@@ -1,0 +1,8 @@
+node_modules
+.env
+backend/.env
+backend/cinematch.db
+frontend/.env
+*.env
+.env.*
+frontend/public/pfs7jtyuzcrorjwmlpm8
