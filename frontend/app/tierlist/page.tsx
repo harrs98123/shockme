@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, DragEvent, useRef } from 'react';
+import { useState, useEffect, useCallback, DragEvent, useRef, Suspense } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -34,6 +34,14 @@ const TMDB_SMALL = 'https://image.tmdb.org/t/p/w185';
 const TMDB_TINY = 'https://image.tmdb.org/t/p/w92';
 
 export default function TierListPage() {
+  return (
+    <Suspense fallback={<div className="container" style={{ paddingTop: 120, textAlign: 'center' }}><div className="spinner" /></div>}>
+      <TierListContent />
+    </Suspense>
+  );
+}
+
+function TierListContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();

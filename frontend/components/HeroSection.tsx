@@ -132,7 +132,7 @@ export default function HeroSection({ movies }: Props) {
           }}
         >
           <Image
-            src={backdropUrl(movie.backdrop_path, 'original')}
+            src={backdropUrl(movie.backdrop_path, 'w1280')}
             alt={movie.title || movie.name || ''}
             fill
             priority

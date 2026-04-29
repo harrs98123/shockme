@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Movie } from '@/lib/types';
 import MovieCard from '@/components/MovieCard';
@@ -19,6 +19,14 @@ const TYPE_MAP: Record<string, { title: string; endpoint: string }> = {
 };
 
 export default function CatalogPage() {
+  return (
+    <Suspense fallback={<div className="section container" style={{ paddingTop: 120, textAlign: 'center' }}><div className="spinner" /></div>}>
+      <CatalogContent />
+    </Suspense>
+  );
+}
+
+function CatalogContent() {
   const { type } = useParams() as { type: string };
   const searchParams = useSearchParams();
   const config = TYPE_MAP[type] || { title: 'Discover', endpoint: `/movies/${type}` };

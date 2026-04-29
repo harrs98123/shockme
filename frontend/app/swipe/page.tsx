@@ -2,6 +2,8 @@
 import SwipeDeck from '@/components/SwipeDeck';
 import { Movie } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 async function fetchSwipeMovies(): Promise<Movie[]> {

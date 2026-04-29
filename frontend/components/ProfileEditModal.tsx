@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, ChangeEvent, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, CheckCircle2, Camera, User as UserIcon, AtSign, AlignLeft } from 'lucide-react';
 import { User as UserType } from '@/lib/types';
@@ -27,7 +27,7 @@ export default function ProfileEditModal({ user, onClose }: ProfileEditModalProp
   const [success, setSuccess] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -190,7 +190,7 @@ export default function ProfileEditModal({ user, onClose }: ProfileEditModalProp
               <InputField
                 icon={UserIcon} label="Display Name" name="name"
                 value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
                 focused={focusedField === 'name'}
                 onFocus={() => setFocusedField('name')}
                 onBlur={() => setFocusedField(null)}
@@ -199,7 +199,7 @@ export default function ProfileEditModal({ user, onClose }: ProfileEditModalProp
               <InputField
                 icon={AtSign} label="Username" name="username"
                 value={formData.username}
-                onChange={e => setFormData({ ...formData, username: e.target.value })}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, username: e.target.value })}
                 focused={focusedField === 'username'}
                 onFocus={() => setFocusedField('username')}
                 onBlur={() => setFocusedField(null)}
@@ -213,7 +213,7 @@ export default function ProfileEditModal({ user, onClose }: ProfileEditModalProp
                 <textarea
                   placeholder="Cinematic storyteller..."
                   value={formData.bio}
-                  onChange={e => setFormData({ ...formData, bio: e.target.value })}
+                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, bio: e.target.value })}
                   onFocus={() => setFocusedField('bio')}
                   onBlur={() => setFocusedField(null)}
                   style={{
@@ -265,7 +265,18 @@ export default function ProfileEditModal({ user, onClose }: ProfileEditModalProp
 
 // ─── Sub-Component for Clean Inputs ─────────────────────────────────
 
-function InputField({ icon: Icon, label, name, value, onChange, focused, onFocus, onBlur }: any) {
+interface InputFieldProps {
+  icon: any;
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  focused: boolean;
+  onFocus: () => void;
+  onBlur: () => void;
+}
+
+function InputField({ icon: Icon, label, name, value, onChange, focused, onFocus, onBlur }: InputFieldProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{

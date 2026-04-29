@@ -112,7 +112,7 @@ export default function TurnstileWidget({
 // Type declaration for Turnstile
 declare global {
   interface Window {
-    turnstile: {
+    turnstile?: {
       render: (container: string | HTMLElement, params: any) => string;
       remove: (widgetId: string) => void;
       reset: (widgetId?: string) => void;

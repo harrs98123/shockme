@@ -43,6 +43,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${poppins.variable} ${inter.variable}`}>
       <head>
         <link rel="preconnect" href="https://challenges.cloudflare.com" />
+        <link rel="preconnect" href="http://localhost:8000" />
+        <link rel="preconnect" href="https://image.tmdb.org" />
+        <link rel="dns-prefetch" href="http://localhost:8000" />
+        <link rel="dns-prefetch" href="https://image.tmdb.org" />
         <script
           src="https://challenges.cloudflare.com/turnstile/v0/api.js"
           async

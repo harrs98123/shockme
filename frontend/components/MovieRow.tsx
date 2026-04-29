@@ -33,6 +33,7 @@ export default function MovieRow({
   loading = false,
 }: Props) {
   const rowRef = useRef<HTMLDivElement>(null);
+  const ticking = useRef(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
@@ -46,10 +47,17 @@ export default function MovieRow({
   };
 
   const handleScroll = () => {
-    const el = rowRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 10);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+    if (!ticking.current) {
+      window.requestAnimationFrame(() => {
+        const el = rowRef.current;
+        if (el) {
+          setCanScrollLeft(el.scrollLeft > 10);
+          setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+        }
+        ticking.current = false;
+      });
+      ticking.current = true;
+    }
   };
 
   if (!movies?.length) return null;

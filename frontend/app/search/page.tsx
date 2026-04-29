@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Movie } from '@/lib/types';
 import MovieCard from '@/components/MovieCard';
@@ -18,6 +18,14 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="section container" style={{ paddingTop: 120, textAlign: 'center' }}><div className="spinner" /></div>}>
+      <SearchContent />
+    </Suspense>
+  );
+}
+
+function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initQ = searchParams?.get('q') || '';

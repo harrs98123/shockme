@@ -235,10 +235,11 @@ function PosterInStack({ path, index }: { path: string; index: number }) {
       }}
     >
       <Image
-        src={posterUrl(path, 'w300')}
+        src={posterUrl(path, 'w342')}
         alt="Poster"
         fill
         sizes="140px"
+        priority={index === 1} // Prioritize the middle poster which is most prominent
         style={{ objectFit: 'cover' }}
       />
     </motion.div>

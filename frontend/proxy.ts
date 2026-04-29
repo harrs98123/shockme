@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 // Protected routes that require auth
-const PROTECTED = [];
+const PROTECTED: string[] = [];
 
 export const config = {
   matcher: [],

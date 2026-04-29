@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, ShieldCheck, Mail, User, Loader2 } from 'lucide-react';
@@ -8,7 +8,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import TurnstileWidget from '@/components/TurnstileWidget';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, user, isLoading } = useAuth();
@@ -62,7 +62,6 @@ export default function LoginPage() {
         setAnime(getPaths(animeRes.data?.results));
       } catch (err) {
         console.log('Posters not available, using placeholders');
-        // Set empty arrays so the form still works without posters
         setHollywood([]);
         setBollywood([]);
         setAnime([]);
@@ -90,14 +89,7 @@ export default function LoginPage() {
 
   // Show loading while checking auth
   if (isLoading) {
-    return (
-      <div className="flex h-screen w-screen overflow-hidden bg-[#000000] text-white font-sans items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="animate-spin" size={20} />
-          <span>Loading...</span>
-        </div>
-      </div>
-    );
+    return <LoginLoadingUI />;
   }
 
   // Don't render if user is logged in
@@ -267,5 +259,24 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LoginLoadingUI() {
+  return (
+    <div className="flex h-screen w-screen overflow-hidden bg-[#000000] text-white font-sans items-center justify-center">
+      <div className="flex items-center space-x-2">
+        <Loader2 className="animate-spin" size={20} />
+        <span>Loading...</span>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoadingUI />}>
+      <LoginForm />
+    </Suspense>
   );
 }
