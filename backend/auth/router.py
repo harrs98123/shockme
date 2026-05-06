@@ -14,7 +14,7 @@ import random
 import string
 from datetime import datetime, timedelta, timezone
 from auth.email import send_reset_email
-import requests
+import httpx
 import os
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -64,22 +64,21 @@ def validate_turnstile(token: str, request: Request) -> bool:
         data["remoteip"] = remoteip
 
     try:
-        response = requests.post(url, data=data, timeout=10)
-        response.raise_for_status()
-        result = response.json()
+        with httpx.Client() as client:
+            response = client.post(url, data=data, timeout=10.0)
+            response.raise_for_status()
+            result = response.json()
         
         success = result.get("success", False)
         if not success:
             error_codes = result.get("error-codes", ["unknown error"])
             print(f"❌ Turnstile Validation Failed: {error_codes}")
-            # If the error is related to domain mismatch on localhost, we might want to log that specifically
         else:
             print(f"✅ Turnstile Validation Success for trace: {result.get('action')}")
             
         return success
-    except requests.RequestException as e:
+    except httpx.HTTPError as e:
         print(f"⚠️ Turnstile Network Error: {e}")
-        # In development, we might want to be more lenient if the network is down
         if app_env == "development":
             print("⚠️ Dev Mode: Allowing request despite Turnstile network error.")
             return True
