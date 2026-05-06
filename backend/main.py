@@ -85,6 +85,7 @@ if IS_PRODUCTION:
 # 3. CORS — explicit origins, methods, and headers only
 CORS_ORIGINS = [
     "http://localhost:3000",
+    "http://localhost:3002",
     "http://127.0.0.1:3000",
 ]
 if IS_PRODUCTION:

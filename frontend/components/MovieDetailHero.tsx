@@ -338,7 +338,7 @@ export default function MovieDetailHero({ movie }: Props) {
                   style={{
                     padding: '14px 28px',
                     borderRadius: '12px',
-                    backgroundImage: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+                    backgroundColor: '#8B5CF6', // Purple
                     color: 'white',
                     fontWeight: 700,
                     fontSize: 14,
