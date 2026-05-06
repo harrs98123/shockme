@@ -21,3 +21,33 @@ services:
         generateValue: true
       - key: REFRESH_SECRET_KEY
         generateValue: true
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: MOD_API_KEY
+        sync: false
+      - key: ADMIN_EMAIL
+        value: admin@cinematch.dev
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        value: no-reply@moctale.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_SERVER
+        value: smtp.gmail.com
+      - key: MAIL_STARTTLS
+        value: "True"
+      - key: MAIL_SSL_TLS
+        value: "False"
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      - key: SECURITY_ENCRYPTION_KEY
+        sync: false
+      - key: ALLOWED_HOSTS
+        value: cinematch-api.onrender.com,cinematch-movie.vercel.app
+      - key: CORS_ORIGINS
+        value: https://cinematch-movie.vercel.app
