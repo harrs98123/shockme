@@ -385,7 +385,13 @@ h6 {
 .container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 14px;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding: 0 24px;
+  }
 }
 
 /* ─── Stance bar ─────────────────────────────────────────────────── */
@@ -477,19 +483,23 @@ h6 {
   position: relative;
   flex-shrink: 0;
   background-color: #09090b;
-  border-radius: 24px;
+  border-radius: 18px;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.08);
   cursor: pointer;
-  width: 150px;
-  height: 225px;
+  width: 135px;
+  height: 202px;
   box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
   contain: paint;
   will-change: transform;
 }
 
+@media (min-width: 400px) {
+  .mc-root { width: 148px; height: 222px; border-radius: 20px; }
+}
+
 @media (min-width: 640px) {
-  .mc-root { width: 180px; height: 270px; }
+  .mc-root { width: 180px; height: 270px; border-radius: 24px; }
 }
 
 @media (min-width: 1024px) {
@@ -526,8 +536,11 @@ h6 {
 .mc-poster {
   position: relative;
   flex-shrink: 0;
-  width: 150px;
-  height: 225px;
+  width: 135px;
+  height: 202px;
+}
+@media (min-width: 400px) {
+  .mc-poster { width: 148px; height: 222px; }
 }
 @media (min-width: 640px) {
   .mc-poster { width: 180px; height: 270px; }

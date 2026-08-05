@@ -29,7 +29,6 @@ export default function HeroSection({ movies }: Props) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const movie = movies[currentIndex];
-
   const fetchedRef = useRef<Set<number>>(new Set());
 
   // Fetch details for current movie
@@ -111,14 +110,7 @@ export default function HeroSection({ movies }: Props) {
   return (
     <section
       id="hero-section"
-      style={{
-        position: 'relative',
-        width: '100%',
-        minHeight: '112vh',
-        background: '#0a0a0a',
-        overflow: 'hidden',
-        marginTop: 0,
-      }}
+      className="relative w-full min-h-[82vh] sm:min-h-[92vh] md:min-h-[105vh] bg-[#0a0a0a] overflow-hidden mt-0"
     >
       {/* Background Image */}
       <AnimatePresence mode="popLayout">
@@ -128,11 +120,7 @@ export default function HeroSection({ movies }: Props) {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 1.2, ease: 'easeInOut' }}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 1,
-          }}
+          className="absolute inset-0 z-1"
         >
           <Image
             src={backdropUrl(movie.backdrop_path, 'w1280')}
@@ -140,281 +128,92 @@ export default function HeroSection({ movies }: Props) {
             fill
             priority
             sizes="100vw"
-            style={{
-              objectFit: 'cover',
-              objectPosition: 'center 15%',
-            }}
+            className="object-cover object-[center_20%]"
           />
         </motion.div>
       </AnimatePresence>
 
       {/* Gradient Overlays */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 2,
-        background: 'linear-gradient(to right, rgba(2,2,2,0.98) 0%, rgba(2,2,2,0.88) 25%, rgba(2,2,2,0.4) 50%, rgba(2,2,2,0.15) 75%, transparent 100%)',
-      }} />
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 2,
-        background: 'linear-gradient(to top, rgba(2,2,2,1) 0%, rgba(2,2,2,0.85) 15%, rgba(2,2,2,0.3) 40%, transparent 60%)',
-      }} />
-      {/* Top vignette */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 2,
-        background: 'linear-gradient(to bottom, rgba(2,2,2,0.5) 0%, transparent 15%)',
-      }} />
+      <div className="absolute inset-0 z-2 bg-gradient-to-r from-[#020202]/98 via-[#020202]/85 md:via-[#020202]/60 to-transparent" />
+      <div className="absolute inset-0 z-2 bg-gradient-to-t from-[#020202] via-[#020202]/80 via-30% to-transparent" />
+      <div className="absolute inset-0 z-2 bg-gradient-to-b from-[#020202]/60 via-transparent to-transparent" />
 
       {/* Main Content */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 5,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-          minHeight: '112vh',
-          padding: '120px 4% 0',
-        }}
-      >
+      <div className="relative z-5 flex flex-col justify-end min-h-[82vh] sm:min-h-[92vh] md:min-h-[105vh] px-3.5 sm:px-6 md:px-10 pt-20 sm:pt-28 md:pt-32 pb-0">
         {/* Movie Info Area */}
         <AnimatePresence mode="wait">
           <motion.div
             key={movie.id}
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            style={{
-              maxWidth: 680,
-              paddingBottom: 24,
-            }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="max-w-2xl pb-4 sm:pb-6"
           >
             {/* Title */}
-            <h1
-              style={{
-                fontSize: 'clamp(28px, 4.5vw, 52px)',
-                fontWeight: 800,
-                lineHeight: 1.05,
-                margin: 0,
-                marginBottom: 16,
-                color: '#fff',
-                textShadow: '0 4px 30px rgba(0,0,0,0.6)',
-                letterSpacing: '-1.5px',
-                fontFamily: "'Poppins', sans-serif",
-                textTransform: 'uppercase',
-              }}
-            >
+            <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2 sm:mb-4 uppercase leading-[1.1] drop-shadow-md">
               {movie.title || movie.name}
             </h1>
 
-            {/* Metadata Row: Rating, Year, Runtime, Genre */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                marginBottom: 16,
-                flexWrap: 'wrap',
-              }}
-            >
-              {/* Content rating pill */}
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '3px 8px',
-                border: '1px solid rgba(255,255,255,0.5)',
-                borderRadius: 4,
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.85)',
-                letterSpacing: '0.5px',
-              }}>
+            {/* Metadata Row */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2.5 sm:mb-4 text-xs sm:text-sm text-white/70 font-medium">
+              <span className="inline-flex items-center px-2 py-0.5 border border-white/40 rounded text-[10px] sm:text-xs font-semibold text-white/90 uppercase tracking-wide">
                 12+
               </span>
 
-              {/* CC icon */}
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '3px 6px',
-                border: '1px solid rgba(255,255,255,0.5)',
-                borderRadius: 4,
-                fontSize: 11,
-                fontWeight: 700,
-                color: 'rgba(255,255,255,0.85)',
-              }}>
+              <span className="inline-flex items-center px-1.5 py-0.5 border border-white/40 rounded text-[10px] sm:text-xs font-bold text-white/90">
                 CC
               </span>
 
-              {/* Year */}
-              <span style={{
-                fontSize: 14,
-                color: 'rgba(255,255,255,0.7)',
-                fontWeight: 500,
-              }}>
-                {year}
-              </span>
+              <span>{year}</span>
 
-              {/* Dot separator */}
-              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8 }}>●</span>
-
-              {/* Runtime */}
               {runtime && (
                 <>
-                  <span style={{
-                    fontSize: 14,
-                    color: 'rgba(255,255,255,0.7)',
-                    fontWeight: 500,
-                  }}>
-                    {formatRuntime(runtime)}
-                  </span>
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8 }}>●</span>
+                  <span className="text-white/30 text-[8px]">●</span>
+                  <span>{formatRuntime(runtime)}</span>
                 </>
               )}
 
-              {/* IMDb Rating */}
-              <span style={{
-                fontSize: 14,
-                color: 'rgba(255,255,255,0.7)',
-                fontWeight: 500,
-              }}>
+              <span className="text-white/30 text-[8px]">●</span>
+
+              <span className="text-white/90 font-semibold">
                 ⭐ {rating}
               </span>
             </div>
 
             {/* Genre Tags */}
-            <div style={{
-              display: 'flex',
-              gap: 8,
-              marginBottom: 20,
-              flexWrap: 'wrap',
-            }}>
-              {genres.slice(0, 3).map((g: Genre) => (
-                <span
-                  key={g.id}
-                  style={{
-                    fontSize: 13,
-                    color: 'rgba(255,255,255,0.65)',
-                    fontWeight: 500,
-                  }}
-                >
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3.5 sm:mb-5 text-xs text-white/60">
+              {genres.slice(0, 3).map((g: Genre, i: number) => (
+                <span key={g.id} className="inline-flex items-center gap-1.5">
                   {g.name}
-                  {genres.indexOf(g) < Math.min(genres.length, 3) - 1 && (
-                    <span style={{ marginLeft: 8, color: 'rgba(255,255,255,0.25)' }}>·</span>
+                  {i < Math.min(genres.length, 3) - 1 && (
+                    <span className="text-white/25">·</span>
                   )}
                 </span>
               ))}
             </div>
 
             {/* Action Buttons */}
-            <div style={{
-              display: 'flex',
-              gap: 12,
-              alignItems: 'center',
-              marginBottom: 24,
-            }}>
-              {/* Trailer Button */}
+            <div className="flex items-center gap-2.5 sm:gap-3 mb-3.5 sm:mb-6 flex-wrap xs:flex-nowrap">
               <Link
                 href={`/movie/${movie.id}`}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '12px 28px',
-                  background: '#fff',
-                  color: '#000',
-                  borderRadius: 6,
-                  fontSize: 15,
-                  fontWeight: 700,
-                  textDecoration: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  fontFamily: "'Poppins', sans-serif",
-                  letterSpacing: '0.5px',
-                  textTransform: 'uppercase',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.85)';
-                  e.currentTarget.style.transform = 'scale(1.03)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#fff';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:px-7 sm:py-3 bg-white text-black rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all flex-1 xs:flex-initial shadow-md"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="#000">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#000">
                   <polygon points="5 3 19 12 5 21" />
                 </svg>
                 Trailer
               </Link>
 
-              {/* View Detail Button */}
               <Link
                 href={`/movie/${movie.id}`}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '12px 24px',
-                  background: 'rgba(255,255,255,0.15)',
-                  backdropFilter: 'blur(4px)',
-                  color: '#fff',
-                  borderRadius: 6,
-                  fontSize: 15,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  border: '1px solid rgba(255,255,255,0.25)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  fontFamily: "'Poppins', sans-serif",
-                  letterSpacing: '0.5px',
-                  textTransform: 'uppercase',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.25)';
-                  e.currentTarget.style.transform = 'scale(1.03)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-white/15 backdrop-blur-md text-white border border-white/25 rounded-lg text-xs sm:text-sm font-semibold uppercase tracking-wider hover:bg-white/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex-1 xs:flex-initial"
               >
                 View Detail
               </Link>
 
-              {/* Add to list button (+ circle) */}
               <button
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '2px solid rgba(255,255,255,0.35)',
-                  color: '#fff',
-                  fontSize: 22,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  padding: 0,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)';
-                  e.currentTarget.style.transform = 'scale(1.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
+                className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/10 border border-white/35 text-white flex items-center justify-center text-lg sm:text-xl font-bold hover:bg-white/20 hover:scale-105 active:scale-95 transition-all shrink-0"
                 title="Add to Watchlist"
               >
                 +
@@ -422,80 +221,29 @@ export default function HeroSection({ movies }: Props) {
             </div>
 
             {/* Description */}
-            <p style={{
-              color: 'rgba(255,255,255,0.75)',
-              fontSize: 15,
-              lineHeight: 1.65,
-              margin: 0,
-              maxWidth: 600,
-              fontWeight: 400,
-              textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-              display: '-webkit-box',
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}>
+            <p className="text-white/75 text-xs sm:text-sm md:text-base leading-relaxed max-w-xl line-clamp-2 sm:line-clamp-3 drop-shadow">
               {movie.overview}
             </p>
           </motion.div>
         </AnimatePresence>
 
         {/* Suggested Movies Section */}
-        <div style={{
-          marginTop: 20,
-          paddingBottom: 40,
-          position: 'relative',
-          background: 'linear-gradient(to bottom, transparent 0%, rgba(10, 10, 10, 0.9) 90%, #0a0a0a 95%)',
-          borderRadius: '24px 24px 0 0',
-          padding: '24px 20px 40px',
-          margin: '0 -20px',
-        }}>
+        <div className="mt-3 sm:mt-5 pb-6 sm:pb-10 relative bg-gradient-to-b from-transparent via-[#0a0a0a]/90 to-[#0a0a0a] rounded-t-xl sm:rounded-t-3xl p-3 sm:p-5 md:p-6 -mx-3.5 sm:-mx-6 md:-mx-10">
           {/* Tabs */}
-          <div style={{
-            display: 'flex',
-            gap: 28,
-            marginBottom: 20,
-            borderBottom: '2px solid rgba(255,255,255,0.08)',
-            paddingBottom: 0,
-          }}>
+          <div className="flex gap-4 sm:gap-7 mb-3 sm:mb-5 border-b border-white/10 text-xs sm:text-sm uppercase tracking-wider font-semibold">
             {(['suggested', 'extras', 'details'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: activeTab === tab ? '#fff' : 'rgba(255,255,255,0.45)',
-                  fontSize: 15,
-                  fontWeight: activeTab === tab ? 700 : 500,
-                  cursor: 'pointer',
-                  padding: '10px 0',
-                  position: 'relative',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1.2px',
-                  fontFamily: "'Poppins', sans-serif",
-                  transition: 'color 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  if (activeTab !== tab) e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== tab) e.currentTarget.style.color = 'rgba(255,255,255,0.45)';
-                }}
+                className={`py-2 relative transition-colors ${
+                  activeTab === tab ? 'text-white font-bold' : 'text-white/45 hover:text-white/70'
+                }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 {activeTab === tab && (
                   <motion.div
                     layoutId="hero-tab-underline"
-                    style={{
-                      position: 'absolute',
-                      bottom: -2,
-                      left: 0,
-                      right: 0,
-                      height: 3,
-                      background: '#fff',
-                      borderRadius: 2,
-                    }}
+                    className="absolute -bottom-0.5 left-0 right-0 h-0.75 bg-white rounded-full"
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
                   />
                 )}
@@ -512,99 +260,41 @@ export default function HeroSection({ movies }: Props) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
-                style={{ position: 'relative' }}
+                className="relative"
               >
                 {similarMovies.length > 0 ? (
-                  <div style={{ position: 'relative' }}>
-                    {/* Left Arrow */}
+                  <div className="relative">
+                    {/* Left Arrow (Desktop) */}
                     <button
                       onClick={() => scrollSuggested('left')}
-                      style={{
-                        position: 'absolute',
-                        left: -8,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        zIndex: 10,
-                        width: 36,
-                        height: 36,
-                        borderRadius: '50%',
-                        background: 'rgba(0,0,0,0.7)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 14,
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.7)'}
+                      className="hidden sm:flex absolute -left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/70 border border-white/15 text-white items-center justify-center text-sm hover:bg-white/20 transition-all"
                     >
                       ‹
                     </button>
 
                     <div
                       ref={suggestedRowRef}
-                      style={{
-                        display: 'flex',
-                        gap: 12,
-                        overflowX: 'auto',
-                        scrollbarWidth: 'none',
-                        padding: '4px 0',
-                        scrollSnapType: 'x mandatory',
-                      }}
+                      className="flex gap-2.5 sm:gap-3 overflow-x-auto scrollbar-none py-1 snap-x snap-mandatory"
                     >
                       {similarMovies.map((sm, idx) => (
                         <SuggestedCard key={sm.id} movie={sm} index={idx} />
                       ))}
                     </div>
 
-                    {/* Right Arrow */}
+                    {/* Right Arrow (Desktop) */}
                     <button
                       onClick={() => scrollSuggested('right')}
-                      style={{
-                        position: 'absolute',
-                        right: -8,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        zIndex: 10,
-                        width: 36,
-                        height: 36,
-                        borderRadius: '50%',
-                        background: 'rgba(0,0,0,0.7)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 14,
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.7)'}
+                      className="hidden sm:flex absolute -right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-black/70 border border-white/15 text-white items-center justify-center text-sm hover:bg-white/20 transition-all"
                     >
                       ›
                     </button>
                   </div>
                 ) : (
-                  <div style={{
-                    display: 'flex',
-                    gap: 12,
-                    overflow: 'hidden',
-                  }}>
-                    {/* Skeleton placeholders */}
+                  <div className="flex gap-3 overflow-hidden">
                     {Array.from({ length: 6 }).map((_, i) => (
                       <div
                         key={i}
-                        className="skeleton"
-                        style={{
-                          minWidth: 220,
-                          height: 130,
-                          borderRadius: 8,
-                          flexShrink: 0,
-                        }}
+                        className="skeleton min-w-[145px] sm:min-w-[210px] h-24 sm:h-32 rounded-lg shrink-0"
                       />
                     ))}
                   </div>
@@ -620,7 +310,7 @@ export default function HeroSection({ movies }: Props) {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
               >
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+                <p className="text-white/50 text-xs sm:text-sm">
                   Bonus content, behind-the-scenes footage, and deleted scenes coming soon.
                 </p>
               </motion.div>
@@ -633,12 +323,7 @@ export default function HeroSection({ movies }: Props) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                  gap: 20,
-                  maxWidth: 800,
-                }}
+                className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5 max-w-2xl"
               >
                 <DetailItem label="Release Year" value={year} />
                 {runtime && <DetailItem label="Runtime" value={formatRuntime(runtime)} />}
@@ -650,49 +335,27 @@ export default function HeroSection({ movies }: Props) {
         </div>
       </div>
 
-      {/* Progress Indicators */}
+      {/* Slide Progress Dots (Desktop only) */}
       {movies.length > 1 && (
-        <div style={{
-          position: 'absolute',
-          right: '4%',
-          bottom: '35%',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-          zIndex: 20,
-        }}>
+        <div className="hidden md:flex flex-col gap-2 absolute right-5 bottom-[35%] z-20">
           {movies.map((_, idx) => (
             <button
               key={idx}
               onClick={() => goToSlide(idx)}
-              style={{
-                width: 6,
-                height: idx === currentIndex ? 28 : 6,
-                borderRadius: 4,
-                backgroundColor: idx === currentIndex ? '#fff' : 'rgba(255,255,255,0.35)',
-                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                cursor: 'pointer',
-                border: 'none',
-                padding: 0,
-              }}
+              className={`w-1.5 rounded-full transition-all duration-400 cursor-pointer p-0 border-0 ${
+                idx === currentIndex ? 'h-7 bg-white' : 'h-1.5 bg-white/35 hover:bg-white/60'
+              }`}
               aria-label={`Go to slide ${idx + 1}`}
             />
           ))}
         </div>
       )}
-
-      {/* Hide scrollbar CSS */}
-      <style jsx>{`
-        div::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </section>
   );
 }
 
 /* ─── Suggested Movie Card ─────────────────────────────────────────── */
-function SuggestedCard({ movie, index }: { movie: Movie; index: number }) {
+function SuggestedCard({ movie }: { movie: Movie; index: number }) {
   const [isHovered, setIsHovered] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -716,89 +379,34 @@ function SuggestedCard({ movie, index }: { movie: Movie; index: number }) {
   return (
     <Link
       href={`/movie/${movie.id}`}
-      style={{
-        minWidth: 220,
-        maxWidth: 220,
-        flexShrink: 0,
-        borderRadius: 8,
-        overflow: 'hidden',
-        position: 'relative',
-        textDecoration: 'none',
-        scrollSnapAlign: 'start',
-        transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        zIndex: isHovered ? 5 : 1,
-        willChange: 'transform'
-      }}
+      className="min-w-[145px] max-w-[145px] sm:min-w-[210px] sm:max-w-[210px] shrink-0 rounded-lg overflow-hidden relative no-underline snap-start transition-transform duration-300 ease-out z-1 hover:z-5 hover:scale-105"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        aspectRatio: '16/9',
-        background: '#1a1a1a',
-      }}>
+      <div className="relative w-full aspect-video bg-[#1a1a1a] rounded-lg overflow-hidden">
         <Image
           src={movie.backdrop_path ? backdropUrl(movie.backdrop_path, 'w780') : posterUrl(movie.poster_path, 'w500')}
           alt={movie.title || movie.name || ''}
           fill
-          sizes="220px"
-          style={{
-            objectFit: 'cover',
-            borderRadius: 8,
-          }}
+          sizes="(max-width: 640px) 145px, 210px"
+          className="object-cover rounded-lg"
         />
-        {/* Hover overlay */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: isHovered
-            ? 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)'
-            : 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)',
-          borderRadius: 8,
-          transition: 'all 0.3s ease',
-        }} />
 
-        {/* Title overlay */}
-        <div style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: '8px 10px',
-        }}>
-          <p style={{
-            color: '#fff',
-            fontSize: 12,
-            fontWeight: 600,
-            margin: 0,
-            lineHeight: 1.3,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            textShadow: '0 1px 4px rgba(0,0,0,0.8)',
-          }}>
+        <div className={`absolute inset-0 transition-all duration-300 rounded-lg ${
+          isHovered
+            ? 'bg-gradient-to-t from-black/90 via-black/30 to-transparent'
+            : 'bg-gradient-to-t from-black/70 via-transparent to-transparent'
+        }`} />
+
+        <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-2.5">
+          <p className="text-white text-[11px] sm:text-xs font-semibold m-0 leading-tight truncate drop-shadow">
             {movie.title || movie.name}
           </p>
         </div>
 
-        {/* Play icon on hover */}
         {isHovered && (
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            background: 'rgba(255,255,255,0.9)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#000">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#000">
               <polygon points="7 3 21 12 7 21" />
             </svg>
           </div>
@@ -812,22 +420,10 @@ function SuggestedCard({ movie, index }: { movie: Movie; index: number }) {
 function DetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <span style={{
-        display: 'block',
-        fontSize: 11,
-        fontWeight: 600,
-        color: 'rgba(255,255,255,0.4)',
-        textTransform: 'uppercase',
-        letterSpacing: '1.5px',
-        marginBottom: 4,
-      }}>
+      <span className="block text-[10px] sm:text-xs font-semibold text-white/40 uppercase tracking-widest mb-1">
         {label}
       </span>
-      <span style={{
-        fontSize: 15,
-        color: 'rgba(255,255,255,0.85)',
-        fontWeight: 500,
-      }}>
+      <span className="text-xs sm:text-sm text-white/85 font-medium">
         {value}
       </span>
     </div>

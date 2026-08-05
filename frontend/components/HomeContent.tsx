@@ -70,7 +70,7 @@ export default function HomeContent({ trending, trendingIndian, popular, topRate
     <>
       {heroMovies.length > 0 && <HeroSection movies={heroMovies} />}
 
-      <div style={{ marginTop: -20, position: 'relative', zIndex: 10 }}>
+      <div className="relative z-10 -mt-2 sm:-mt-5">
         <MovieRow
           title="Trending Now"
           movies={trending}

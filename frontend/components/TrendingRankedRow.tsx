@@ -52,50 +52,21 @@ export default function TrendingRankedRow({
   if (!movies?.length) return null;
 
   return (
-    <section style={{ padding: '48px 0 24px', overflow: 'hidden' }}>
+    <section className="py-6 sm:py-12 overflow-hidden">
       <div className="container">
-        <div style={{ marginBottom: 24 }}>
-           <h2 style={{ 
-             fontSize: 28, 
-             fontWeight: 800, 
-             letterSpacing: '-0.02em',
-             color: 'white',
-             margin: 0,
-             display: 'flex',
-             alignItems: 'center',
-             gap: 12
-           }}>
-             <span style={{ 
-               width: 4, 
-               height: 28, 
-               background: 'var(--primary)', 
-               borderRadius: 2 
-             }} />
-             {title}
-           </h2>
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-2xl font-extrabold tracking-tight text-white m-0 flex items-center gap-2.5 sm:gap-3">
+            <span className="w-1 h-5 sm:h-7 bg-[var(--primary)] rounded-full" />
+            {title}
+          </h2>
         </div>
 
-        <div style={{ position: 'relative' }}>
-          {/* Scroll Buttons */}
+        <div className="relative">
+          {/* Scroll Buttons (Desktop only) */}
           {canScrollLeft && (
             <button
               onClick={() => scroll('left')}
-              className="scroll-btn left"
-              style={{
-                position: 'absolute',
-                left: -20,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                zIndex: 20,
-                width: 44,
-                height: 44,
-                borderRadius: '50%',
-                background: 'rgba(0,0,0,0.8)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'white',
-                cursor: 'pointer',
-                backdropFilter: 'blur(8px)'
-              }}
+              className="hidden md:flex scroll-btn left absolute -left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/80 border border-white/10 text-white cursor-pointer backdrop-blur-md items-center justify-center text-lg"
             >
               ←
             </button>
@@ -104,22 +75,7 @@ export default function TrendingRankedRow({
           {canScrollRight && (
             <button
               onClick={() => scroll('right')}
-              className="scroll-btn right"
-              style={{
-                position: 'absolute',
-                right: -20,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                zIndex: 20,
-                width: 44,
-                height: 44,
-                borderRadius: '50%',
-                background: 'rgba(0,0,0,0.8)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'white',
-                cursor: 'pointer',
-                backdropFilter: 'blur(8px)'
-              }}
+              className="hidden md:flex scroll-btn right absolute -right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/80 border border-white/10 text-white cursor-pointer backdrop-blur-md items-center justify-center text-lg"
             >
               →
             </button>
@@ -127,17 +83,8 @@ export default function TrendingRankedRow({
 
           <div
             ref={rowRef}
-            className="scroll-row hide-scrollbar"
+            className="scroll-row hide-scrollbar flex gap-4 sm:gap-10 py-3 sm:py-5 px-3 sm:px-10 overflow-x-auto scroll-smooth snap-x snap-mandatory"
             onScroll={handleScroll}
-            style={{
-              display: 'flex',
-              gap: 40,
-              padding: '20px 40px 40px 20px',
-              overflowX: 'auto',
-              scrollBehavior: 'smooth',
-              contain: 'content',
-              willChange: 'scroll-position'
-            }}
           >
             {movies.slice(0, 10).map((movie, index) => (
               <motion.div
@@ -146,34 +93,20 @@ export default function TrendingRankedRow({
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.05 }}
-                style={{
-                  position: 'relative',
-                  minWidth: 220,
-                  flexShrink: 0,
-                  display: 'flex',
-                  alignItems: 'flex-end'
-                }}
+                className="relative min-w-[165px] sm:min-w-[220px] shrink-0 flex items-end snap-start"
               >
                 {/* Large Background Number */}
-                <span style={{
-                  position: 'absolute',
-                  left: -45,
-                  bottom: -25,
-                  fontSize: 220,
-                  fontWeight: 900,
-                  lineHeight: 0.8,
-                  color: '#010103', // Solid black (matches bg)
-                  WebkitTextStroke: '2px rgba(255,255,255,0.2)', // Slightly thinner outline
-                  zIndex: 0,
-                  pointerEvents: 'none',
-                  fontFamily: 'Inter, sans-serif',
-                  letterSpacing: '-0.15em'
-                }}>
+                <span className="absolute -left-7 sm:-left-11 -bottom-3 sm:-bottom-6 text-[130px] sm:text-[220px] font-black leading-none text-[#010103] z-0 pointer-events-none tracking-tighter select-none"
+                  style={{
+                    WebkitTextStroke: '1.5px rgba(255,255,255,0.22)',
+                    fontFamily: 'Inter, sans-serif'
+                  }}
+                >
                   {index + 1}
                 </span>
 
                 {/* Movie Card with extra margin to show the number */}
-                <div style={{ position: 'relative', zIndex: 1, marginLeft: 85, width: '100%' }}>
+                <div className="relative z-1 ml-14 sm:ml-20 w-full">
                   <MovieCard
                     movie={movie}
                     isFav={favIds.includes(movie.id)}

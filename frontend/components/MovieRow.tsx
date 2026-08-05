@@ -65,110 +65,70 @@ export default function MovieRow({
   const ArrowBtn = ({ dir }: { dir: 'left' | 'right' }) => (
     <button
       onClick={() => scroll(dir)}
-      style={{
-        position: 'absolute',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        [dir]: -16,
-        zIndex: 10,
-        width: 40,
-        height: 40,
-        borderRadius: '50%',
-        background: 'rgba(15,15,15,0.95)',
-        border: '1px solid var(--border)',
-        color: 'white',
-        cursor: 'pointer',
-        fontSize: 16,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'background 0.2s, border-color 0.2s',
-        opacity: dir === 'left' ? (canScrollLeft ? 1 : 0.3) : (canScrollRight ? 1 : 0.3),
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--primary)')}
-      onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(15,15,15,0.95)')}
+      className={`hidden md:flex absolute top-1/2 -translate-y-1/2 ${
+        dir === 'left' ? '-left-4' : '-right-4'
+      } z-10 w-10 h-10 rounded-full bg-[#0f0f0f]/95 border border-white/10 text-white cursor-pointer items-center justify-center text-base transition-all ${
+        dir === 'left' ? (canScrollLeft ? 'opacity-100 hover:bg-[var(--primary)]' : 'opacity-30') : (canScrollRight ? 'opacity-100 hover:bg-[var(--primary)]' : 'opacity-30')
+      }`}
     >
       {dir === 'left' ? '←' : '→'}
     </button>
   );
 
   return (
-    <section style={{ padding: '32px 0' }}>
+    <section className="py-4 sm:py-8">
       <div className="container">
-        <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: 22, margin: 0, color: 'white' }}>{title}</h2>
-          {subtitle && <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>{subtitle}</p>}
+        <div className="mb-3 sm:mb-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base sm:text-xl font-extrabold text-white m-0 tracking-tight">
+              {title}
+            </h2>
+            {seeMoreLink && (
+              <a
+                href={seeMoreLink}
+                className="text-xs font-semibold text-white/50 hover:text-white transition-colors flex items-center gap-1 sm:hidden"
+              >
+                See all →
+              </a>
+            )}
+          </div>
+          {subtitle && (
+            <p className="text-white/50 text-xs sm:text-sm mt-1 mb-0 font-medium">
+              {subtitle}
+            </p>
+          )}
         </div>
-        <div style={{ position: 'relative' }}>
+
+        <div className="relative">
           <ArrowBtn dir="left" />
           <div
             ref={rowRef}
-            className="scroll-row"
+            className="scroll-row flex gap-3 sm:gap-4 overflow-x-auto py-2 px-1 scrollbar-none snap-x snap-mandatory"
             onScroll={handleScroll}
-            style={{ 
-              padding: '8px 4px 16px',
-              contain: 'content',
-              willChange: 'scroll-position'
-            }}
           >
             {movies.map((movie) => (
-              <MovieCard
-                key={movie.id}
-                movie={movie}
-                isFav={favIds.includes(movie.id)}
-                isWatchlisted={watchlistIds.includes(movie.id)}
-                isWatched={watchedIds.includes(movie.id)}
-                onFavToggle={onFavToggle}
-                onWatchlistToggle={onWatchlistToggle}
-                onWatchedToggle={onWatchedToggle}
-              />
+              <div key={movie.id} className="snap-start shrink-0">
+                <MovieCard
+                  movie={movie}
+                  isFav={favIds.includes(movie.id)}
+                  isWatchlisted={watchlistIds.includes(movie.id)}
+                  isWatched={watchedIds.includes(movie.id)}
+                  onFavToggle={onFavToggle}
+                  onWatchlistToggle={onWatchlistToggle}
+                  onWatchedToggle={onWatchedToggle}
+                />
+              </div>
             ))}
 
             {seeMoreLink && (
               <a
                 href={seeMoreLink}
-                style={{
-                  minWidth: 180,
-                  height: 330,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px dashed var(--border)',
-                  borderRadius: 16,
-                  color: 'var(--text-muted)',
-                  textDecoration: 'none',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  gap: 12,
-                  marginLeft: 8,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                  e.currentTarget.style.borderColor = 'var(--primary)';
-                  e.currentTarget.style.color = 'white';
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                  e.currentTarget.style.color = 'var(--text-muted)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
+                className="snap-start min-w-[135px] max-w-[135px] sm:min-w-[180px] sm:max-w-[180px] lg:max-w-[210px] h-[202px] sm:h-[270px] lg:h-[315px] flex flex-col items-center justify-center bg-white/[0.03] border border-dashed border-white/15 rounded-2xl sm:rounded-3xl text-white/50 hover:text-white hover:bg-white/[0.08] hover:border-[var(--primary)] transition-all gap-2 shrink-0 no-underline"
               >
-                <div style={{
-                  width: 50,
-                  height: 50,
-                  borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.05)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 24
-                }}>
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/5 flex items-center justify-center text-lg sm:text-xl">
                   →
                 </div>
-                <span style={{ fontWeight: 500 }}>See Everything</span>
+                <span className="text-xs sm:text-sm font-semibold">See Everything</span>
               </a>
             )}
           </div>
