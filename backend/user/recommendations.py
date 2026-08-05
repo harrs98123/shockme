@@ -36,20 +36,28 @@ async def get_recommendations(
             for g in genres:
                 genre_weight[g] += r.rating  # Weight by rating
 
-    # 2. Boost from favorites
+    # 2. Boost from favorites & collect favorite IDs
     favorites = db.query(models.Favorite).filter(
         models.Favorite.user_id == current_user.id
     ).all()
+    fav_ids = {int(f.movie_id) for f in favorites if f.movie_id}
 
-    # Get genres for favorites from a quick TMDB lookup (cached in a real app)
-    # For simplicity, we'll rely on genre data from ratings here
+    if not genre_weight and fav_ids:
+        for f_id in list(fav_ids)[:3]:
+            try:
+                detail = await tmdb_get(f"/movie/{f_id}", {})
+                for g in detail.get("genres", []):
+                    genre_weight[int(g.get("id"))] += 5
+            except Exception:
+                pass
 
-    # 3. Get watched IDs to exclude
+    # 3. Get watched & favorite IDs to exclude from recommendations
     watched_ids = {
-        w.movie_id for w in db.query(models.Watched).filter(
+        int(w.movie_id) for w in db.query(models.Watched).filter(
             models.Watched.user_id == current_user.id
-        ).all()
+        ).all() if w.movie_id
     }
+    exclude_ids = watched_ids.union(fav_ids)
 
     # 4. If no preference data, return popular movies
     if not genre_weight:
@@ -57,11 +65,10 @@ async def get_recommendations(
             data = await tmdb_get("/movie/popular", {"page": 1, "language": "en-US"})
             movies = [
                 m for m in data.get("results", [])
-                if m.get("id") not in watched_ids
+                if m.get("id") and int(m.get("id")) not in exclude_ids
             ][:20]
             return {"based_on": [], "results": movies}
         except Exception:
-            # Let HTTPException bubble up or return empty if needed
             raise
 
     # 5. Top 3 genres by weight
@@ -77,7 +84,7 @@ async def get_recommendations(
         })
         movies = [
             m for m in data.get("results", [])
-            if m.get("id") not in watched_ids
+            if m.get("id") and int(m.get("id")) not in exclude_ids
         ][:20]
         return {"based_on": top_genres, "results": movies}
     except Exception:

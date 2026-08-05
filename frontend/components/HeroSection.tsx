@@ -110,7 +110,7 @@ export default function HeroSection({ movies }: Props) {
   return (
     <section
       id="hero-section"
-      className="relative w-full min-h-[82vh] sm:min-h-[92vh] md:min-h-[105vh] bg-[#0a0a0a] overflow-hidden mt-0"
+      className="relative w-full h-[100dvh] min-h-[100dvh] sm:h-auto sm:min-h-[92vh] md:min-h-[105vh] bg-[#0a0a0a] overflow-hidden mt-0"
     >
       {/* Background Image */}
       <AnimatePresence mode="popLayout">
@@ -133,13 +133,13 @@ export default function HeroSection({ movies }: Props) {
         </motion.div>
       </AnimatePresence>
 
-      {/* Gradient Overlays - tuned for mobile clarity */}
-      <div className="absolute inset-0 z-2 bg-gradient-to-r from-[#020202]/90 via-[#020202]/40 to-transparent sm:from-[#020202]/98 sm:via-[#020202]/85 md:via-[#020202]/60" />
-      <div className="absolute inset-0 z-2 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 via-35% to-transparent" />
-      <div className="absolute inset-0 z-2 bg-gradient-to-b from-[#020202]/75 via-transparent to-transparent" />
+      {/* Gradient Overlays - tuned for maximum poster clarity & subtle text contrast on mobile */}
+      <div className="absolute inset-0 z-2 bg-gradient-to-r from-black/75 via-black/20 to-transparent sm:from-[#020202]/98 sm:via-[#020202]/85 md:via-[#020202]/60" />
+      <div className="absolute inset-0 z-2 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 via-40% to-transparent" />
+      <div className="absolute inset-0 z-2 bg-gradient-to-b from-black/40 via-transparent to-transparent sm:from-[#020202]/75" />
 
       {/* Main Content */}
-      <div className="relative z-5 flex flex-col justify-end min-h-[82vh] sm:min-h-[92vh] md:min-h-[105vh] px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 md:pt-32 pb-0">
+      <div className="relative z-5 flex flex-col justify-end h-[100dvh] min-h-[100dvh] sm:h-auto sm:min-h-[92vh] md:min-h-[105vh] px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 md:pt-32 pb-0">
         {/* Movie Info Area */}
         <AnimatePresence mode="wait">
           <motion.div
