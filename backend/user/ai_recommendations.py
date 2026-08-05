@@ -39,14 +39,13 @@ async def get_mood_recommendations(
       "category": "Title in English",
       "genre_ids": [numbers],
       "keywords": ["strings"],
-      "explanation": "Reasoning in English"
+      "explanation": "Brief 1-2 sentence explanation for the user on why these movies match their requested vibe."
     }}
-    JSON ONLY. NO MARKDOWN.
+    JSON ONLY. NO MARKDOWN. DO NOT INCLUDE THINKING OR CHAIN OF THOUGHT IN THE OUTPUT.
     """
 
     async with httpx.AsyncClient() as client:
         try:
-            # Using google/gemini-2.0-flash-exp:free for better stability and response speed
             response = await client.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={
@@ -56,20 +55,12 @@ async def get_mood_recommendations(
                 json={
                     "model": "nvidia/nemotron-3-super-120b-a12b:free",
                     "messages": [{"role": "user", "content": prompt}],
-                    "reasoning": {"enabled": True}
                 },
                 timeout=60.0
             )
             response.raise_for_status()
             res_data = response.json()
             content = res_data['choices'][0]['message'].get('content', "").strip()
-            
-            # Use raw reasoning if available, otherwise use explanation from the AI result
-            reasoning = res_data['choices'][0]['message'].get('reasoning_details', "")
-            if isinstance(reasoning, list):
-                reasoning = "\n".join([r.get("text", "") for r in reasoning if isinstance(r, dict)])
-            else:
-                reasoning = str(reasoning)
 
             # Clean content from potential markdown blocks if AI ignored "RAW JSON" instruction
             if content.startswith("```json"):
@@ -80,20 +71,30 @@ async def get_mood_recommendations(
             ai_data = json.loads(content)
         except Exception as e:
             print(f"OpenRouter Error: {str(e)}")
-            # Even if reasoning is empty, we must ensure ai_data is formed for fallback
             raise HTTPException(status_code=502, detail=f"OpenRouter/AI Brain Error: {str(e)}")
 
-    # 2. Search for movies on TMDB using genres and keywords
+    # 2. Search for movies on TMDB using genres and keywords.
     results = []
     genre_ids = ai_data.get("genre_ids", [])
     keywords = ai_data.get("keywords", [])
-    
+    explanation = ai_data.get("explanation", f"Selected specifically for your vibe: {request.mood}")
+    TARGET_COUNT = 24
+
+    async def discover(client, params):
+        try:
+            resp = await client.get(f"{TMDB_BASE_URL}/discover/movie", params=params)
+            if resp.status_code == 200:
+                return resp.json().get("results", [])
+        except Exception:
+            pass
+        return []
+
     async with httpx.AsyncClient() as client:
         try:
-            # First, try to find keyword IDs if keywords are provided
+            # Resolve keyword strings to TMDB keyword IDs
             keyword_ids = []
             if keywords:
-                for kw in keywords[:3]: # limit to top 3 keywords
+                for kw in keywords[:5]:  # limit to top 5 keywords
                     kw_resp = await client.get(
                         f"{TMDB_BASE_URL}/search/keyword",
                         params={"api_key": TMDB_API_KEY, "query": kw}
@@ -103,37 +104,62 @@ async def get_mood_recommendations(
                         if kw_data.get("results"):
                             keyword_ids.append(str(kw_data["results"][0]["id"]))
 
-            # Discover movies
-            discover_params = {
-                "api_key": TMDB_API_KEY,
-                "language": "en-US",
-                "sort_by": "vote_average.desc", # Get better rated movies for "best" suggests
-                "page": 1,
-                "vote_count.gte": 100, # ensure they are well-regarded
-                "with_genres": ",".join(map(str, genre_ids))
-            }
-            if keyword_ids:
-                discover_params["with_keywords"] = "|".join(keyword_ids) # OR logic for keywords
+            movies_by_id: dict[int, dict] = {}
+            order: list[int] = []
 
-            resp = await client.get(
-                f"{TMDB_BASE_URL}/discover/movie",
-                params=discover_params
-            )
-            
-            if resp.status_code == 200:
-                data = resp.json()
-                movies = data.get("results", [])[:10]  # get top 10
-                
-                category_name = ai_data.get("category", "Personalized Selection")
-                explanation = ai_data.get("explanation", "Matches your requested mood.")
-                
-                # If no movies found with keywords + genres, fallback to just genres
-                if not movies and keyword_ids:
-                    del discover_params["with_keywords"]
-                    resp = await client.get(f"{TMDB_BASE_URL}/discover/movie", params=discover_params)
-                    if resp.status_code == 200:
-                        movies = resp.json().get("results", [])[:10]
+            def merge(movie_list):
+                for m in movie_list:
+                    mid = m.get("id")
+                    if mid and mid not in movies_by_id:
+                        movies_by_id[mid] = m
+                        order.append(mid)
 
+            genre_and = ",".join(map(str, genre_ids))  # TMDB: comma = ALL genres (precise)
+            genre_or = "|".join(map(str, genre_ids))   # TMDB: pipe = ANY genre (broad)
+
+            # Tier 1: precise — must match every AI-picked genre + at least one keyword
+            if genre_ids:
+                tier1_params = {
+                    "api_key": TMDB_API_KEY,
+                    "language": "en-US",
+                    "sort_by": "vote_average.desc",
+                    "page": 1,
+                    "vote_count.gte": 100,
+                    "with_genres": genre_and,
+                }
+                if keyword_ids:
+                    tier1_params["with_keywords"] = "|".join(keyword_ids)
+                merge(await discover(client, tier1_params))
+
+            # Tier 2: drop the keyword filter, keep the precise genre match
+            if len(order) < TARGET_COUNT and genre_ids:
+                tier2_params = {
+                    "api_key": TMDB_API_KEY,
+                    "language": "en-US",
+                    "sort_by": "vote_average.desc",
+                    "page": 1,
+                    "vote_count.gte": 100,
+                    "with_genres": genre_and,
+                }
+                merge(await discover(client, tier2_params))
+
+            # Tier 3: relax to "ANY of these genres", drop the vote-count floor, pull two pages
+            if len(order) < TARGET_COUNT and genre_ids:
+                for page in (1, 2):
+                    if len(order) >= TARGET_COUNT:
+                        break
+                    tier3_params = {
+                        "api_key": TMDB_API_KEY,
+                        "language": "en-US",
+                        "sort_by": "popularity.desc",
+                        "page": page,
+                        "with_genres": genre_or,
+                    }
+                    merge(await discover(client, tier3_params))
+
+            movies = [movies_by_id[mid] for mid in order][:TARGET_COUNT]
+
+            if movies:
                 for movie in movies:
                     results.append(schemas.MovieRecommendation(
                         id=movie["id"],
@@ -145,14 +171,11 @@ async def get_mood_recommendations(
                         genre_ids=movie.get("genre_ids", []),
                         reason=explanation
                     ))
-            
-            # If still nothing, or AI just wants to provide specific ones, we could add more logic here.
-            # For now, this covers the "search and suggest" requirement well.
 
         except Exception as e:
             print(f"TMDB/Logic Error: {str(e)}")
 
     return schemas.MoodRecommendationResponse(
         results=results,
-        reasoning=reasoning if reasoning else ai_data.get("explanation", "")
+        reasoning=explanation
     )

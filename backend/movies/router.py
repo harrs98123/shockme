@@ -84,14 +84,15 @@ def _get_fallback_data(path: str) -> dict:
         "cast": [], "crew": [], "known_for": []
     }
 
-async def tmdb_get(path: str, params: dict = {}) -> dict:
+async def tmdb_get(path: str, params: dict = {}, ttl: int = 600) -> dict:
     import json
     from fastapi_cache import FastAPICache
-    
+
     # Create a unique cache key
     cache_key = f"tmdb:{path}:{json.dumps(params, sort_keys=True)}"
-    
+
     # Try to get from cache (Redis or InMemory)
+    backend = None
     try:
         backend = FastAPICache.get_backend()
         if backend:
@@ -118,14 +119,18 @@ async def tmdb_get(path: str, params: dict = {}) -> dict:
         print(f"❌ TMDB request error ({type(exc).__name__}): {exc}. Using fallback.")
         data = _get_fallback_data(path)
 
-    # Cache the result for 600 seconds (10 minutes)
+    # Cache the result
     try:
         if backend:
-            await backend.set(cache_key, json.dumps(data), expire=600)
+            await backend.set(cache_key, json.dumps(data), expire=ttl)
     except Exception as e:
         print(f"⚠️ Redis write error: {e}")
 
     return data
+
+
+# TTL for data that almost never changes (genre lists, language/country config)
+STATIC_TTL = 86400  # 24 hours
 
 
 from fastapi import APIRouter, Query
@@ -216,7 +221,7 @@ async def discover_movies(
 @router.get("/genres")
 async def get_genres(media_type: str = "movie"):
     path = "/genre/movie/list" if media_type == "movie" else "/genre/tv/list"
-    data = await tmdb_get(path, {"language": "en-US"})
+    data = await tmdb_get(path, {"language": "en-US"}, ttl=STATIC_TTL)
     return data
 
 @router.get("/tv/trending")
@@ -272,13 +277,13 @@ async def discover_tv(
 
 @router.get("/languages")
 async def get_languages():
-    data = await tmdb_get("/configuration/languages")
+    data = await tmdb_get("/configuration/languages", ttl=STATIC_TTL)
     return data
 
 
 @router.get("/countries")
 async def get_countries():
-    data = await tmdb_get("/configuration/countries")
+    data = await tmdb_get("/configuration/countries", ttl=STATIC_TTL)
     return data
 
 
@@ -576,7 +581,8 @@ async def get_details(movie_id: int, media_type: str = "movie"):
             "append_to_response": "credits,videos,similar,images,watch/providers,keywords,release_dates,content_ratings",
             "include_image_language": "en,null",
             "language": "en-US"
-        }
+        },
+        ttl=3600,  # movie/TV detail data rarely changes within an hour
     )
     return data
 

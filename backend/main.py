@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, ORJSONResponse
 from database import engine, Base, run_security_migration
 
 import redis.asyncio as redis
@@ -64,6 +64,8 @@ app = FastAPI(
     docs_url=None if IS_PRODUCTION else "/docs",
     redoc_url=None if IS_PRODUCTION else "/redoc",
     openapi_url=None if IS_PRODUCTION else "/openapi.json",
+    # orjson serializes 2-5x faster than the stdlib json used by the default response class
+    default_response_class=ORJSONResponse,
 )
 
 # ── Rate Limiter ───────────────────────────────────────────────────────────────
