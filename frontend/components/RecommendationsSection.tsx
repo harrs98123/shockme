@@ -21,8 +21,24 @@ export default function RecommendationsSection() {
 
   const fetchRecs = async () => {
     try {
-      const res = await api.get('/recommendations');
-      setData(res.data);
+      const [recsRes, favsRes] = await Promise.allSettled([
+        api.get('/recommendations'),
+        api.get('/favorites/ids'),
+      ]);
+
+      let favSet = new Set<number>();
+      if (favsRes.status === 'fulfilled' && Array.isArray(favsRes.value.data)) {
+        favSet = new Set(favsRes.value.data.map(Number));
+      }
+
+      if (recsRes.status === 'fulfilled' && recsRes.value.data) {
+        const rawResults = recsRes.value.data.results || [];
+        const filteredResults = rawResults.filter((m: any) => !favSet.has(Number(m.id || m.movie_id)));
+        setData({
+          ...recsRes.value.data,
+          results: filteredResults,
+        });
+      }
     } catch (e) {
       console.error(e);
     } finally {

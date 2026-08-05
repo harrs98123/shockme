@@ -40,11 +40,12 @@ import {
   Film,
   Bell,
   Users,
+  Sparkles,
 } from 'lucide-react';
 
 import ProfileEditModal from '@/components/ProfileEditModal';
 
-type TabType = 'favorites' | 'reviews' | 'posts' | 'collections' | 'watchlist' | 'watched' | 'groups' | 'tierlists' | 'interested';
+type TabType = 'favorites' | 'suggestions' | 'reviews' | 'posts' | 'collections' | 'watchlist' | 'watched' | 'groups' | 'tierlists' | 'interested';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -127,6 +128,7 @@ export default function ProfilePage() {
 
   const tabs = [
     { id: 'favorites', label: 'Favorites', icon: Heart },
+    { id: 'suggestions', label: 'Suggested for You', icon: Sparkles },
     { id: 'watchlist', label: 'Watchlist', icon: Clock },
     { id: 'watched', label: 'Watched', icon: Eye },
     { id: 'reviews', label: 'Reviews', icon: Star },
@@ -397,7 +399,12 @@ export default function ProfilePage() {
                   </div>
                 )}
 
-                {/* Other Tabs (Reviews, Collections, Groups, etc.) follow similar sleek patterns */}
+                {/* Suggested for You */}
+                {activeTab === 'suggestions' && (
+                  <div>
+                    <RecommendationsSection />
+                  </div>
+                )}
                 {/* Interested */}
                 {activeTab === 'interested' && (
                   <div>

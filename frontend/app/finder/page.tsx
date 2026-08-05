@@ -436,7 +436,7 @@ export default function FinderPage() {
     step === 0 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6' :
     step === 1 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-5' :
     step === 2 ? 'grid-cols-2 sm:grid-cols-4' :
-    'grid-cols-1 sm:grid-cols-3';
+    'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
 
   const loadingMessages = [
     'Scanning atmosphere, occasion, era & style…',
@@ -445,7 +445,7 @@ export default function FinderPage() {
   ];
 
   return (
-    <div ref={topRef} className="min-h-screen px-4 sm:px-6 pt-24 sm:pt-28 pb-20 bg-[var(--bg)] relative overflow-hidden text-[var(--text)]">
+    <div ref={topRef} className="min-h-screen px-3.5 sm:px-6 pt-20 sm:pt-28 pb-24 sm:pb-20 bg-[var(--bg)] relative overflow-hidden text-[var(--text)]">
       {/* ── AMBIENT DYNAMIC BACKGROUND GLOW ── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-[var(--bg)] to-black" />
@@ -472,9 +472,9 @@ export default function FinderPage() {
 
       <div className="max-w-6xl mx-auto relative z-10">
         {phase !== 'results' && (
-          <div className="min-h-[calc(100vh-11rem)] flex flex-col justify-center">
+          <div className="min-h-[calc(100dvh-11rem)] py-4 sm:py-8 flex flex-col justify-center">
             {/* ── PROGRESS HEADER ── */}
-            <div className="max-w-2xl mx-auto w-full mb-8 sm:mb-10">
+            <div className="max-w-2xl mx-auto w-full mb-6 sm:mb-10">
               <div className="flex items-center justify-between mb-3">
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white/50">
                   <Compass className="w-3.5 h-3.5" />
@@ -508,7 +508,7 @@ export default function FinderPage() {
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   className="max-w-5xl mx-auto w-full"
                 >
-                  <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center gap-3 mb-2 sm:mb-3">
                     <button
                       onClick={goBack}
                       disabled={step === 0}
@@ -519,12 +519,12 @@ export default function FinderPage() {
                     </button>
                   </div>
 
-                  <div className="text-center mb-7 sm:mb-9">
-                    <h1 className="text-3xl sm:text-4xl md:text-[2.75rem] font-extrabold tracking-tight mb-2 text-white">{currentMeta.title}</h1>
-                    <p className="text-sm text-white/60 font-medium">{currentMeta.question}</p>
+                  <div className="text-center mb-5 sm:mb-9">
+                    <h1 className="text-2xl sm:text-4xl md:text-[2.75rem] font-extrabold tracking-tight mb-2 text-white">{currentMeta.title}</h1>
+                    <p className="text-xs sm:text-sm text-white/60 font-medium">{currentMeta.question}</p>
                   </div>
 
-                  <motion.div variants={gridVariants} initial="hidden" animate="show" className={`grid gap-3 ${gridCols}`}>
+                  <motion.div variants={gridVariants} initial="hidden" animate="show" className={`grid gap-2.5 sm:gap-3 ${gridCols}`}>
                     {currentMeta.options.map(opt => {
                       const Icon = opt.icon;
                       const isSelected = selections[currentMeta.key] === opt.id;
@@ -542,7 +542,7 @@ export default function FinderPage() {
                           onMouseLeave={() => setHoveredOptionId(null)}
                           onClick={() => selectOption(currentMeta.key, opt.id)}
                           className={`relative flex rounded-2xl border backdrop-blur-md transition-all duration-300 ${
-                            hasDesc ? 'flex-row items-start gap-3.5 p-5 text-left' : 'flex-col items-center gap-2.5 p-4 text-center'
+                            hasDesc ? 'flex-row items-start gap-3 sm:gap-3.5 p-4 sm:p-5 text-left' : 'flex-col items-center gap-2 sm:gap-2.5 p-3 sm:p-4 text-center'
                           } ${
                             isSelected
                               ? `${accent.ring} ring-2 bg-white/[0.08] shadow-lg`
@@ -562,8 +562,8 @@ export default function FinderPage() {
                               <Check className="w-3 h-3 text-white" strokeWidth={3} />
                             </motion.span>
                           )}
-                          <div className={`p-2.5 rounded-xl border shrink-0 transition-transform duration-300 ${accent.badge} ${isHov ? 'scale-110' : ''}`}>
-                            <Icon className={`w-4.5 h-4.5 ${accent.icon}`} />
+                          <div className={`p-2 sm:p-2.5 rounded-xl border shrink-0 transition-transform duration-300 ${accent.badge} ${isHov ? 'scale-110' : ''}`}>
+                            <Icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${accent.icon}`} />
                           </div>
                           <div className={hasDesc ? 'flex-1 min-w-0' : ''}>
                             <span className="text-xs sm:text-sm font-bold block text-white">{opt.label}</span>
@@ -609,7 +609,7 @@ export default function FinderPage() {
                   </AnimatePresence>
                 </div>
 
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 mt-6 w-full max-w-3xl">
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4 mt-6 w-full max-w-3xl">
                   {Array.from({ length: 12 }).map((_, i) => (
                     <div
                       key={i}
@@ -625,9 +625,9 @@ export default function FinderPage() {
 
         {/* ── RESULTS ── */}
         {phase === 'results' && (
-          <div ref={resultsRef} className="pt-6 space-y-12">
+          <div ref={resultsRef} className="pt-2 sm:pt-6 space-y-8 sm:space-y-12">
             {/* Header Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Layers className="w-4 h-4 text-white/60" />
@@ -652,18 +652,18 @@ export default function FinderPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
                 <button
                   onClick={shuffleResults}
                   disabled={pool.length <= 16}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200 text-xs font-bold hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-200 text-xs font-bold hover:bg-white/10 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <Shuffle className="w-3.5 h-3.5" />
                   Shuffle Picks
                 </button>
                 <button
                   onClick={startOver}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-xs font-bold transition-all shadow-md hover:scale-105 active:scale-95"
+                  className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-bold transition-all shadow-md hover:scale-105 active:scale-95"
                   style={{ background: activeGlow.primary }}
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -706,7 +706,7 @@ export default function FinderPage() {
                   <Compass className="w-4 h-4 text-white/60" />
                   <h3 className="text-xs font-extrabold uppercase tracking-wider text-white/60">More Matches</h3>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 sm:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-6">
                   {remainingMatches.map((movie, i) => (
                     <MoodMovieCard
                       key={movie.id}

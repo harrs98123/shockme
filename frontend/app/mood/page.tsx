@@ -179,7 +179,7 @@ function MoodContent() {
   const remainingMatches = sortedResults.slice(1);
 
   return (
-    <div className="min-h-screen px-4 sm:px-6 pt-28 pb-24 bg-[#05010a] relative overflow-hidden text-white font-[Inter]">
+    <div className="min-h-screen px-3.5 sm:px-6 pt-20 sm:pt-28 pb-28 sm:pb-24 bg-[#05010a] relative overflow-hidden text-white font-[Inter]">
       {/* ── AMBIENT ARTISTIC BACKGROUND LIGHTS ── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-purple-950/25 via-[#05010a] to-[#07020e]" />
@@ -201,25 +201,25 @@ function MoodContent() {
       <div className="max-w-7xl mx-auto relative z-10">
 
         {/* ── HERO HEADER ── */}
-        <div className="max-w-4xl mx-auto text-center pt-6 pb-14">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-purple-500/15 via-indigo-500/15 to-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-extrabold uppercase tracking-widest mb-6 backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.15)]">
-            <Wand2 className="w-4 h-4 text-purple-400 animate-pulse" />
+        <div className="max-w-4xl mx-auto text-center pt-2 sm:pt-6 pb-8 sm:pb-14">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-purple-500/15 via-indigo-500/15 to-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] sm:text-xs font-extrabold uppercase tracking-widest mb-4 sm:mb-6 backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.15)]">
+            <Wand2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 animate-pulse" />
             <span>Neural Vibe Engine</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight mb-6 leading-[1.12]">
+          <h1 className="text-2xl xs:text-3xl sm:text-5xl md:text-6xl font-black tracking-tight mb-4 sm:mb-6 leading-[1.12]">
             Describe your <span className="bg-gradient-to-r from-purple-400 via-fuchsia-300 to-indigo-300 bg-clip-text text-transparent">Vibe.</span>
             <br />
             We curate the Cinema.
           </h1>
 
-          <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
+          <p className="text-xs sm:text-base text-gray-400 max-w-2xl mx-auto mb-6 sm:mb-10 leading-relaxed font-normal">
             Type any feeling, atmosphere, scene description, or mood in any language.
             Our AI neural engine maps your exact emotion directly to cinema recommendations.
           </p>
 
           {/* AI Search Input */}
-          <div className="max-w-2xl mx-auto relative mb-12">
+          <div className="max-w-2xl mx-auto relative mb-8 sm:mb-12">
             <AIChatInput
               value={mood}
               onChange={setMood}
@@ -229,13 +229,13 @@ function MoodContent() {
           </div>
 
           {/* Suggested Preset Mood Pills with SVG Icons */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-center gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-400">
               <Compass className="w-3.5 h-3.5 text-purple-400" />
               <span>Popular Atmospheric Vibes</span>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto">
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3 max-w-4xl mx-auto">
               {SUGGESTED_MOODS.map((m) => {
                 const IconComponent = m.icon;
                 return (
@@ -244,10 +244,10 @@ function MoodContent() {
                     onClick={() => handleSearch(undefined, undefined, m.label)}
                     disabled={isSearching}
                     title={m.desc}
-                    className={`group relative flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r ${m.color} border border-white/10 backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-40 shadow-lg`}
+                    className={`group relative flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-2xl bg-gradient-to-r ${m.color} border border-white/10 backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-40 shadow-lg`}
                   >
-                    <IconComponent className="w-4 h-4 flex-shrink-0 transition-transform group-hover:rotate-12" />
-                    <span className="text-xs font-bold capitalize">
+                    <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 transition-transform group-hover:rotate-12" />
+                    <span className="text-[11px] sm:text-xs font-bold capitalize">
                       {m.label}
                     </span>
                   </button>
@@ -274,7 +274,7 @@ function MoodContent() {
               </div>
 
               {/* Skeleton Cards Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5 sm:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-6">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <div
                     key={i}
@@ -299,9 +299,9 @@ function MoodContent() {
 
           {/* Results Display */}
           {!isSearching && results.length > 0 && (
-            <div className="space-y-12">
+            <div className="space-y-8 sm:space-y-12">
               {/* Header Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <Layers className="w-4 h-4 text-purple-400" />
@@ -309,8 +309,8 @@ function MoodContent() {
                       Neural Cinema Matches
                     </h2>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl sm:text-2xl font-black capitalize text-white">
+                  <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                    <span className="text-lg sm:text-2xl font-black capitalize text-white">
                       &quot;{lastMood}&quot;
                     </span>
                     <span className="text-xs font-bold text-gray-300 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center gap-1.5">
@@ -321,9 +321,9 @@ function MoodContent() {
                 </div>
 
                 {/* Sort & Reasoning Toggle Controls */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-gray-300">
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-purple-400" />
+                <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+                  <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-gray-300">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                     <span>Sort:</span>
                     <select
                       value={sortBy}
@@ -339,12 +339,12 @@ function MoodContent() {
                   {reasoning && (
                     <button
                       onClick={() => setShowReasoning(!showReasoning)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold hover:bg-purple-500/20 transition-all"
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold hover:bg-purple-500/20 transition-all"
                     >
-                      <Brain className="w-4 h-4 text-purple-400" />
+                      <Brain className="w-4 h-4 text-purple-400 shrink-0" />
                       <span>AI Insights</span>
                       <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform duration-300 ${
+                        className={`w-3.5 h-3.5 transition-transform duration-300 shrink-0 ${
                           showReasoning ? 'rotate-180' : ''
                         }`}
                       />

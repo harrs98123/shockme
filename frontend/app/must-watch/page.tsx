@@ -61,7 +61,7 @@ export default function MustWatchPage() {
       ) : (
         <div className="relative z-10">
           {/* ── Hero ── */}
-          <section className="relative pt-36 pb-20 px-8 overflow-hidden">
+          <section className="relative pt-20 sm:pt-36 pb-10 sm:pb-20 px-4 sm:px-8 overflow-hidden">
             {/* Background glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-violet-700/20 blur-[100px] rounded-full pointer-events-none" />
 
@@ -75,20 +75,20 @@ export default function MustWatchPage() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.1, duration: 0.6 }}
-                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-4 sm:mb-8"
                 style={{
                   background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(59,130,246,0.1))',
                   border: '1px solid rgba(139,92,246,0.3)',
                 }}
               >
                 <Bookmark className="w-3 h-3 text-violet-400" />
-                <span className="text-xs font-semibold tracking-[0.2em] uppercase text-violet-300">
+                <span className="text-[10px] sm:text-xs font-semibold tracking-[0.2em] uppercase text-violet-300">
                   Curated Archive
                 </span>
               </motion.div>
 
               <h1
-                className="text-6xl md:text-8xl font-black tracking-tighter mb-5 leading-none"
+                className="text-4xl xs:text-5xl sm:text-7xl md:text-8xl font-black tracking-tighter mb-4 sm:mb-5 leading-none"
                 style={{
                   background: 'linear-gradient(135deg, #ffffff 30%, rgba(255,255,255,0.5) 100%)',
                   WebkitBackgroundClip: 'text',
@@ -100,7 +100,7 @@ export default function MustWatchPage() {
                 Must Watch
               </h1>
 
-              <p className="text-base text-neutral-400 leading-relaxed font-light max-w-lg">
+              <p className="text-xs sm:text-base text-neutral-400 leading-relaxed font-light max-w-lg px-2">
                 A definitive collection of cinematic masterpieces — curated to highlight the beauty, tension, and emotion of the medium.
               </p>
 

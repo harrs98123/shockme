@@ -124,40 +124,40 @@ export default function PredictionsPage() {
   const topBadges = ['🥇', '🥈', '🥉'];
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 100 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 80 }}>
       {/* Hero */}
       <div style={{
-        textAlign: 'center', padding: '60px 24px 48px',
+        textAlign: 'center', padding: '36px 16px 28px',
         background: 'radial-gradient(ellipse at center top, rgba(245,158,11,0.12) 0%, transparent 60%)'
       }}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}>🏆</div>
-        <h1 style={{ fontSize: 48, fontWeight: 900, marginBottom: 12, lineHeight: 1.1 }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>🏆</div>
+        <h1 style={{ fontSize: 'clamp(28px, 6vw, 48px)', fontWeight: 900, marginBottom: 8, lineHeight: 1.1 }}>
           Prediction <span style={{ color: '#f59e0b' }}>Leagues</span>
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 18, maxWidth: 600, margin: '0 auto', lineHeight: 1.6 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, maxWidth: 600, margin: '0 auto', lineHeight: 1.6 }}>
           Predict Oscar, BAFTA & Cannes winners before the ceremonies. Compete with film lovers and climb the leaderboard.
         </p>
         {user && (
           <button
             onClick={() => setShowCreate(!showCreate)}
             className="btn-primary"
-            style={{ marginTop: 24, background: '#f59e0b' }}
+            style={{ marginTop: 20, background: '#f59e0b', padding: '10px 20px', fontSize: 13 }}
           >
             {showCreate ? '✕ Cancel' : '+ Create Prediction Season'}
           </button>
         )}
       </div>
 
-      <div className="container" style={{ paddingBottom: 64 }}>
+      <div className="container px-3.5 sm:px-6" style={{ paddingBottom: 64 }}>
         {/* Create Season Form */}
         {showCreate && (
           <form onSubmit={createSeason} style={{
-            marginBottom: 48, padding: 32, borderRadius: 20,
+            marginBottom: 36, padding: 20, borderRadius: 20,
             background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(0,0,0,0.2))',
             border: '1px solid rgba(245,158,11,0.2)'
           }}>
-            <h2 style={{ fontSize: 22, marginBottom: 20 }}>Create Prediction Season</h2>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+            <h2 style={{ fontSize: 18, marginBottom: 16 }}>Create Prediction Season</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
               <input
                 className="input-field"
                 placeholder="Season name (e.g. Oscars 2026)"
@@ -170,7 +170,7 @@ export default function PredictionsPage() {
                 className="input-field"
                 value={newSeason.ceremony}
                 onChange={e => setNewSeason({ ...newSeason, ceremony: e.target.value })}
-                style={{ width: 180 }}
+                style={{ width: '100%' }}
               >
                 <option value="oscar">🏆 Oscars</option>
                 <option value="bafta">🎭 BAFTA</option>
@@ -179,9 +179,9 @@ export default function PredictionsPage() {
               </select>
             </div>
 
-            <h3 style={{ fontSize: 16, marginBottom: 12, color: 'var(--text-muted)' }}>Categories</h3>
+            <h3 style={{ fontSize: 14, marginBottom: 10, color: 'var(--text-muted)' }}>Categories</h3>
             {newCategories.map((cat, idx) => (
-              <div key={idx} style={{ marginBottom: 16, padding: 16, background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--border)' }}>
+              <div key={idx} style={{ marginBottom: 14, padding: 14, background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--border)' }}>
                 <input
                   className="input-field"
                   placeholder={`Category name (e.g. Best Picture)`}
@@ -206,16 +206,16 @@ export default function PredictionsPage() {
                 />
               </div>
             ))}
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button
                 type="button"
                 onClick={() => setNewCategories([...newCategories, { name: '', nominees: '' }])}
                 className="btn-ghost"
-                style={{ flex: 1 }}
+                style={{ flex: 1, padding: '10px 14px', fontSize: 13 }}
               >
                 + Add Category
               </button>
-              <button type="submit" className="btn-primary" disabled={creating} style={{ flex: 1, background: '#f59e0b' }}>
+              <button type="submit" className="btn-primary" disabled={creating} style={{ flex: 1, background: '#f59e0b', padding: '10px 14px', fontSize: 13 }}>
                 {creating ? 'Creating...' : 'Create Season'}
               </button>
             </div>
@@ -223,21 +223,21 @@ export default function PredictionsPage() {
         )}
 
         {loading ? (
-          <div style={{ display: 'flex', gap: 16 }}>
-            {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 120, flex: 1 }} />)}
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 100, flex: 1, minWidth: 200 }} />)}
           </div>
         ) : seasons.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 80 }}>
-            <div style={{ fontSize: 64, marginBottom: 16 }}>🎬</div>
-            <h2 style={{ fontSize: 24, marginBottom: 8 }}>No Prediction Seasons Yet</h2>
-            <p style={{ color: 'var(--text-muted)' }}>Be the first to create a prediction season and start competing!</p>
+          <div style={{ textAlign: 'center', padding: 48 }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🎬</div>
+            <h2 style={{ fontSize: 20, marginBottom: 8 }}>No Prediction Seasons Yet</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Be the first to create a prediction season and start competing!</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', gap: 48, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
             {/* Season Selector */}
-            <div style={{ flex: '0 0 280px' }}>
-              <h2 style={{ fontSize: 18, marginBottom: 16 }}>🎬 Seasons</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="w-full sm:w-[260px] sm:flex-none">
+              <h2 style={{ fontSize: 16, marginBottom: 12 }}>🎬 Seasons</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {seasons.map(season => {
                   const cer = ceremonies[season.ceremony] || ceremonies.oscar;
                   const isSelected = selectedSeason?.id === season.id;
@@ -246,16 +246,16 @@ export default function PredictionsPage() {
                       key={season.id}
                       onClick={() => loadSeason(season.id)}
                       style={{
-                        padding: '16px 18px', borderRadius: 14, textAlign: 'left',
+                        padding: '12px 14px', borderRadius: 14, textAlign: 'left',
                         background: isSelected ? `${cer.color}15` : 'var(--surface)',
                         border: `2px solid ${isSelected ? cer.color : 'var(--border)'}`,
                         cursor: 'pointer', transition: 'all 0.2s',
-                        display: 'flex', alignItems: 'center', gap: 12
+                        display: 'flex', alignItems: 'center', gap: 10
                       }}
                     >
-                      <span style={{ fontSize: 28 }}>{cer.icon}</span>
+                      <span style={{ fontSize: 24 }}>{cer.icon}</span>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{season.name}</div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{season.name}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
                           {season.category_count} categories • {season.status.toUpperCase()}
                         </div>
@@ -267,31 +267,31 @@ export default function PredictionsPage() {
 
               {/* Leaderboard */}
               {leaderboard.length > 0 && (
-                <div style={{ marginTop: 32 }}>
-                  <h2 style={{ fontSize: 18, marginBottom: 16 }}>🏅 Leaderboard</h2>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ marginTop: 24 }}>
+                  <h2 style={{ fontSize: 16, marginBottom: 12 }}>🏅 Leaderboard</h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {leaderboard.map((entry, idx) => (
                       <div key={entry.user_id} style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '12px 16px', borderRadius: 12,
+                        padding: '10px 14px', borderRadius: 12,
                         background: idx < 3 ? 'rgba(245,158,11,0.06)' : 'var(--surface)',
                         border: `1px solid ${idx < 3 ? 'rgba(245,158,11,0.2)' : 'var(--border)'}`
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontSize: idx < 3 ? 20 : 14, fontWeight: 700, width: 28 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: idx < 3 ? 18 : 13, fontWeight: 700, width: 24 }}>
                             {idx < 3 ? topBadges[idx] : `${idx + 1}.`}
                           </span>
-                          <span style={{ fontWeight: 600, fontSize: 14 }}>{entry.user_name}</span>
+                          <span style={{ fontWeight: 600, fontSize: 13 }}>{entry.user_name}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                             {entry.correct_count}/{entry.total_predictions}
                           </span>
                           <span style={{
-                            padding: '4px 10px', borderRadius: 8,
+                            padding: '3px 8px', borderRadius: 6,
                             background: entry.score >= 70 ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
                             color: entry.score >= 70 ? '#10b981' : '#f59e0b',
-                            fontWeight: 800, fontSize: 13
+                            fontWeight: 800, fontSize: 12
                           }}>
                             {entry.score}%
                           </span>
@@ -304,46 +304,46 @@ export default function PredictionsPage() {
             </div>
 
             {/* Categories & Predictions */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 280 }}>
               {loadingDetail ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 200 }} />)}
+                  {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 180 }} />)}
                 </div>
               ) : selectedSeason ? (
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-                    <h2 style={{ fontSize: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+                    <h2 style={{ fontSize: 20, margin: 0 }}>
                       {ceremonies[selectedSeason.ceremony]?.icon} {selectedSeason.name}
                     </h2>
                     <span style={{
-                      padding: '6px 14px', borderRadius: 99, fontSize: 12, fontWeight: 700,
+                      padding: '4px 12px', borderRadius: 99, fontSize: 11, fontWeight: 700,
                       background: selectedSeason.status === 'open' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
                       color: selectedSeason.status === 'open' ? '#10b981' : '#ef4444',
                       textTransform: 'uppercase'
                     }}>
-                      {selectedSeason.status === 'open' ? '🟢 Open for Predictions' : selectedSeason.status === 'locked' ? '🔒 Locked' : '🏁 Completed'}
+                      {selectedSeason.status === 'open' ? '🟢 Open' : selectedSeason.status === 'locked' ? '🔒 Locked' : '🏁 Done'}
                     </span>
                   </div>
 
                   {selectedSeason.categories.length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>
+                    <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 32, fontSize: 13 }}>
                       No categories yet.
                     </p>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                       {selectedSeason.categories.map(cat => (
                         <div key={cat.id} style={{
-                          background: 'var(--surface)', borderRadius: 16, padding: 24,
+                          background: 'var(--surface)', borderRadius: 16, padding: 16,
                           border: '1px solid var(--border)'
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                            <h3 style={{ fontSize: 18, fontWeight: 700 }}>{cat.name}</h3>
-                            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                              {cat.total_predictions} predictions
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                            <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{cat.name}</h3>
+                            <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>
+                              {cat.total_predictions} picks
                             </span>
                           </div>
 
-                          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             {cat.nominees.map(nominee => {
                               const isUserPick = cat.user_prediction_id === nominee.movie_id;
                               const isWinner = cat.winner_movie_id === nominee.movie_id;
@@ -355,10 +355,10 @@ export default function PredictionsPage() {
                                   onClick={() => selectedSeason.status === 'open' && makePrediction(cat.id, nominee.movie_id)}
                                   disabled={selectedSeason.status !== 'open' || predicting === cat.id}
                                   style={{
-                                    width: 110, textAlign: 'center',
+                                    flex: '1 1 calc(33.333% - 6px)', minWidth: 85, maxWidth: 110, textAlign: 'center',
                                     background: isCorrect ? 'rgba(16,185,129,0.15)' : isUserPick ? 'rgba(245,158,11,0.12)' : isWinner ? 'rgba(16,185,129,0.08)' : 'var(--bg)',
                                     border: `2px solid ${isCorrect ? '#10b981' : isUserPick ? '#f59e0b' : isWinner ? '#10b981' : 'var(--border)'}`,
-                                    borderRadius: 12, padding: 10, cursor: selectedSeason.status === 'open' ? 'pointer' : 'default',
+                                    borderRadius: 10, padding: 8, cursor: selectedSeason.status === 'open' ? 'pointer' : 'default',
                                     transition: 'all 0.2s', position: 'relative',
                                     opacity: predicting === cat.id ? 0.5 : 1
                                   }}

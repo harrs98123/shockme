@@ -452,8 +452,12 @@ export default function GemsPage() {
           .gem-card-wrap { margin-bottom: 14px; }
         }
         @media (max-width: 600px) {
-          .gems-grid { columns: 2 140px; column-gap: 12px; padding: 0 14px 48px; }
-          .gem-card-wrap { margin-bottom: 12px; }
+          .gems-hero { padding: 40px 16px 32px; }
+          .gems-hero h1 { font-size: 34px; letter-spacing: -1px; margin-bottom: 12px; }
+          .gems-hero p { font-size: 13px; max-width: 320px; line-height: 1.6; }
+          .gems-badges { padding: 0 16px; margin-bottom: 32px; }
+          .gems-grid { columns: 2 135px; column-gap: 10px; padding: 0 12px 48px; }
+          .gem-card-wrap { margin-bottom: 10px; }
         }
       `}</style>
 

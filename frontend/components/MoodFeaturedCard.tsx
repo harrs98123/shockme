@@ -183,41 +183,43 @@ export default function MoodFeaturedCard({
           )}
 
           {/* Action CTAs */}
-          <div className="flex flex-wrap items-center gap-3 pt-2">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 pt-2 w-full">
             <Link
               href={`/${mediaType}/${movie.id}`}
-              className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition-all hover:scale-105 active:scale-95"
+              className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-all hover:scale-105 active:scale-95"
               style={{ background: primaryGlow }}
             >
-              <Info className="w-4 h-4" />
-              Explore Movie
+              <Info className="w-4 h-4 shrink-0" />
+              <span>Explore</span>
             </Link>
 
             <button
               onClick={handleFavClick}
-              className={`px-4 py-2.5 sm:py-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition-all ${
+              className={`px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all ${
                 localFav
                   ? 'bg-red-500/20 border-red-500/40 text-red-300'
                   : 'bg-white/5 border-white/15 text-gray-300 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <Heart className="w-4 h-4" fill={localFav ? 'currentColor' : 'none'} />
-              {localFav ? 'Favorited' : 'Favorite'}
+              <Heart className="w-4 h-4 shrink-0" fill={localFav ? 'currentColor' : 'none'} />
+              <span>{localFav ? 'Favorited' : 'Favorite'}</span>
             </button>
 
             <button
               onClick={handleWatchlistClick}
-              className={`px-4 py-2.5 sm:py-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition-all ${
+              className={`px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all ${
                 localWatchlist
                   ? 'bg-white/20 border-white/40 text-white'
                   : 'bg-white/5 border-white/15 text-gray-300 hover:bg-white/10 hover:text-white'
               }`}
             >
-              {localWatchlist ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-              {localWatchlist ? 'Watchlisted' : 'Watchlist'}
+              {localWatchlist ? <Check className="w-4 h-4 shrink-0" /> : <Plus className="w-4 h-4 shrink-0" />}
+              <span>{localWatchlist ? 'Watchlisted' : 'Watchlist'}</span>
             </button>
 
-            <AddToCollectionButton movie={movie} showRankButton={false} />
+            <div className="flex items-center justify-center">
+              <AddToCollectionButton movie={movie} showRankButton={false} />
+            </div>
           </div>
         </div>
       </div>

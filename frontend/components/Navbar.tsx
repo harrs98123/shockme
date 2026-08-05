@@ -706,7 +706,7 @@ export default function Navbar() {
             z-index: 100;
           }
 
-          /* Bottom tab bar */
+          /* Bottom tab bar container (floating & transparent) */
           .mobile-bottom-bar {
             display: flex;
             align-items: center;
@@ -714,24 +714,29 @@ export default function Navbar() {
             position: fixed;
             bottom: 0; left: 0; right: 0;
             z-index: 150;
-            padding: 12px 16px max(20px, env(safe-area-inset-bottom));
-            background: rgba(8,8,8,0.92);
-            backdrop-filter: blur(32px);
-            -webkit-backdrop-filter: blur(32px);
-            border-top: 1px solid rgba(255,255,255,0.07);
+            padding: 10px 16px max(14px, env(safe-area-inset-bottom));
+            background: transparent;
+            pointer-events: none;
           }
 
-          /* Floating pill */
+          /* Liquid Glass Floating Pill */
           .mobile-tab-pill {
+            pointer-events: auto;
             display: flex;
             align-items: center;
             gap: 4px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 99px;
-            padding: 6px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 100%);
+            backdrop-filter: blur(28px) saturate(190%);
+            -webkit-backdrop-filter: blur(28px) saturate(190%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 999px;
+            padding: 5px;
             width: 100%;
             max-width: 360px;
+            box-shadow: 
+              0 16px 36px -6px rgba(0, 0, 0, 0.7),
+              inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
+              inset 0 -1px 2px 0 rgba(0, 0, 0, 0.4);
           }
 
           .mobile-tab-btn {
@@ -740,23 +745,28 @@ export default function Navbar() {
             flex-direction: column;
             align-items: center;
             gap: 3px;
-            padding: 8px 4px;
-            border: none;
+            padding: 7px 4px;
+            border: 1px solid transparent;
             background: transparent;
-            color: rgba(255,255,255,0.4);
+            color: rgba(255, 255, 255, 0.55);
             cursor: pointer;
-            border-radius: 99px;
+            border-radius: 999px;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
           }
 
           .mobile-tab-btn.active {
-            color: white;
-            background: rgba(225,29,72,0.2);
+            color: #ffffff;
+            background: linear-gradient(135deg, rgba(225, 29, 72, 0.4) 0%, rgba(180, 10, 50, 0.25) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 
+              0 4px 16px rgba(225, 29, 72, 0.4),
+              inset 0 1px 0 rgba(255, 255, 255, 0.4);
           }
 
           .mobile-tab-btn.active .mobile-tab-icon-wrap {
-            color: var(--primary, #e11d48);
+            color: #ffffff;
+            filter: drop-shadow(0 0 6px rgba(225, 29, 72, 0.8));
           }
 
           .mobile-tab-icon-wrap {

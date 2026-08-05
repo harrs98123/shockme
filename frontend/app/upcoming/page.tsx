@@ -142,10 +142,9 @@ export default function UpcomingPage() {
   return (
     <div style={{ minHeight: '100vh' }}>
       {/* ─── Hero Header ────────────────────────────────────────────── */}
-      <div style={{
+      <div className="pt-20 sm:pt-28 pb-6 sm:pb-10" style={{
         position: 'relative',
         overflow: 'hidden',
-        padding: '100px 0 40px',
         background: `
           radial-gradient(ellipse 80% 50% at 50% -20%, ${activeRegionData.color}22, transparent),
           linear-gradient(180deg, rgba(15,15,15,0) 0%, #0F0F0F 100%)
@@ -162,7 +161,7 @@ export default function UpcomingPage() {
           pointerEvents: 'none',
         }} />
 
-        <div className="container" style={{ position: 'relative', zIndex: 2 }}>
+        <div className="container px-3.5 sm:px-6" style={{ position: 'relative', zIndex: 2 }}>
           {/* Title area */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -171,7 +170,7 @@ export default function UpcomingPage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
               <div style={{
-                padding: '8px 12px',
+                padding: '6px 10px',
                 borderRadius: 12,
                 background: `${activeRegionData.color}20`,
                 border: `1px solid ${activeRegionData.color}40`,
@@ -179,20 +178,20 @@ export default function UpcomingPage() {
                 alignItems: 'center',
                 gap: 6,
               }}>
-                <Clock size={16} style={{ color: activeRegionData.color }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: activeRegionData.color, textTransform: 'uppercase', letterSpacing: 1 }}>
+                <Clock size={14} style={{ color: activeRegionData.color }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: activeRegionData.color, textTransform: 'uppercase', letterSpacing: 1 }}>
                   Coming Soon
                 </span>
               </div>
               {totalResults > 0 && !loading && (
-                <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>
+                <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
                   {totalResults} {totalResults === 1 ? 'movie' : 'movies'} found
                 </span>
               )}
             </div>
 
             <h1 style={{
-              fontSize: 'clamp(28px, 4vw, 48px)',
+              fontSize: 'clamp(24px, 5vw, 48px)',
               fontWeight: 800,
               margin: '0 0 8px',
               backgroundImage: `linear-gradient(135deg, #fff 0%, ${activeRegionData.color} 100%)`,
@@ -206,7 +205,7 @@ export default function UpcomingPage() {
             </h1>
             <p style={{
               color: 'var(--text-muted)',
-              fontSize: 16,
+              fontSize: 14,
               maxWidth: 500,
               lineHeight: 1.6,
               margin: 0,
@@ -460,7 +459,7 @@ export default function UpcomingPage() {
       </div>
 
       {/* ─── Movies Grid ──────────────────────────────────────────── */}
-      <div className="container" style={{ paddingTop: 32, paddingBottom: 80 }}>
+      <div className="container px-3.5 sm:px-6" style={{ paddingTop: 24, paddingBottom: 80 }}>
         <AnimatePresence mode="wait">
           {loading && movies.length === 0 ? (
             <motion.div
@@ -468,11 +467,7 @@ export default function UpcomingPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 180px), 1fr))',
-                gap: '32px 16px',
-              }}
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-6"
             >
               {Array.from({ length: 12 }).map((_, i) => (
                 <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -493,15 +488,15 @@ export default function UpcomingPage() {
               {/* Date range info */}
               {dateRange.from && (
                 <div style={{
-                  marginBottom: 24,
-                  padding: '12px 16px',
+                  marginBottom: 20,
+                  padding: '10px 14px',
                   borderRadius: 12,
                   background: 'rgba(255,255,255,0.02)',
                   border: '1px solid rgba(255,255,255,0.05)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  fontSize: 13,
+                  fontSize: 12,
                   color: 'var(--text-dim)',
                 }}>
                   <Sparkles size={14} style={{ color: activeRegionData.color }} />
@@ -516,13 +511,7 @@ export default function UpcomingPage() {
                 </div>
               )}
 
-              <div 
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 180px), 1fr))',
-                  gap: '32px 16px',
-                }}
-              >
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-6">
                 {movies.map((movie, index) => (
                   <motion.div
                     key={`${movie.id}-${index}`}

@@ -311,22 +311,22 @@ function TierListContent() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 120, paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 80, paddingBottom: 100 }}>
       {/* Dynamic Background */}
       <div className="fixed inset-0 -z-10 bg-[#050505]" />
       <div className="fixed inset-0 -z-10 bg-gradient-to-tr from-primary/5 via-transparent to-transparent opacity-20" />
 
-      <div className="container">
+      <div className="container px-3.5 sm:px-6">
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 48, flexWrap: 'wrap', gap: 24 }}>
-          <div style={{ flex: 1, minWidth: 280 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ flex: 1, minWidth: 260 }}>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter Tier List Title..."
               style={{
                 background: 'transparent', border: 'none', color: 'white',
-                fontSize: 36, fontWeight: 900, outline: 'none', width: '100%',
+                fontSize: 'clamp(22px, 5vw, 36px)', fontWeight: 900, outline: 'none', width: '100%',
                 padding: 0, margin: 0, letterSpacing: '-0.02em'
               }}
             />
@@ -339,8 +339,8 @@ function TierListContent() {
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="Find movie to add..."
                             style={{
-                                width: '100%', height: 44, borderRadius: 22, background: 'rgba(255,255,255,0.05)',
-                                border: '1px solid rgba(255,255,255,0.1)', padding: '0 48px', color: 'white',
+                                width: '100%', height: 42, borderRadius: 21, background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid rgba(255,255,255,0.1)', padding: '0 44px', color: 'white',
                                 fontSize: 13, outline: 'none', transition: 'all 0.2s'
                             }}
                             onFocus={() => query.length > 1 && setShowResults(true)}
@@ -412,49 +412,49 @@ function TierListContent() {
                  </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div className="w-full sm:w-auto" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <button
               onClick={resetList}
               className="btn-ghost"
-              style={{ padding: '12px 20px', borderRadius: 12, border: '1px solid var(--border)', gap: 8 }}
+              style={{ flex: 1, padding: '10px 14px', borderRadius: 12, border: '1px solid var(--border)', gap: 6, fontSize: 13 }}
             >
-              <RotateCcw size={16} /> Reset
+              <RotateCcw size={15} /> Reset
             </button>
             <button
               onClick={addTier}
               className="btn-ghost"
-              style={{ padding: '12px 20px', borderRadius: 12, border: '1px solid var(--border)', gap: 8 }}
+              style={{ flex: 1, padding: '10px 14px', borderRadius: 12, border: '1px solid var(--border)', gap: 6, fontSize: 13 }}
             >
-              <Plus size={16} /> Add Tier
+              <Plus size={15} /> Add Tier
             </button>
-            <button onClick={saveTierList} disabled={saving} className="btn-primary" style={{ padding: '12px 24px', height: 48, borderRadius: 12, gap: 8 }}>
-              <Save size={18} /> {saving ? 'Saving...' : 'Save Ranking'}
+            <button onClick={saveTierList} disabled={saving} className="btn-primary w-full sm:w-auto" style={{ padding: '12px 20px', height: 44, borderRadius: 12, gap: 8, fontSize: 13, justifyContent: 'center' }}>
+              <Save size={16} /> {saving ? 'Saving...' : 'Save Ranking'}
             </button>
           </div>
         </div>
 
         {/* ── Unranked Pool ── */}
         <div style={{
-          background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(255,255,255,0.02)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)',
           backdropFilter: 'blur(20px)',
-          padding: 32, marginBottom: 48, minHeight: 180,
+          padding: '16px 16px 20px', marginBottom: 32, minHeight: 140,
           boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
         }}
           onDrop={(e) => onDrop(e, 'unranked')}
           onDragOver={onDragOver}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-            <h3 style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               Collection Pool ({unranked.length})
             </h3>
           </div>
 
           {unranked.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-dim)', fontSize: 13 }}>
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-dim)', fontSize: 13 }}>
               {loading ? 'Fetching movies...' : 'No movies in pool. Add movies from Search or Collections first!'}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               {unranked.map(movie => (
                 <div key={movie.movie_id} style={{ position: 'relative' }}>
                   <motion.div
@@ -462,7 +462,7 @@ function TierListContent() {
                     onDragStart={(e) => onDragStart(e as any, movie, 'unranked')}
                     whileHover={{ scale: 1.05, y: -5 }}
                     style={{
-                      width: 80, height: 120, position: 'relative', borderRadius: 12,
+                      width: 68, height: 102, position: 'relative', borderRadius: 10,
                       overflow: 'hidden', cursor: 'grab', flexShrink: 0,
                       boxShadow: '0 8px 16px rgba(0,0,0,0.4)',
                       border: '1px solid rgba(255,255,255,0.1)'
@@ -477,14 +477,14 @@ function TierListContent() {
                   <button
                     onClick={() => removeMovie(movie, 'unranked')}
                     style={{
-                      position: 'absolute', top: -6, right: -6, width: 22, height: 22,
+                      position: 'absolute', top: -5, right: -5, width: 20, height: 20,
                       borderRadius: '50%', background: '#ef4444', color: 'white',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       border: '2px solid #050505', cursor: 'pointer', zIndex: 10,
-                      fontSize: 12
+                      fontSize: 10
                     }}
                   >
-                    <X size={12} />
+                    <X size={10} />
                   </button>
                 </div>
               ))}
@@ -493,20 +493,20 @@ function TierListContent() {
         </div>
 
         {/* ── Tiers ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {tiers.map(tier => (
             <div
               key={tier.id}
               style={{
-                display: 'flex', minHeight: 140, background: 'rgba(255,255,255,0.02)',
-                borderRadius: 20, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex', minHeight: 110, background: 'rgba(255,255,255,0.02)',
+                borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)',
                 transition: 'all 0.3s ease'
               }}
             >
               {/* Tier Label */}
-              <div style={{
-                width: 140, background: tier.color, flexShrink: 0, display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center', padding: 16, position: 'relative',
+              <div className="w-[90px] sm:w-[140px]" style={{
+                background: tier.color, flexShrink: 0, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', padding: '10px 6px', position: 'relative',
                 boxShadow: 'inset -10px 0 20px rgba(0,0,0,0.1)'
               }}>
                 <textarea
@@ -514,7 +514,7 @@ function TierListContent() {
                   onChange={(e) => updateTierName(tier.id, e.target.value)}
                   style={{
                     width: '100%', background: 'transparent', border: 'none', color: '#000',
-                    fontSize: 16, fontWeight: 900, textAlign: 'center', resize: 'none',
+                    fontSize: 13, fontWeight: 900, textAlign: 'center', resize: 'none',
                     height: '100%', outline: 'none', fontFamily: 'inherit',
                     textShadow: '0 1px 1px rgba(255,255,255,0.3)'
                   }}
@@ -522,17 +522,17 @@ function TierListContent() {
                 <button
                   onClick={() => removeTier(tier.id)}
                   style={{
-                    position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.1)',
-                    border: 'none', fontSize: 14, cursor: 'pointer', opacity: 0.4,
-                    width: 20, height: 20, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.1)',
+                    border: 'none', fontSize: 12, cursor: 'pointer', opacity: 0.4,
+                    width: 18, height: 18, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center'
                   }}
-                > <Trash2 size={12} /> </button>
+                > <Trash2 size={10} /> </button>
               </div>
 
               {/* Tier Movies Area */}
               <div
                 style={{
-                  flex: 1, padding: 24, display: 'flex', flexWrap: 'wrap', gap: 12,
+                  flex: 1, padding: 12, display: 'flex', flexWrap: 'wrap', gap: 8,
                   background: 'rgba(0,0,0,0.2)', position: 'relative'
                 }}
                 onDrop={(e) => onDrop(e, tier.id)}
@@ -545,7 +545,7 @@ function TierListContent() {
                       onDragStart={(e) => onDragStart(e as any, movie, tier.id)}
                       whileHover={{ scale: 1.05, y: -5 }}
                       style={{
-                        width: 70, height: 105, position: 'relative', borderRadius: 8,
+                        width: 60, height: 90, position: 'relative', borderRadius: 8,
                         overflow: 'hidden', cursor: 'grab', flexShrink: 0,
                         boxShadow: '0 8px 20px rgba(0,0,0,0.5)',
                         border: '1px solid rgba(255,255,255,0.05)'
@@ -560,7 +560,7 @@ function TierListContent() {
                     <button
                       onClick={() => removeMovie(movie, tier.id)}
                       style={{
-                        position: 'absolute', top: -5, right: -5, width: 20, height: 20,
+                        position: 'absolute', top: -5, right: -5, width: 18, height: 18,
                         borderRadius: '50%', background: 'rgba(0,0,0,0.6)', color: 'white',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.1)',

@@ -133,13 +133,13 @@ export default function HeroSection({ movies }: Props) {
         </motion.div>
       </AnimatePresence>
 
-      {/* Gradient Overlays */}
-      <div className="absolute inset-0 z-2 bg-gradient-to-r from-[#020202]/98 via-[#020202]/85 md:via-[#020202]/60 to-transparent" />
-      <div className="absolute inset-0 z-2 bg-gradient-to-t from-[#020202] via-[#020202]/80 via-30% to-transparent" />
-      <div className="absolute inset-0 z-2 bg-gradient-to-b from-[#020202]/60 via-transparent to-transparent" />
+      {/* Gradient Overlays - tuned for mobile clarity */}
+      <div className="absolute inset-0 z-2 bg-gradient-to-r from-[#020202]/90 via-[#020202]/40 to-transparent sm:from-[#020202]/98 sm:via-[#020202]/85 md:via-[#020202]/60" />
+      <div className="absolute inset-0 z-2 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 via-35% to-transparent" />
+      <div className="absolute inset-0 z-2 bg-gradient-to-b from-[#020202]/75 via-transparent to-transparent" />
 
       {/* Main Content */}
-      <div className="relative z-5 flex flex-col justify-end min-h-[82vh] sm:min-h-[92vh] md:min-h-[105vh] px-3.5 sm:px-6 md:px-10 pt-20 sm:pt-28 md:pt-32 pb-0">
+      <div className="relative z-5 flex flex-col justify-end min-h-[82vh] sm:min-h-[92vh] md:min-h-[105vh] px-4 sm:px-6 md:px-10 pt-20 sm:pt-28 md:pt-32 pb-0">
         {/* Movie Info Area */}
         <AnimatePresence mode="wait">
           <motion.div
@@ -151,21 +151,21 @@ export default function HeroSection({ movies }: Props) {
             className="max-w-2xl pb-4 sm:pb-6"
           >
             {/* Title */}
-            <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2 sm:mb-4 uppercase leading-[1.1] drop-shadow-md">
+            <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2 sm:mb-4 uppercase leading-[1.15] drop-shadow-lg">
               {movie.title || movie.name}
             </h1>
 
             {/* Metadata Row */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2.5 sm:mb-4 text-xs sm:text-sm text-white/70 font-medium">
-              <span className="inline-flex items-center px-2 py-0.5 border border-white/40 rounded text-[10px] sm:text-xs font-semibold text-white/90 uppercase tracking-wide">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2.5 sm:mb-4 text-xs sm:text-sm text-white/80 font-medium">
+              <span className="inline-flex items-center px-2 py-0.5 border border-white/40 bg-black/30 backdrop-blur-sm rounded text-[10px] sm:text-xs font-semibold text-white/90 uppercase tracking-wide">
                 12+
               </span>
 
-              <span className="inline-flex items-center px-1.5 py-0.5 border border-white/40 rounded text-[10px] sm:text-xs font-bold text-white/90">
+              <span className="inline-flex items-center px-1.5 py-0.5 border border-white/40 bg-black/30 backdrop-blur-sm rounded text-[10px] sm:text-xs font-bold text-white/90">
                 CC
               </span>
 
-              <span>{year}</span>
+              <span className="font-semibold text-white/90">{year}</span>
 
               {runtime && (
                 <>
@@ -176,44 +176,41 @@ export default function HeroSection({ movies }: Props) {
 
               <span className="text-white/30 text-[8px]">●</span>
 
-              <span className="text-white/90 font-semibold">
+              <span className="text-amber-400 font-bold flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20 text-xs">
                 ⭐ {rating}
               </span>
             </div>
 
             {/* Genre Tags */}
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3.5 sm:mb-5 text-xs text-white/60">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3.5 sm:mb-5 text-xs text-white/70 font-medium">
               {genres.slice(0, 3).map((g: Genre, i: number) => (
-                <span key={g.id} className="inline-flex items-center gap-1.5">
+                <span key={g.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/10 border border-white/10 backdrop-blur-sm text-[11px] sm:text-xs text-white/85">
                   {g.name}
-                  {i < Math.min(genres.length, 3) - 1 && (
-                    <span className="text-white/25">·</span>
-                  )}
                 </span>
               ))}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2.5 sm:gap-3 mb-3.5 sm:mb-6 flex-wrap xs:flex-nowrap">
+            {/* Action Buttons - Clean 1-row layout on mobile */}
+            <div className="flex items-center gap-2 sm:gap-3 mb-3.5 sm:mb-6 w-full max-w-md">
               <Link
                 href={`/movie/${movie.id}`}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:px-7 sm:py-3 bg-white text-black rounded-lg text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all flex-1 xs:flex-initial shadow-md"
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-7 py-2.5 sm:py-3 bg-white text-black rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all flex-1 shadow-lg"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="#000">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#000" className="shrink-0">
                   <polygon points="5 3 19 12 5 21" />
                 </svg>
-                Trailer
+                <span>Trailer</span>
               </Link>
 
               <Link
                 href={`/movie/${movie.id}`}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-white/15 backdrop-blur-md text-white border border-white/25 rounded-lg text-xs sm:text-sm font-semibold uppercase tracking-wider hover:bg-white/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex-1 xs:flex-initial"
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-white/15 backdrop-blur-md text-white border border-white/25 rounded-xl text-xs sm:text-sm font-semibold uppercase tracking-wider hover:bg-white/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex-1"
               >
-                View Detail
+                <span>Details</span>
               </Link>
 
               <button
-                className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/10 border border-white/35 text-white flex items-center justify-center text-lg sm:text-xl font-bold hover:bg-white/20 hover:scale-105 active:scale-95 transition-all shrink-0"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/15 backdrop-blur-md border border-white/30 text-white flex items-center justify-center text-xl font-bold hover:bg-white/25 hover:scale-105 active:scale-95 transition-all shrink-0 shadow-md"
                 title="Add to Watchlist"
               >
                 +
@@ -221,7 +218,7 @@ export default function HeroSection({ movies }: Props) {
             </div>
 
             {/* Description */}
-            <p className="text-white/75 text-xs sm:text-sm md:text-base leading-relaxed max-w-xl line-clamp-2 sm:line-clamp-3 drop-shadow">
+            <p className="text-white/85 text-xs sm:text-sm md:text-base leading-relaxed max-w-xl line-clamp-2 sm:line-clamp-3 drop-shadow-md">
               {movie.overview}
             </p>
           </motion.div>
