@@ -11,6 +11,7 @@ import { Movie } from '@/lib/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const CACHE_KEY = 'cinematch_home_cache';
+const CACHE_VERSION = 5; // bump this to bust stale cache
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 interface HomeData {
@@ -74,12 +75,16 @@ function getCache(): HomeData | null {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (!raw) return null;
-    const data: HomeData = JSON.parse(raw);
+    const data: HomeData & { _v?: number } = JSON.parse(raw);
+    // Bust old cache versions (e.g. the dummy "TMDB Blocked" data)
+    if (data._v !== CACHE_VERSION) {
+      sessionStorage.removeItem(CACHE_KEY);
+      return null;
+    }
     if (Date.now() - data.cachedAt > CACHE_TTL) {
       sessionStorage.removeItem(CACHE_KEY);
       return null;
     }
-    // Relaxed validation: just ensure the object is somewhat valid
     if (!data.trending) return null;
     return data;
   } catch {
@@ -89,7 +94,7 @@ function getCache(): HomeData | null {
 
 function setCache(data: HomeData) {
   try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, _v: CACHE_VERSION }));
   } catch {
     // sessionStorage quota exceeded – silently ignore
   }
@@ -170,12 +175,14 @@ export default function HomePage() {
     setCache(newData);
   };
 
-  const heroMovies = data.trending.slice(0, 5);
-  const remainingTrending = data.trending.slice(5);
+  // Hero: prefer trending, fall back to popular
+  const heroSource = data.trending.length > 0 ? data.trending : data.popular;
+  const heroMovies = heroSource.slice(0, 8);
+  const heroLoading = sectionLoading.trending && sectionLoading.popular;
 
   return (
     <>
-      {sectionLoading.trending ? (
+      {heroLoading ? (
         <HeroSkeleton />
       ) : (
         heroMovies.length > 0 && <HeroSection movies={heroMovies} />
@@ -185,7 +192,7 @@ export default function HomePage() {
 
         <MovieRow
           title="Trending Now"
-          movies={remainingTrending}
+          movies={data.trending}
           favIds={data.favIds}
           watchlistIds={data.watchlistIds}
           watchedIds={data.watchedIds}

@@ -161,18 +161,24 @@ async def startup_event():
     run_security_migration()
     print("[System] Security migration verified")
 
-    # 1. Initialize Redis Cache
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-    r = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-    FastAPICache.init(RedisBackend(r), prefix="fastapi-cache")
-    print(f"[Cache] Redis Cache initialized: {redis_url[:30]}...")
+    # 1. Initialize Cache with graceful Redis check & InMemory fallback
+    redis_url = os.getenv("REDIS_URL", "")
+    redis_connected = False
 
-    # 2. Verify Redis is reachable
-    try:
-        await r.ping()
-        print("[Health] Redis health check passed")
-    except Exception as e:
-        print(f"[Warning] Redis health check failed: {e}")
+    if redis_url:
+        try:
+            r = redis.from_url(redis_url, encoding="utf-8", decode_responses=True, socket_connect_timeout=3)
+            await r.ping()
+            FastAPICache.init(RedisBackend(r), prefix="fastapi-cache")
+            redis_connected = True
+            print(f"[Cache] Redis Cache initialized: {redis_url[:30]}...")
+        except Exception as e:
+            print(f"[Warning] Redis connection failed ({e}). Falling back to InMemoryBackend.")
+
+    if not redis_connected:
+        from fastapi_cache.backends.inmemory import InMemoryBackend
+        FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
+        print("[Cache] InMemoryBackend initialized for local caching.")
 
     # 3. Seed admin account (after migration, so columns exist)
     seed_admin()
@@ -221,3 +227,18 @@ def root():
 @app.get("/health", include_in_schema=False)
 def health():
     return {"status": "ok", "env": APP_ENV}
+
+
+if __name__ == "__main__":
+    import subprocess
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(backend_dir)
+    venv_python = os.path.join(project_root, ".venv", "Scripts", "python.exe")
+
+    if os.path.exists(venv_python) and os.path.normpath(sys.executable).lower() != os.path.normpath(venv_python).lower():
+        sys.exit(subprocess.call([venv_python] + sys.argv))
+
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+
+

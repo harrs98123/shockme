@@ -13,6 +13,8 @@ load_dotenv()
 TMDB_API_KEY = os.getenv("TMDB_API_KEY", "")
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
+from movies.router import tmdb_get
+
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
 
@@ -51,43 +53,32 @@ async def get_recommendations(
 
     # 4. If no preference data, return popular movies
     if not genre_weight:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                f"{TMDB_BASE_URL}/movie/popular",
-                params={"api_key": TMDB_API_KEY, "language": "en-US", "page": 1}
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                movies = [
-                    m for m in data.get("results", [])
-                    if m["id"] not in watched_ids
-                ][:20]
-                return {"based_on": [], "results": movies}
-        return {"based_on": [], "results": []}
+        try:
+            data = await tmdb_get("/movie/popular", {"page": 1, "language": "en-US"})
+            movies = [
+                m for m in data.get("results", [])
+                if m.get("id") not in watched_ids
+            ][:20]
+            return {"based_on": [], "results": movies}
+        except Exception:
+            # Let HTTPException bubble up or return empty if needed
+            raise
 
     # 5. Top 3 genres by weight
     top_genres = [str(g) for g, _ in genre_weight.most_common(3)]
     genre_str = ",".join(top_genres)
 
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(
-            f"{TMDB_BASE_URL}/discover/movie",
-            params={
-                "api_key": TMDB_API_KEY,
-                "language": "en-US",
-                "with_genres": genre_str,
-                "sort_by": "popularity.desc",
-                "vote_count.gte": 50,
-                "page": 1
-            }
-        )
-        if resp.status_code != 200:
-            return {"based_on": top_genres, "results": []}
-
-        data = resp.json()
+    try:
+        data = await tmdb_get("/discover/movie", {
+            "with_genres": genre_str,
+            "sort_by": "popularity.desc",
+            "vote_count.gte": 50,
+            "page": 1
+        })
         movies = [
             m for m in data.get("results", [])
-            if m["id"] not in watched_ids
+            if m.get("id") not in watched_ids
         ][:20]
-
-    return {"based_on": top_genres, "results": movies}
+        return {"based_on": top_genres, "results": movies}
+    except Exception:
+        raise

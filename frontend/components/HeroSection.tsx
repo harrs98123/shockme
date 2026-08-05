@@ -30,10 +30,13 @@ export default function HeroSection({ movies }: Props) {
 
   const movie = movies[currentIndex];
 
+  const fetchedRef = useRef<Set<number>>(new Set());
+
   // Fetch details for current movie
   useEffect(() => {
-    if (!movie?.id || movieDetails[movie.id]) return;
+    if (!movie?.id || fetchedRef.current.has(movie.id)) return;
 
+    fetchedRef.current.add(movie.id);
     (async () => {
       try {
         const res = await fetch(`${API_BASE}/movies/${movie.id}?media_type=${movie.media_type || 'movie'}`);
@@ -50,7 +53,7 @@ export default function HeroSection({ movies }: Props) {
         }));
       } catch { /* ignore */ }
     })();
-  }, [movie?.id, movie?.media_type, movieDetails]);
+  }, [movie?.id, movie?.media_type]);
 
   // Auto-play interval
   const startTimer = useCallback(() => {
