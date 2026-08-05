@@ -6,3 +6,16 @@ frontend/.env
 *.env
 .env.*
 frontend/public/pfs7jtyuzcrorjwmlpm8
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# Next.js
+frontend/.next/
+frontend/build_output.txt
+
+# OS
+.DS_Store
