@@ -51,7 +51,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
             "connect-src 'self' http://localhost:8000 https://*.onrender.com https://*.render.com https://*.vercel.app https://api.themoviedb.org https://challenges.cloudflare.com https://res.cloudinary.com https://api.cloudinary.com",
             "frame-src 'self' http://localhost:8000 https://www.youtube.com https://youtube.com https://challenges.cloudflare.com https://screenscape.me https://widget.cloudinary.com https://upload-widget.cloudinary.com https://*.onrender.com",
-            "frame-ancestors 'self' http://localhost:3000 https://*.vercel.app",
+            "frame-ancestors 'self' http://localhost:3000 http://localhost:3002 https://shockme.vercel.app https://*.vercel.app",
             "object-src 'none'",
             "base-uri 'self'",
             "form-action 'self'",

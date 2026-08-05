@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { Heart, Star, Gauge, Plus, Check, Info } from 'lucide-react';
 import { Media } from '@/lib/types';
 import { posterUrl } from '@/lib/api';
+import { GlowConfig } from '@/lib/finderData';
 import AddToCollectionButton from './AddToCollectionButton';
 
 interface MoodMovieCardProps {
@@ -18,6 +19,7 @@ interface MoodMovieCardProps {
   isWatched?: boolean;
   onWatchedToggle?: (media: Media) => void;
   moodQuery?: string;
+  accentGlow?: GlowConfig;
 }
 
 export default function MoodMovieCard({
@@ -27,7 +29,7 @@ export default function MoodMovieCard({
   onFavToggle,
   isWatchlisted = false,
   onWatchlistToggle,
-  moodQuery = '',
+  accentGlow,
 }: MoodMovieCardProps) {
   const [localFav, setLocalFav] = useState(isFav);
   const [localWatchlist, setLocalWatchlist] = useState(isWatchlisted);
@@ -43,6 +45,9 @@ export default function MoodMovieCard({
 
   // Calculate dynamic vibe match percentage based on index and rating
   const matchPercentage = Math.max(82, Math.min(99, Math.round(98 - index * 1.5 + (movie.vote_average || 7) * 0.2)));
+
+  const borderStyle = isHovered && accentGlow ? accentGlow.border : 'rgba(255, 255, 255, 0.1)';
+  const shadowStyle = isHovered && accentGlow ? `0 12px 35px -8px ${accentGlow.shadow}` : '0 10px 25px -10px rgba(0,0,0,0.5)';
 
   const handleFavClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -129,12 +134,16 @@ export default function MoodMovieCard({
 
   return (
     <div
-      className="group relative flex flex-col h-full rounded-2xl bg-gradient-to-b from-[#140b24]/80 via-[#0c0517]/90 to-[#07020f]/95 border border-purple-500/15 hover:border-purple-400/40 transition-all duration-500 hover:shadow-[0_12px_35px_-10px_rgba(168,85,247,0.3)] hover:-translate-y-1.5 overflow-hidden"
+      className="group relative flex flex-col h-full rounded-2xl bg-[#0e0819]/80 backdrop-blur-md transition-all duration-500 hover:-translate-y-1.5 overflow-hidden border"
+      style={{
+        borderColor: borderStyle,
+        boxShadow: shadowStyle,
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* ── CARD MEDIA CONTAINER ── */}
-      <div className="relative aspect-[2/3] w-full overflow-hidden rounded-t-2xl bg-[#090312]">
+      <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#07030e]">
         <Image
           src={posterUrl(movie.poster_path)}
           alt={title}
@@ -145,69 +154,72 @@ export default function MoodMovieCard({
         />
 
         {/* Ambient Gradient Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0c0517] via-transparent to-black/40 opacity-80 group-hover:opacity-60 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0819] via-transparent to-black/50 opacity-80 group-hover:opacity-40 transition-opacity duration-300" />
 
         {/* Top Badges */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 gap-2">
+        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 gap-2">
           {/* Vibe Match Tag */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-purple-500/30 text-purple-300 text-[10px] font-extrabold tracking-wide">
-            <Gauge className="w-3 h-3 text-purple-400" />
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white/90 text-[10px] font-extrabold tracking-wider">
+            <Gauge className="w-3 h-3 text-amber-400" />
             <span>{matchPercentage}% MATCH</span>
           </div>
 
           {/* Favorite Button */}
           <button
             onClick={handleFavClick}
-            className={`w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
+            className={`w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
               localFav
                 ? 'bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.6)]'
                 : 'bg-black/50 text-white/70 hover:text-white hover:bg-black/70 border border-white/10'
             }`}
             title={localFav ? 'Remove from Favorites' : 'Add to Favorites'}
           >
-            <Heart className="w-4 h-4" fill={localFav ? 'currentColor' : 'none'} />
+            <Heart className="w-3.5 h-3.5" fill={localFav ? 'currentColor' : 'none'} />
           </button>
         </div>
 
         {/* Floating Quick Action Overlay on Hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0314] via-[#0a0314]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-end gap-3 z-10">
-          <p className="text-xs text-gray-300 line-clamp-3 leading-relaxed font-normal">
+        <div className="absolute inset-0 bg-gradient-to-t from-[#080312] via-[#080312]/85 to-black/30 opacity-0 group-hover:opacity-100 transition-all duration-300 p-3 sm:p-3.5 flex flex-col justify-end gap-2.5 z-10">
+          <p className="text-[11px] sm:text-xs text-gray-200 line-clamp-2 sm:line-clamp-3 leading-relaxed font-normal">
             {movie.overview || 'No synopsis available for this selection.'}
           </p>
 
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-1.5 pt-0.5 w-full overflow-hidden">
             <Link
               href={`/${mediaType}/${movie.id}`}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors shadow-lg shadow-purple-600/30"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl text-white text-[11px] sm:text-xs font-bold transition-all shadow-lg hover:scale-[1.02] active:scale-95 truncate"
+              style={{
+                background: accentGlow ? accentGlow.primary : 'var(--primary-hover)',
+              }}
             >
-              <Info className="w-3.5 h-3.5" />
-              <span>Details</span>
+              <Info className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Details</span>
             </Link>
 
             <button
               onClick={handleWatchlistClick}
-              className={`p-2 rounded-xl border backdrop-blur-md transition-all ${
+              className={`w-8 h-8 rounded-xl border backdrop-blur-md shrink-0 flex items-center justify-center transition-all ${
                 localWatchlist
-                  ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
+                  ? 'bg-white/25 border-white/40 text-white'
                   : 'bg-white/10 border-white/15 text-white hover:bg-white/20'
               }`}
               title={localWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
             >
-              {localWatchlist ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              {localWatchlist ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
             </button>
 
-            <div onClick={(e) => e.stopPropagation()}>
-              <AddToCollectionButton movie={movie} showRankButton={false} />
+            <div className="shrink-0 flex items-center" onClick={(e) => e.stopPropagation()}>
+              <AddToCollectionButton movie={movie} showRankButton={false} compact />
             </div>
           </div>
         </div>
       </div>
 
       {/* ── CARD CONTENT ── */}
-      <div className="p-4 flex flex-col flex-1 justify-between gap-3 bg-gradient-to-b from-transparent to-black/40">
+      <div className="p-3.5 flex flex-col flex-1 justify-between gap-2.5">
         <div>
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400/80">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-white/50">
               #{index + 1} Selection
             </span>
             <div className="flex items-center gap-1 text-amber-400 text-xs font-black">
@@ -216,19 +228,19 @@ export default function MoodMovieCard({
             </div>
           </div>
 
-          <h3 className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors line-clamp-1 leading-snug">
+          <h3 className="text-sm font-bold text-white group-hover:text-white/90 transition-colors line-clamp-1 leading-snug">
             {title}
           </h3>
 
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-white/45 mt-0.5 font-medium">
             {releaseYear} {mediaType === 'tv' ? '• Series' : ''}
           </p>
         </div>
 
         {/* AI Vibe Note */}
         {movie.reason && (
-          <div className="pt-2 border-t border-white/5">
-            <p className="text-[11px] text-purple-200/70 italic line-clamp-2 leading-relaxed">
+          <div className="pt-2 border-t border-white/10">
+            <p className="text-[11px] text-white/70 italic line-clamp-2 leading-relaxed">
               &quot;{movie.reason}&quot;
             </p>
           </div>
@@ -237,3 +249,4 @@ export default function MoodMovieCard({
     </div>
   );
 }
+

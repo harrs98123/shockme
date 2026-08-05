@@ -192,7 +192,10 @@ async def discover_movies(
     with_companies: str = "",
     vote_average_gte: float = 0,
     vote_count_gte: int = 0,
+    vote_count_lte: int = 0,
     primary_release_year: int = 0,
+    primary_release_date_gte: str = "",
+    primary_release_date_lte: str = "",
     sort_by: str = "popularity.desc",
     page: int = 1
 ):
@@ -211,9 +214,15 @@ async def discover_movies(
         params["vote_average.gte"] = vote_average_gte
     if vote_count_gte > 0:
         params["vote_count.gte"] = vote_count_gte
+    if vote_count_lte > 0:
+        params["vote_count.lte"] = vote_count_lte
     if primary_release_year > 0:
         params["primary_release_year"] = primary_release_year
-        
+    if primary_release_date_gte:
+        params["primary_release_date.gte"] = primary_release_date_gte
+    if primary_release_date_lte:
+        params["primary_release_date.lte"] = primary_release_date_lte
+
     data = await tmdb_get("/discover/movie", params)
     return data
 

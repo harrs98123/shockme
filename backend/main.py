@@ -78,11 +78,27 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # 2. Trusted Hosts — reject requests with unexpected Host headers (prod only)
+# NOTE: Render proxies requests through their load balancer. The Host header
+# can be the external domain OR an internal Render hostname. We include both.
 if IS_PRODUCTION:
-    allowed_hosts = os.getenv("ALLOWED_HOSTS", "").split(",")
-    allowed_hosts = [h.strip() for h in allowed_hosts if h.strip()]
-    if allowed_hosts:
+    env_hosts = os.getenv("ALLOWED_HOSTS", "")
+    if env_hosts.strip():
+        allowed_hosts = [h.strip() for h in env_hosts.split(",") if h.strip()]
+        # Always include Render-internal patterns and localhost for health checks
+        render_defaults = [
+            "*.onrender.com",
+            "localhost",
+            "127.0.0.1",
+        ]
+        for h in render_defaults:
+            if h not in allowed_hosts:
+                allowed_hosts.append(h)
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
+        print(f"[Security] TrustedHostMiddleware active for: {allowed_hosts}")
+    else:
+        # ALLOWED_HOSTS not configured — skip middleware to avoid blocking all traffic.
+        # Set this env var in Render dashboard: ALLOWED_HOSTS=your-api.onrender.com,your-app.vercel.app
+        print("[Warning] ALLOWED_HOSTS not set — TrustedHostMiddleware disabled. Set it in Render env vars.")
 
 # 3. CORS — explicit origins, methods, and headers only
 CORS_ORIGINS = [
@@ -93,6 +109,13 @@ CORS_ORIGINS = [
 if IS_PRODUCTION:
     prod_origins = os.getenv("CORS_ORIGINS", "").split(",")
     CORS_ORIGINS = [o.strip() for o in prod_origins if o.strip()]
+    # Fallback: if CORS_ORIGINS env var isn't set on Render, use known domains
+    if not CORS_ORIGINS:
+        CORS_ORIGINS = [
+            "https://shockme.vercel.app",
+            "http://localhost:3000",
+        ]
+        print("[Warning] CORS_ORIGINS not set — using fallback origins.")
 
 app.add_middleware(
     CORSMiddleware,
@@ -186,6 +209,11 @@ async def startup_event():
     seed_admin()
 
     print(f"[System] CineMatch API started in {APP_ENV.upper()} mode")
+    print(f"[Config] ALLOWED_HOSTS={os.getenv('ALLOWED_HOSTS', '<not set>')}")
+    print(f"[Config] CORS_ORIGINS={os.getenv('CORS_ORIGINS', '<not set>')}")
+    print(f"[Config] TMDB_API_KEY={'set' if os.getenv('TMDB_API_KEY') else 'MISSING!'}")
+    print(f"[Config] DATABASE_URL={'set' if os.getenv('DATABASE_URL') else 'MISSING!'}")
+    print(f"[Config] REDIS_URL={'set' if os.getenv('REDIS_URL') else 'not set (using InMemory cache)'})")
 
 
 def seed_admin():

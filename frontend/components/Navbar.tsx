@@ -25,6 +25,7 @@ import {
   LogOut,
   User,
   ChevronRight,
+  ListChecks,
 } from 'lucide-react';
 
 
@@ -76,6 +77,7 @@ export default function Navbar() {
   const navLinks = [
     { href: '/upcoming', label: 'Upcoming', icon: Clapperboard },
     { href: '/must-watch', label: 'Must Watch', icon: Eye },
+    { href: '/finder', label: 'Finder', icon: ListChecks },
     { href: '/mood', label: 'Mood', icon: Wand2 },
     { href: '/search', label: 'Search', icon: Search },
   ];
@@ -310,6 +312,7 @@ export default function Navbar() {
                       {/* Dropdown Links */}
                       <DropdownItem icon={<User size={16} />} label="My Profile" href="/profile" onClick={() => setMenuOpen(false)} />
                       <DropdownItem icon={<Library size={16} />} label="My Collections" href="/collections" onClick={() => setMenuOpen(false)} />
+                      <DropdownItem icon={<ListChecks size={16} />} label="Movie Finder" href="/finder" onClick={() => setMenuOpen(false)} />
                       <DropdownItem icon={<Wand2 size={16} />} label="Movie Moods" href="/mood" onClick={() => setMenuOpen(false)} />
                       
                       <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 8px' }} />

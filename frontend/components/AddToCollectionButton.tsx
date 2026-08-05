@@ -17,6 +17,9 @@ interface Props {
   movie: Media;
   /** If true, also shows the "Add to Rank Collection" quick button */
   showRankButton?: boolean;
+  /** If true, renders a compact icon-only trigger button (ideal for grid cards) */
+  compact?: boolean;
+  className?: string;
 }
 
 function mediaPayload(movie: Media) {
@@ -35,7 +38,7 @@ function mediaPayload(movie: Media) {
   };
 }
 
-export default function AddToCollectionButton({ movie, showRankButton = false }: Props) {
+export default function AddToCollectionButton({ movie, showRankButton = false, compact = false, className = '' }: Props) {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -108,24 +111,37 @@ export default function AddToCollectionButton({ movie, showRankButton = false }:
   return (
     <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
       {/* ── Main Trigger Button ── */}
-      <button
-        onClick={toggleModal}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          padding: '8px 14px', borderRadius: 10,
-          border: '1.2px solid rgba(255,255,255,0.12)',
-          background: 'rgba(255,255,255,0.06)', color: 'white',
-          fontSize: 13, fontWeight: 700, cursor: 'pointer',
-          transition: 'all 0.2s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-        </svg>
-        Save
-      </button>
+      {compact ? (
+        <button
+          onClick={toggleModal}
+          title="Save to Collection"
+          className={`w-8 h-8 rounded-xl border backdrop-blur-md flex items-center justify-center transition-all bg-white/10 border-white/15 text-white hover:bg-white/20 ${className}`}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
+      ) : (
+        <button
+          onClick={toggleModal}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '8px 14px', borderRadius: 10,
+            border: '1.2px solid rgba(255,255,255,0.12)',
+            background: 'rgba(255,255,255,0.06)', color: 'white',
+            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          className={className}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+          Save
+        </button>
+      )}
 
       {/* ── Quick Rank Button ── */}
       {showRankButton && (
