@@ -24,17 +24,17 @@ export const viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'shockme – Discover Your Next Favorite Movie',
-    template: '%s | shockme',
+    default: 'plotmint – Discover Your Next Favorite Movie',
+    template: '%s | plotmint',
   },
   description:
-    'shockme is your cinematic companion — discover trending movies, get personalized recommendations, rate, review, and debate your favorites.',
+    'plotmint is your cinematic companion — discover trending movies, get personalized recommendations, rate, review, and debate your favorites.',
   keywords: ['movies', 'film recommendations', 'movie ratings', 'watchlist', 'cinema'],
   openGraph: {
     type: 'website',
-    title: 'shockme',
+    title: 'plotmint',
     description: 'Discover your next favorite movie',
-    siteName: 'shockme',
+    siteName: 'plotmint',
   },
 };
 

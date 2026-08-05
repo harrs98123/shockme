@@ -7,6 +7,7 @@ import { Eye, EyeOff, ShieldCheck, Mail, User, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import TurnstileWidget from '@/components/TurnstileWidget';
+import PlotmintLogo from '@/components/PlotmintLogo';
 
 function LoginForm() {
   const router = useRouter();
@@ -156,24 +157,9 @@ function LoginForm() {
       <div className="flex w-full flex-col items-center justify-center p-6 lg:w-[45%] border-l border-white/5 bg-[#000000] z-20 overflow-y-auto">
         <div className="mb-10 text-center select-none mt-auto lg:mt-0 pt-10 lg:pt-0">
           <div className="flex items-center justify-center">
-            <span style={{ 
-              fontSize: 32, 
-              fontFamily: 'var(--font-poppins, Poppins)', 
-              fontWeight: 900, 
-              color: 'white', 
-              letterSpacing: '-1.5px', 
-              display: 'flex', 
-              alignItems: 'baseline',
-              textTransform: 'lowercase'
-            }}>
-              <span style={{ fontSize: '1.3em', color: '#e11d48', lineHeight: 0.8 }}>s</span>
-              <span style={{ fontSize: '0.9em' }}>h</span>
-              <span style={{ fontSize: '0.75em', opacity: 0.9 }}>o</span>
-              <span style={{ fontSize: '1.1em' }}>c</span>
-              <span style={{ fontSize: '1.4em', color: '#e11d48', lineHeight: 0.8 }}>k</span>
-              <span style={{ fontSize: '0.85em' }}>m</span>
-              <span style={{ fontSize: '1.2em' }}>e</span>
-            </span>
+            <Link href="/" className="cursor-pointer">
+              <PlotmintLogo size="large" />
+            </Link>
           </div>
         </div>
 

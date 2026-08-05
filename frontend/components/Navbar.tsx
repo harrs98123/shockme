@@ -4,18 +4,18 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import PlotmintLogo from '@/components/PlotmintLogo';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import {
   ChevronDown,
   ChevronLeft,
-  LayoutGrid,
-  Theater,
+  Eye,
+  Library,
   Globe,
-  Languages,
   Users,
   Trophy,
-  Award,
-  Sparkles,
+  Gem,
+  Wand2,
   Clapperboard,
   X,
   Home,
@@ -75,15 +75,15 @@ export default function Navbar() {
 
   const navLinks = [
     { href: '/upcoming', label: 'Upcoming', icon: Clapperboard },
-    { href: '/must-watch', label: 'Must Watch', icon: Theater },
-    { href: '/mood', label: 'Mood', icon: Sparkles },
-    { href: '/search', label: 'Search', icon: LayoutGrid },
+    { href: '/must-watch', label: 'Must Watch', icon: Eye },
+    { href: '/mood', label: 'Mood', icon: Wand2 },
+    { href: '/search', label: 'Search', icon: Search },
   ];
 
   const moreLinks = [
     { href: '/groups', label: 'Groups', icon: Users },
-    { href: '/collections', label: 'Collections', icon: Theater },
-    { href: '/gems', label: 'Gems', icon: Award },
+    { href: '/collections', label: 'Collections', icon: Library },
+    { href: '/gems', label: 'Gems', icon: Gem },
     { href: '/universe', label: 'Universe', icon: Globe },
     { href: '/predictions', label: 'Predict', icon: Trophy },
   ];
@@ -95,7 +95,7 @@ export default function Navbar() {
     { label: 'Language', icon: '/language-svgrepo-com.svg', color: '#10B981' },
     { label: 'Family Friendly', icon: '/family-think-svgrepo-com.svg', color: '#F59E0B' },
     { label: 'Award Winners', icon: '/oscar-prize-statue-silhouette-svgrepo-com.svg', color: '#F43F5E' },
-    { label: 'Moctale Select', icon: '/badge-svgrepo-com.svg', color: '#8B5CF6' },
+    { label: 'Plotmint Select', icon: '/badge-svgrepo-com.svg', color: '#8B5CF6' },
     { label: 'Anime', icon: '/anime-away-face-svgrepo-com.svg', color: '#EC4899' },
     { label: 'Franchise', icon: '/film-camera-svgrepo-com.svg', color: '#3B82F6' },
   ];
@@ -150,43 +150,7 @@ export default function Navbar() {
         {/* … original desktop nav content kept intact … */}
         <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '76px' }}>
           <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 0 }}>
-            <motion.span 
-              whileHover={{ scale: 1.02 }}
-              style={{ 
-                fontSize: 28, 
-                fontFamily: 'system-ui, -apple-system, sans-serif', 
-                fontWeight: 900, 
-                background: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                letterSpacing: '-1.5px', 
-                display: 'flex', 
-                alignItems: 'baseline',
-                textTransform: 'lowercase',
-                position: 'relative',
-                cursor: 'pointer'
-              }}
-            >
-              <span style={{ fontSize: '1.2em', lineHeight: 0.8 }}>s</span>
-              <span style={{ fontSize: '0.9em' }}>h</span>
-              <span style={{ fontSize: '0.8em' }}>o</span>
-              <span style={{ fontSize: '1.05em' }}>c</span>
-              <span style={{ fontSize: '1.25em', lineHeight: 0.8 }}>k</span>
-              <span style={{ fontSize: '0.85em' }}>m</span>
-              <span style={{ fontSize: '1.15em' }}>e</span>
-              <motion.span 
-                animate={{ 
-                  opacity: [0.4, 1, 0.4],
-                  scale: [1, 1.2, 1],
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
-                style={{ 
-                  width: 6, height: 6, borderRadius: '50%', 
-                  background: '#A855F7', marginLeft: 2,
-                  boxShadow: '0 0 10px #A855F7'
-                }} 
-              />
-            </motion.span>
+            <PlotmintLogo size="desktop" />
           </Link>
 
           <nav style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -345,8 +309,8 @@ export default function Navbar() {
 
                       {/* Dropdown Links */}
                       <DropdownItem icon={<User size={16} />} label="My Profile" href="/profile" onClick={() => setMenuOpen(false)} />
-                      <DropdownItem icon={<Theater size={16} />} label="My Collections" href="/collections" onClick={() => setMenuOpen(false)} />
-                      <DropdownItem icon={<Sparkles size={16} />} label="Movie Moods" href="/mood" onClick={() => setMenuOpen(false)} />
+                      <DropdownItem icon={<Library size={16} />} label="My Collections" href="/collections" onClick={() => setMenuOpen(false)} />
+                      <DropdownItem icon={<Wand2 size={16} />} label="Movie Moods" href="/mood" onClick={() => setMenuOpen(false)} />
                       
                       <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 8px' }} />
                       
@@ -388,26 +352,8 @@ export default function Navbar() {
         transition: 'background 0.35s ease, border-color 0.35s ease, backdrop-filter 0.35s ease',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', height: '100%' }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <span style={{ 
-              fontSize: 24, 
-              fontWeight: 900, 
-              background: 'linear-gradient(135deg, #C084FC 0%, #A855F7 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              letterSpacing: '-1px', 
-              display: 'flex', 
-              alignItems: 'baseline',
-              textTransform: 'lowercase'
-            }}>
-              <span style={{ fontSize: '1.2em', lineHeight: 0.8 }}>s</span>
-              <span style={{ fontSize: '0.9em' }}>h</span>
-              <span style={{ fontSize: '0.8em' }}>o</span>
-              <span style={{ fontSize: '1.05em' }}>c</span>
-              <span style={{ fontSize: '1.25em', lineHeight: 0.8 }}>k</span>
-              <span style={{ fontSize: '0.85em' }}>m</span>
-              <span style={{ fontSize: '1.15em' }}>e</span>
-            </span>
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <PlotmintLogo size="mobile" />
           </Link>
           {user ? (
             <button

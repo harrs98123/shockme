@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Eye, EyeOff, ShieldCheck, Mail, Lock, Key, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import PlotmintLogo from '@/components/PlotmintLogo';
 
 type Step = 'request' | 'verify' | 'reset' | 'success';
 
@@ -141,11 +142,10 @@ export default function ForgotPasswordPage() {
       {/* Right side: Multi-step Flow */}
       <div className="flex w-full flex-col items-center justify-center p-6 lg:w-[45%] border-l border-white/5 bg-[#000000] z-20">
         <div className="mb-10 text-center select-none">
-           <div className="flex items-center justify-center gap-3">
-              <div className="flex items-center justify-center h-9 w-9 rounded-lg border-2 border-white">
-                <span className="text-lg font-black italic tracking-tighter">M</span>
-              </div>
-              <span className="text-xl font-black tracking-[0.2em] uppercase">MOCTALE</span>
+           <div className="flex items-center justify-center">
+             <Link href="/" className="cursor-pointer">
+               <PlotmintLogo size="large" />
+             </Link>
            </div>
         </div>
 
