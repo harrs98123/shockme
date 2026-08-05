@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+
 // Content Security Policy directives
 const cspDirectives = [
   "default-src 'self'",
@@ -13,12 +15,11 @@ const cspDirectives = [
   // Images: self + TMDB + Cloudinary + Google avatars + data URIs
   "img-src 'self' data: blob: https://image.tmdb.org https://res.cloudinary.com https://lh3.googleusercontent.com https://ui-avatars.com",
   // Fonts
-  "font-src 'self' data: https://fonts.gstatic.com",
-  // API calls: self + backend + TMDB API + Cloudflare Turnstile
-  // In dev allow localhost backend; in prod this should be your production domain
-  `connect-src 'self' http://localhost:8000 ws://localhost:3000 ${isDev ? "ws://localhost:* http://localhost:*" : ""} https://api.themoviedb.org https://challenges.cloudflare.com https://res.cloudinary.com https://api.cloudinary.com https://screenscape.me`,
+  "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
+  // API calls: self + backend + Render + TMDB API + Cloudflare Turnstile
+  `connect-src 'self' http://localhost:8000 ws://localhost:3000 ${isDev ? "ws://localhost:* http://localhost:*" : ""} ${apiUrl} https://*.onrender.com https://*.render.com wss://*.onrender.com https://api.themoviedb.org https://challenges.cloudflare.com https://res.cloudinary.com https://api.cloudinary.com https://screenscape.me`,
   // Frames: only Cloudflare Turnstile and our local streaming proxy
-  "frame-src https://vidsrc.to https://www.youtube.com https://youtube.com https://challenges.cloudflare.com https://widget.cloudinary.com https://upload-widget.cloudinary.com https://screenscape.me http://localhost:8000",
+  "frame-src https://vidsrc.to https://www.youtube.com https://youtube.com https://challenges.cloudflare.com https://widget.cloudinary.com https://upload-widget.cloudinary.com https://screenscape.me http://localhost:8000 https://*.onrender.com",
   // No plugins
   "object-src 'none'",
   // Prevent forms submitting to external sites

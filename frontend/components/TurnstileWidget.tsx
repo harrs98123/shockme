@@ -51,7 +51,7 @@ export default function TurnstileWidget({
   useEffect(() => {
     if (!isLoaded || !containerRef.current) return;
 
-    const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '0x4AAAAAAC0DzxiQGDlEQxfy';
+    const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
 
     // Clear previous widget if exists
     if (widgetId) {

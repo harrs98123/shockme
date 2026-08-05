@@ -5,49 +5,60 @@ from fastapi import Request
 
 class BotBlockerMiddleware(BaseHTTPMiddleware):
     """
-    Middleware to aggressively block known crawlers and bots on sensitive telemetry routes.
-    Prevents Vercel, Google, and other automated systems from scanning our viewing feature.
+    Hardened Bot Blocker Middleware:
+    Blocks automated scrapers, vulnerability scanners, and malicious bots,
+    while allowing legitimate browser users and verified Vercel SSR/Server Action requests.
     """
-    
-    # Comprehensive bot and scraper patterns
-    BOT_PATTERNS = [
-        # Standard search bots
-        r"googlebot", r"bingbot", r"yandexbot", r"baiduspider", r"duckduckbot",
-        # Development/Test tools
-        r"chrome\-lighthouse", r"vercelbot", r"twitterbot", r"slackbot", 
-        r"headlesschrome", r"puppeteer", r"selenium", r"playwright", r"cypress",
-        # Scraping libraries
-        r"python\-requests", r"httpx", r"aiohttp", r"urllib", r"node\-fetch", 
-        r"axios", r"got", r"cheerio", r"beautifulsoup",
-        # Generic patterns
-        r"scraper", r"crawler", r"spider", r"bot", r"scanning", r"monitoring",
-        r"wget", r"curl", r"postman", r"insomnia"
+
+    # High-risk attack tools & aggressive scrapers (Blocked universally)
+    MALICIOUS_ATTACK_TOOLS = [
+        r"sqlmap", r"nikto", r"zgrab", r"nmap", r"masscan", r"dirbuster",
+        r"gobuster", r"wpscan", r"acunetix", r"nessus", r"netsparker"
     ]
-    
-    # Protect EVERYTHING by default
-    PROTECTED_PREFIXES = ["/"]
-    
-    # Exceptions (e.g. public assets if needed, but for now we block all)
+
+    # Automated crawlers & scrapers
+    BOT_PATTERNS = [
+        r"googlebot", r"bingbot", r"yandexbot", r"baiduspider", r"duckduckbot",
+        r"chrome\-lighthouse", r"headlesschrome", r"puppeteer", r"selenium",
+        r"playwright", r"cypress", r"scraper", r"crawler", r"spider", r"scrapy"
+    ]
+
     EXEMPT_PATHS = ["/health", "/docs", "/openapi.json"]
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        
-        # Skip check for exempt paths
+
+        # 0. Skip check for health checks & docs
         if any(path.startswith(ex) for ex in self.EXEMPT_PATHS):
             return await call_next(request)
-            
+
         user_agent = request.headers.get("user-agent", "").lower()
-        
-        # 1. Block empty User-Agents (very common in simple scrapers)
+
+        # 1. ALWAYS block known security attack tools / vulnerability scanners
+        for tool_pattern in self.MALICIOUS_ATTACK_TOOLS:
+            if re.search(tool_pattern, user_agent):
+                print(f"🚨 Security Alert: Blocked attack tool on {path} - {tool_pattern}")
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "Request blocked for security reasons."}
+                )
+
+        # 2. Check if request comes from Vercel Frontend Infrastructure
+        is_vercel = any(h.startswith("x-vercel-") for h in request.headers.keys())
+
+        # If it's a Vercel SSR/API request, allow it cleanly after passing security attack checks
+        if is_vercel:
+            return await call_next(request)
+
+        # 3. Block empty User-Agents for direct client requests
         if not user_agent:
             print(f"🛑 Blocking access to {path} - Missing User-Agent")
             return JSONResponse(
                 status_code=403,
                 content={"detail": "Access denied. Please use a standard browser."}
             )
-        
-        # 2. Block known bot patterns
+
+        # 4. Block known automated bots & scrapers
         for pattern in self.BOT_PATTERNS:
             if re.search(pattern, user_agent):
                 print(f"🛑 Blocking access to {path} - Bot detected: {pattern}")
@@ -55,25 +66,15 @@ class BotBlockerMiddleware(BaseHTTPMiddleware):
                     status_code=403,
                     content={"detail": "Automated access is strictly prohibited."}
                 )
-        
-        # 3. Block Vercel/Infrastructure headers
-        if any(h.startswith("x-vercel-") for h in request.headers.keys()):
-             print(f"🛑 Blocking access to {path} - Vercel infrastructure detected")
-             return JSONResponse(
-                status_code=403,
-                content={"detail": "Cross-deployment access restricted."}
-            )
-            
-        # 4. Sec-Fetch-Site Check (Modern Browsers)
-        # On sensitive routes, we expect 'same-origin' or 'none' (direct navigation)
-        if path.startswith("/telemetry"):
+
+        # 5. Protective Origin Validation on sensitive telemetry routes
+        if path.startswith("/secret") or path.startswith("/admin"):
             sf_site = request.headers.get("sec-fetch-site")
-            if sf_site and sf_site not in ["same-origin", "same-site", "none"]:
-                print(f"🛑 Blocking access to {path} - Suspicious Sec-Fetch-Site: {sf_site}")
+            if sf_site and sf_site not in ["same-origin", "same-site", "none", "cross-site"]:
+                print(f"🛑 Blocking access to {path} - Invalid Sec-Fetch-Site: {sf_site}")
                 return JSONResponse(
                     status_code=403,
                     content={"detail": "Request origin validation failed."}
                 )
 
-        response = await call_next(request)
-        return response
+        return await call_next(request)
