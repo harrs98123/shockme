@@ -218,7 +218,7 @@ def seed_admin():
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
-@app.get("/", include_in_schema=False)
+@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
 def root():
     return {
         "message": "🎬 CineMatch API is running!",
@@ -226,7 +226,7 @@ def root():
     }
 
 
-@app.get("/health", include_in_schema=False)
+@app.api_route("/health", methods=["GET", "HEAD"], include_in_schema=False)
 def health():
     return {"status": "ok", "env": APP_ENV}
 
@@ -241,6 +241,8 @@ if __name__ == "__main__":
         sys.exit(subprocess.call([venv_python] + sys.argv))
 
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    host = os.getenv("HOST", "0.0.0.0" if IS_PRODUCTION else "127.0.0.1")
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main:app", host=host, port=port, reload=not IS_PRODUCTION)
 
 
