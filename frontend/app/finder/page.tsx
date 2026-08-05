@@ -39,7 +39,6 @@ type Phase = 'wizard' | 'loading' | 'results';
 
 interface ScoredMovie extends Movie {
   popularity?: number;
-  vote_count?: number;
   adult?: boolean;
   _score: number;
   _matchReason?: string;
@@ -80,13 +79,13 @@ const optionVariants: Variants = {
  * 6. Adult/garbage filter → discard adult content and very low-rated films
  */
 function scoreMovie(
-  m: Movie & { popularity?: number; adult?: boolean; vote_count?: number },
+  m: Movie & { popularity?: number; adult?: boolean },
   atm: WizardOption,
   occ: WizardOption,
   styleMinRating: number,
 ): number {
   const rating = m.vote_average || 0;
-  const voteCount = (m as ScoredMovie).vote_count ?? 0;
+  const voteCount = m.vote_count ?? 0;
 
   // Combined minimum rating from atmosphere, occasion, and style
   const effectiveMinRating = Math.max(

@@ -4,17 +4,21 @@ import Image from "next/image";
 import Link from "next/link";
 
 async function getTrendingMovies() {
-    const response = await fetch(
-        `https://api.themoviedb.org/3/trending/all/week?api_key=5a209f099efaba1cd26a904e09b90829`,
-        { next: { revalidate: 3600 } }
-    );
+    try {
+        const response = await fetch(
+            `https://api.themoviedb.org/3/trending/all/week?api_key=5a209f099efaba1cd26a904e09b90829`,
+            { next: { revalidate: 3600 } }
+        );
 
-    if (!response.ok) {
+        if (!response.ok) {
+            return [];
+        }
+
+        const data = await response.json();
+        return data.results || [];
+    } catch {
         return [];
     }
-
-    const data = await response.json();
-    return data.results || [];
 }
 
 async function getGitHubStars() {
@@ -39,7 +43,14 @@ export default async function Home() {
     const trending = await getTrendingMovies();
     const stars = await getGitHubStars();
 
-    const images = trending.slice(0, 50).map((item: any) => ({
+    const images = (trending.length > 0 ? trending : [
+        { poster_path: "/z1p34vh7dEOnLDmyCrlUVLuoDzd.jpg", title: "Godzilla x Kong" },
+        { poster_path: "/iADOJ8Zymht2JPMoy3R7xceZprc.jpg", title: "Furiosa" },
+        { poster_path: "/ldfCF9RhR40mppkzmVd6oBFgMHN.jpg", title: "Migration" },
+        { poster_path: "/kDp1vUBnMpe8ak4rjgl3cLELqjU.jpg", title: "Kung Fu Panda 4" },
+        { poster_path: "/gKkl37BQuKTanygYQG1pyYgLVgf.jpg", title: "Kingdom of the Planet of the Apes" },
+        { poster_path: "/xYduFGuch84bVSBNOFCNnqFXnYt.jpg", title: "The Garfield Movie" },
+    ]).slice(0, 50).map((item: any) => ({
         src: item.poster_path
             ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
             : `https://image.tmdb.org/t/p/w500${item.backdrop_path}`,
