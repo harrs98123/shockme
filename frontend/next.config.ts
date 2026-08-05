@@ -17,7 +17,7 @@ const cspDirectives = [
   // Fonts
   "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
   // API calls: self + backend + Render + TMDB API + Cloudflare Turnstile
-  `connect-src 'self' http://localhost:8000 ws://localhost:3000 ${isDev ? "ws://localhost:* http://localhost:*" : ""} ${apiUrl} https://*.onrender.com https://*.render.com wss://*.onrender.com https://api.themoviedb.org https://challenges.cloudflare.com https://res.cloudinary.com https://api.cloudinary.com https://screenscape.me`,
+  `connect-src 'self' http://localhost:8000 ws://localhost:3000 ${isDev ? "ws://localhost:* http://localhost:*" : ""} ${apiUrl} https://shockme-1.onrender.com https://*.onrender.com https://*.render.com wss://*.onrender.com https://api.themoviedb.org https://challenges.cloudflare.com https://res.cloudinary.com https://api.cloudinary.com https://screenscape.me`,
   // Frames: only Cloudflare Turnstile and our local streaming proxy
   "frame-src https://vidsrc.to https://www.youtube.com https://youtube.com https://challenges.cloudflare.com https://widget.cloudinary.com https://upload-widget.cloudinary.com https://screenscape.me http://localhost:8000 https://*.onrender.com",
   // No plugins

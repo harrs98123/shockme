@@ -97,7 +97,7 @@ if IS_PRODUCTION:
         print(f"[Security] TrustedHostMiddleware active for: {allowed_hosts}")
     else:
         # ALLOWED_HOSTS not configured — skip middleware to avoid blocking all traffic.
-        # Set this env var in Render dashboard: ALLOWED_HOSTS=your-api.onrender.com,your-app.vercel.app
+        # Set this env var in Render dashboard: ALLOWED_HOSTS=shockme-1.onrender.com,shockme.vercel.app
         print("[Warning] ALLOWED_HOSTS not set — TrustedHostMiddleware disabled. Set it in Render env vars.")
 
 # 3. CORS — explicit origins, methods, and headers only
