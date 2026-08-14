@@ -26,6 +26,10 @@ import {
   User,
   ChevronRight,
   ListChecks,
+  Calendar,
+  Coffee,
+  LayoutGrid,
+  Bookmark,
 } from 'lucide-react';
 
 
@@ -75,10 +79,10 @@ export default function Navbar() {
   if (pathname?.startsWith('/watch')) return null;
 
   const navLinks = [
-    { href: '/upcoming', label: 'Upcoming', icon: Clapperboard },
+    { href: '/upcoming', label: 'Upcoming', icon: Calendar },
     { href: '/must-watch', label: 'Must Watch', icon: Eye },
-    { href: '/finder', label: 'Finder', icon: ListChecks },
-    { href: '/mood', label: 'Mood', icon: Wand2 },
+    { href: '/finder', label: 'Finder', icon: LayoutGrid },
+    { href: '/mood', label: 'Mood', icon: Coffee },
     { href: '/search', label: 'Search', icon: Search },
   ];
 
@@ -89,6 +93,11 @@ export default function Navbar() {
     { href: '/universe', label: 'Universe', icon: Globe },
     { href: '/predictions', label: 'Predict', icon: Trophy },
   ];
+
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+
+  const isMoreActive = moreLinks.some(l => pathname === l.href);
+  const isBrowseActive = pathname?.startsWith('/browse') || false;
 
   const categories = [
     { label: 'Category', icon: '/category-solid-svgrepo-com.svg', color: '#8B5CF6' },
@@ -142,34 +151,155 @@ export default function Navbar() {
           top: 0, left: 0, right: 0,
           zIndex: 100,
           transition: 'background 0.4s ease, border-color 0.4s ease, backdrop-filter 0.4s ease, box-shadow 0.4s ease',
-          background: scrolled ? 'rgba(10, 10, 10, 0.82)' : 'transparent',
+          background: scrolled ? 'rgba(10, 10, 12, 0.88)' : 'transparent',
           backdropFilter: scrolled ? 'blur(28px)' : 'none',
           WebkitBackdropFilter: scrolled ? 'blur(28px)' : 'none',
           borderBottom: scrolled ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
-          boxShadow: scrolled ? '0 10px 30px rgba(0,0,0,0.3)' : 'none',
+          boxShadow: scrolled ? '0 10px 30px rgba(0,0,0,0.4)' : 'none',
         }}
       >
-        {/* … original desktop nav content kept intact … */}
         <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '76px' }}>
           <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 0 }}>
             <PlotmintLogo size="desktop" />
           </Link>
 
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <nav style={{ display: 'flex', alignItems: 'center', gap: 32, position: 'relative', height: '100%' }}>
             {/* Browse dropdown */}
-            <div style={{ position: 'relative' }} onMouseEnter={() => setBrowseOpen(true)} onMouseLeave={() => setBrowseOpen(false)}>
-              <button style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 18px', fontSize: 15, fontWeight: 600, color: browseOpen ? '#fff' : 'var(--text-dim)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                Browse <ChevronDown size={14} style={{ transform: browseOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
+            <div 
+              style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }} 
+              onMouseEnter={() => { setBrowseOpen(true); setHoveredTab('browse'); }} 
+              onMouseLeave={() => { setBrowseOpen(false); setHoveredTab(null); }}
+            >
+              <button 
+                onClick={() => router.push('/browse/category')}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 8, 
+                  padding: '6px 2px', 
+                  fontSize: 15, 
+                  fontWeight: (isBrowseActive || browseOpen) ? 700 : 500, 
+                  color: (isBrowseActive || browseOpen) ? '#ffffff' : hoveredTab === 'browse' ? '#ffffff' : 'rgba(255, 255, 255, 0.5)', 
+                  background: 'transparent', 
+                  border: 'none',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  height: '100%',
+                  transition: 'color 0.2s ease',
+                }}
+              >
+                <motion.div
+                  animate={{
+                    scale: (isBrowseActive || browseOpen) ? 1.06 : hoveredTab === 'browse' ? 1.08 : 1,
+                  }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Compass size={22} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                </motion.div>
+
+                <AnimatePresence initial={false}>
+                  {(isBrowseActive || browseOpen) && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0, x: -6 }}
+                      animate={{ opacity: 1, width: 'auto', x: 0 }}
+                      exit={{ opacity: 0, width: 0, x: -6 }}
+                      transition={{
+                        width: { type: 'spring', stiffness: 350, damping: 30, mass: 0.8 },
+                        opacity: { duration: 0.2, ease: 'easeOut' },
+                        x: { type: 'spring', stiffness: 350, damping: 30, mass: 0.8 },
+                      }}
+                      style={{ overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4, letterSpacing: '-0.2px' }}
+                    >
+                      Browse <ChevronDown size={13} style={{ transform: browseOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+
+                {/* Floating tooltip for inactive */}
+                <AnimatePresence>
+                  {hoveredTab === 'browse' && !isBrowseActive && !browseOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.92 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 4, scale: 0.92 }}
+                      transition={{ duration: 0.15 }}
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% - 10px)',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        padding: '5px 11px',
+                        background: 'rgba(15, 15, 20, 0.95)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: 8,
+                        backdropFilter: 'blur(16px)',
+                        color: '#fff',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        pointerEvents: 'none',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                        zIndex: 1100,
+                      }}
+                    >
+                      Browse
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {isBrowseActive && (
+                  <motion.div
+                    layoutId="desktop-active-nav-indicator"
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: -4,
+                      right: -4,
+                      height: 28,
+                      pointerEvents: 'none',
+                      overflow: 'visible',
+                    }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 28, mass: 0.7 }}
+                  >
+                    {/* Subtle curved ambient glow */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: '5%',
+                        right: '5%',
+                        height: '100%',
+                        background: 'radial-gradient(ellipse at bottom, rgba(168, 85, 247, 0.45) 0%, rgba(147, 51, 234, 0.15) 50%, transparent 80%)',
+                        filter: 'blur(3px)',
+                      }}
+                    />
+                    {/* Bottom glowing line */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: 2.5,
+                        borderRadius: '3px 3px 0 0',
+                        background: 'linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #9333ea 100%)',
+                        boxShadow: '0 -2px 10px rgba(168, 85, 247, 0.85), 0 0 18px rgba(147, 51, 234, 0.5)',
+                      }}
+                    />
+                  </motion.div>
+                )}
               </button>
+
               <AnimatePresence>
                 {browseOpen && (
                   <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={{ duration: 0.2 }}
-                    style={{ position: 'absolute', top: '100%', left: -100, width: 440, padding: 24, background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(32px)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', zIndex: 1000 }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: 'white' }}>Browse By</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                    style={{ position: 'absolute', top: 'calc(100% - 6px)', left: -60, width: 440, padding: 24, background: 'rgba(10,10,10,0.95)', backdropFilter: 'blur(32px)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', zIndex: 1000 }}>
+                    <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 18, color: 'white', letterSpacing: '-0.2px' }}>Browse By</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                       {categories.map((cat) => (
                         <button key={cat.label} onClick={() => { setBrowseOpen(false); handleCategoryNav(cat.label); }}
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '16px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, color: 'var(--text-dim)', cursor: 'pointer', transition: 'all 0.3s' }}>
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '14px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, color: 'var(--text-dim)', cursor: 'pointer', transition: 'all 0.3s' }}>
                           <div style={{ padding: 10, borderRadius: 10, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.03)' }}>
                             <div style={{ 
                               width: 22, height: 22, 
@@ -190,30 +320,270 @@ export default function Navbar() {
                 )}
               </AnimatePresence>
             </div>
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} style={{ position: 'relative', padding: '8px 14px', textDecoration: 'none', fontSize: 14, fontWeight: 600, color: pathname === link.href ? '#fff' : 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <link.icon size={16} strokeWidth={2.5} />
-                {link.label}
-                {pathname === link.href && <motion.div layoutId="nav-indicator" style={{ position: 'absolute', bottom: -4, left: 10, right: 10, height: 3, borderRadius: 2, backgroundColor: 'var(--primary)', boxShadow: '0 0 12px var(--primary-glow)' }} transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }} />}
-              </Link>
-            ))}
+
+            {/* Nav Links */}
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              const isHovered = hoveredTab === link.href;
+              const IconComp = link.icon;
+
+              return (
+                <div
+                  key={link.href}
+                  style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }}
+                  onMouseEnter={() => setHoveredTab(link.href)}
+                  onMouseLeave={() => setHoveredTab(null)}
+                >
+                  <Link
+                    href={link.href}
+                    style={{
+                      position: 'relative',
+                      padding: '6px 2px',
+                      textDecoration: 'none',
+                      fontSize: 15,
+                      fontWeight: isActive ? 700 : 500,
+                      color: isActive ? '#ffffff' : isHovered ? '#ffffff' : 'rgba(255, 255, 255, 0.5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      background: 'transparent',
+                      border: 'none',
+                      height: '100%',
+                      transition: 'color 0.2s ease',
+                    }}
+                  >
+                    <motion.div
+                      animate={{
+                        scale: isActive ? 1.06 : isHovered ? 1.08 : 1,
+                      }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <IconComp size={22} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                    </motion.div>
+                    
+                    <AnimatePresence initial={false}>
+                      {isActive && (
+                        <motion.span
+                          initial={{ opacity: 0, width: 0, x: -6 }}
+                          animate={{ opacity: 1, width: 'auto', x: 0 }}
+                          exit={{ opacity: 0, width: 0, x: -6 }}
+                          transition={{
+                            width: { type: 'spring', stiffness: 350, damping: 30, mass: 0.8 },
+                            opacity: { duration: 0.2, ease: 'easeOut' },
+                            x: { type: 'spring', stiffness: 350, damping: 30, mass: 0.8 },
+                          }}
+                          style={{
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap',
+                            letterSpacing: '-0.2px',
+                          }}
+                        >
+                          {link.label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+
+                    {isActive && (
+                      <motion.div
+                        layoutId="desktop-active-nav-indicator"
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: -4,
+                          right: -4,
+                          height: 28,
+                          pointerEvents: 'none',
+                          overflow: 'visible',
+                        }}
+                        transition={{ type: 'spring', stiffness: 350, damping: 28, mass: 0.7 }}
+                      >
+                        {/* Subtle curved ambient glow */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: '5%',
+                            right: '5%',
+                            height: '100%',
+                            background: 'radial-gradient(ellipse at bottom, rgba(168, 85, 247, 0.45) 0%, rgba(147, 51, 234, 0.15) 50%, transparent 80%)',
+                            filter: 'blur(3px)',
+                          }}
+                        />
+                        {/* Bottom glowing line */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: 2.5,
+                            borderRadius: '3px 3px 0 0',
+                            background: 'linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #9333ea 100%)',
+                            boxShadow: '0 -2px 10px rgba(168, 85, 247, 0.85), 0 0 18px rgba(147, 51, 234, 0.5)',
+                          }}
+                        />
+                      </motion.div>
+                    )}
+                  </Link>
+
+                  {/* Micro Tooltip for inactive hover */}
+                  <AnimatePresence>
+                    {isHovered && !isActive && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6, scale: 0.92 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 4, scale: 0.92 }}
+                        transition={{ duration: 0.15 }}
+                        style={{
+                          position: 'absolute',
+                          top: 'calc(100% - 10px)',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          padding: '5px 11px',
+                          background: 'rgba(15, 15, 20, 0.95)',
+                          border: '1px solid rgba(255, 255, 255, 0.12)',
+                          borderRadius: 8,
+                          backdropFilter: 'blur(16px)',
+                          color: '#fff',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          whiteSpace: 'nowrap',
+                          pointerEvents: 'none',
+                          boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                          zIndex: 1100,
+                        }}
+                      >
+                        {link.label}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
 
             {/* More dropdown */}
-            <div style={{ position: 'relative' }} onMouseEnter={() => setMoreOpen(true)} onMouseLeave={() => setMoreOpen(false)}>
+            <div 
+              style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }} 
+              onMouseEnter={() => { setMoreOpen(true); setHoveredTab('more'); }} 
+              onMouseLeave={() => { setMoreOpen(false); setHoveredTab(null); }}
+            >
               <button style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: 5, 
-                padding: '8px 14px', 
-                fontSize: 14, 
-                fontWeight: 600, 
-                color: moreOpen ? '#fff' : 'var(--text-dim)', 
+                gap: 8, 
+                padding: '6px 2px', 
+                fontSize: 15, 
+                fontWeight: (isMoreActive || moreOpen) ? 700 : 500, 
+                color: (isMoreActive || moreOpen) ? '#fff' : hoveredTab === 'more' ? '#fff' : 'rgba(255, 255, 255, 0.5)', 
                 background: 'transparent', 
-                border: 'none', 
+                border: 'none',
                 cursor: 'pointer',
-                transition: 'color 0.2s'
+                position: 'relative',
+                height: '100%',
+                transition: 'color 0.2s ease',
               }}>
-                More <MoreHorizontal size={14} style={{ transform: moreOpen ? 'scale(1.2)' : 'none', transition: 'transform 0.3s' }} />
+                <motion.div
+                  animate={{
+                    scale: (isMoreActive || moreOpen) ? 1.06 : hoveredTab === 'more' ? 1.08 : 1,
+                  }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <MoreHorizontal size={22} strokeWidth={2.3} style={{ transform: moreOpen ? 'scale(1.15)' : 'none', transition: 'transform 0.3s' }} />
+                </motion.div>
+
+                <AnimatePresence initial={false}>
+                  {(isMoreActive || moreOpen) && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0, x: -6 }}
+                      animate={{ opacity: 1, width: 'auto', x: 0 }}
+                      exit={{ opacity: 0, width: 0, x: -6 }}
+                      transition={{
+                        width: { type: 'spring', stiffness: 350, damping: 30, mass: 0.8 },
+                        opacity: { duration: 0.2, ease: 'easeOut' },
+                        x: { type: 'spring', stiffness: 350, damping: 30, mass: 0.8 },
+                      }}
+                      style={{ overflow: 'hidden', whiteSpace: 'nowrap', letterSpacing: '-0.2px' }}
+                    >
+                      More
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+
+                {/* Floating tooltip for inactive */}
+                <AnimatePresence>
+                  {hoveredTab === 'more' && !isMoreActive && !moreOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.92 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 4, scale: 0.92 }}
+                      transition={{ duration: 0.15 }}
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% - 10px)',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        padding: '5px 11px',
+                        background: 'rgba(15, 15, 20, 0.95)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: 8,
+                        backdropFilter: 'blur(16px)',
+                        color: '#fff',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        pointerEvents: 'none',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                        zIndex: 1100,
+                      }}
+                    >
+                      More
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {isMoreActive && (
+                  <motion.div
+                    layoutId="desktop-active-nav-indicator"
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: -4,
+                      right: -4,
+                      height: 28,
+                      pointerEvents: 'none',
+                      overflow: 'visible',
+                    }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 28, mass: 0.7 }}
+                  >
+                    {/* Subtle curved ambient glow */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: '5%',
+                        right: '5%',
+                        height: '100%',
+                        background: 'radial-gradient(ellipse at bottom, rgba(168, 85, 247, 0.45) 0%, rgba(147, 51, 234, 0.15) 50%, transparent 80%)',
+                        filter: 'blur(3px)',
+                      }}
+                    />
+                    {/* Bottom glowing line */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: 2.5,
+                        borderRadius: '3px 3px 0 0',
+                        background: 'linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #9333ea 100%)',
+                        boxShadow: '0 -2px 10px rgba(168, 85, 247, 0.85), 0 0 18px rgba(147, 51, 234, 0.5)',
+                      }}
+                    />
+                  </motion.div>
+                )}
               </button>
               <AnimatePresence>
                 {moreOpen && (
@@ -224,15 +594,15 @@ export default function Navbar() {
                     transition={{ duration: 0.2 }}
                     style={{ 
                       position: 'absolute', 
-                      top: '100%', 
+                      top: 'calc(100% - 6px)', 
                       right: 0, 
                       width: 220, 
                       padding: '12px 8px', 
-                      background: 'rgba(10,10,10,0.85)', 
+                      background: 'rgba(10,10,10,0.95)', 
                       backdropFilter: 'blur(32px)', 
                       borderRadius: 18, 
                       border: '1px solid rgba(255,255,255,0.08)', 
-                      boxShadow: '0 20px 40px rgba(0,0,0,0.4)', 
+                      boxShadow: '0 20px 40px rgba(0,0,0,0.5)', 
                       zIndex: 1000 
                     }}
                   >
@@ -417,7 +787,7 @@ export default function Navbar() {
                 className={`mobile-tab-btn ${isActive ? 'active' : ''}`}
               >
                 <span className="mobile-tab-icon-wrap">
-                  <tab.icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+                  <tab.icon size={22} strokeWidth={2.2} />
                 </span>
                 <span className="mobile-tab-label">{tab.label}</span>
               </button>
@@ -601,7 +971,7 @@ export default function Navbar() {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Compass size={18} style={{ color: '#a78bfa' }} />
+                            <Compass size={18} strokeWidth={2.2} style={{ color: '#a78bfa' }} />
                           </div>
                           <div style={{ textAlign: 'left' }}>
                             <div style={{ fontSize: 14, fontWeight: 700 }}>Browse All</div>
@@ -798,6 +1168,103 @@ export default function Navbar() {
 }
 
 // ─── Sub-Components ──────────────────────────────────────────────────
+
+function NavSvgIcon({
+  svg,
+  icon: IconComponent,
+  size = 22,
+  className,
+  style,
+}: {
+  svg?: string;
+  icon?: any;
+  size?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  if (svg === '/svgs/browse.svg') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, ...style }}>
+        <circle cx="12" cy="12" r="10" />
+        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="currentColor" fillOpacity={0.3} />
+      </svg>
+    );
+  }
+  if (svg === '/svgs/upcoming-svgrepo-com.svg') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, ...style }}>
+        <rect x="3" y="4" width="18" height="17" rx="3" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+        <circle cx="8" cy="14" r="1.1" fill="currentColor" />
+        <circle cx="12" cy="14" r="1.1" fill="currentColor" />
+        <circle cx="16" cy="14" r="1.1" fill="currentColor" />
+        <circle cx="8" cy="17.5" r="1.1" fill="currentColor" />
+        <circle cx="12" cy="17.5" r="1.1" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (svg === '/svgs/eye-monster-svgrepo-com.svg') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, ...style }}>
+        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+        <circle cx="12" cy="12" r="3.2" />
+        <circle cx="12" cy="12" r="1.3" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (svg === '/svgs/finder-svgrepo-com.svg') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, ...style }}>
+        <path d="m10.5 7.5 7.5-3 2 4-7.5 3z" />
+        <path d="m6.5 12.5 4-1.5-1.5-3.5-4 1.5a1.5 1.5 0 0 0-.9 1.9l.5 1.2a1.5 1.5 0 0 0 1.9.9z" />
+        <line x1="12" y1="12" x2="8" y2="21" />
+        <line x1="12" y1="12" x2="16" y2="21" />
+        <line x1="12" y1="12" x2="12" y2="21" />
+      </svg>
+    );
+  }
+  if (svg === '/svgs/mood-svgrepo-com.svg') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, ...style }}>
+        <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+        <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+        <line x1="6" y1="2" x2="6" y2="4" />
+        <line x1="10" y1="2" x2="10" y2="4" />
+        <line x1="14" y1="2" x2="14" y2="4" />
+      </svg>
+    );
+  }
+  if (svg) {
+    return (
+      <span
+        aria-hidden="true"
+        className={className}
+        style={{
+          width: size,
+          height: size,
+          display: 'inline-block',
+          backgroundColor: 'currentColor',
+          maskImage: `url(${svg})`,
+          WebkitMaskImage: `url(${svg})`,
+          maskSize: 'contain',
+          WebkitMaskSize: 'contain',
+          maskRepeat: 'no-repeat',
+          WebkitMaskRepeat: 'no-repeat',
+          maskPosition: 'center',
+          WebkitMaskPosition: 'center',
+          flexShrink: 0,
+          ...style,
+        }}
+      />
+    );
+  }
+  if (IconComponent) {
+    return <IconComponent size={size} strokeWidth={2.3} style={{ flexShrink: 0, ...style }} />;
+  }
+  return null;
+}
 
 function DropdownItem({ icon, label, href, onClick }: any) {
   return (

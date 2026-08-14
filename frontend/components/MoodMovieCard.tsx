@@ -7,6 +7,7 @@ import { Heart, Star, Gauge, Plus, Check, Info } from 'lucide-react';
 import { Media } from '@/lib/types';
 import { posterUrl } from '@/lib/api';
 import { GlowConfig } from '@/lib/finderData';
+import { getEnglishTitle } from '@/lib/utils';
 import AddToCollectionButton from './AddToCollectionButton';
 
 interface MoodMovieCardProps {
@@ -38,7 +39,7 @@ export default function MoodMovieCard({
   useEffect(() => { setLocalFav(isFav); }, [isFav]);
   useEffect(() => { setLocalWatchlist(isWatchlisted); }, [isWatchlisted]);
 
-  const title = movie.title || movie.name || 'Untitled';
+  const title = getEnglishTitle(movie);
   const mediaType = movie.media_type || (movie.title ? 'movie' : 'tv');
   const dateStr = movie.release_date || movie.first_air_date;
   const releaseYear = dateStr ? new Date(dateStr).getFullYear() : 'N/A';

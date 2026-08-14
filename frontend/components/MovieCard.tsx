@@ -8,6 +8,7 @@ import { Heart, Tv, Bell, Star } from 'lucide-react';
 import { Media, InterestInfo } from '@/lib/types';
 
 import { posterUrl } from '@/lib/api';
+import { getEnglishTitle } from '@/lib/utils';
 import AddToCollectionButton from './AddToCollectionButton';
 
 interface Props {
@@ -58,7 +59,7 @@ export default function MovieCard({
     setIsHovered(false);
   };
 
-  const title = movie.title || movie.name || 'Untitled';
+  const title = getEnglishTitle(movie);
   const mediaType = movie.media_type || (movie.title ? 'movie' : 'tv');
   const dateStr = movie.release_date || movie.first_air_date;
   const releaseYear = dateStr ? new Date(dateStr).getFullYear() : 'N/A';
@@ -159,6 +160,25 @@ export default function MovieCard({
 
   const activeButton = isUpcoming ? isInterested : localFavorited;
 
+  const genreMap: Record<number, string> = {
+    28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
+    99: 'Documentary', 18: 'Drama', 10751: 'Family', 14: 'Fantasy', 36: 'History',
+    27: 'Horror', 10402: 'Music', 9648: 'Mystery', 10749: 'Romance', 878: 'Sci-Fi',
+    10770: 'TV Movie', 53: 'Thriller', 10752: 'War', 37: 'Western',
+    10759: 'Action & Adventure', 10762: 'Kids', 10763: 'News', 10764: 'Reality',
+    10765: 'Sci-Fi & Fantasy', 10766: 'Soap', 10767: 'Talk', 10768: 'War & Politics'
+  };
+
+  const genresList = movie.genres?.map(g => g.name) || movie.genre_ids?.map(id => genreMap[id]).filter(Boolean) || [];
+
+  const fallbackOverview = movie.overview && movie.overview.trim().length > 0
+    ? movie.overview
+    : movie.tagline && movie.tagline.trim().length > 0
+      ? movie.tagline
+      : genresList.length > 0
+        ? `A ${genresList.slice(0, 2).join(' & ')} cinematic release from ${releaseYear}. Discover ratings, cast, trailer, and streaming options.`
+        : `A feature release from ${releaseYear}. Discover ratings, cast, reviews, and where to stream.`;
+
   return (
     <div
       className={isGridView ? "mc-grid-card" : `mc-root${isHovered ? ' hovered' : ''}`}
@@ -247,8 +267,18 @@ export default function MovieCard({
                 {movie.vote_average?.toFixed(1) || 'N/A'}
               </div>
             </div>
-            <div className="mc-detail-year">{releaseYear}</div>
-            <p className="mc-detail-overview">{movie.overview}</p>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+              <span className="mc-detail-year" style={{ margin: 0 }}>{releaseYear}</span>
+              {genresList.slice(0, 2).map((g, i) => (
+                <span key={i} style={{ fontSize: '0.72rem', padding: '1px 6px', background: 'rgba(255,255,255,0.08)', borderRadius: 4, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
+                  {g}
+                </span>
+              ))}
+            </div>
+
+            <p className="mc-detail-overview">{fallbackOverview}</p>
+
             <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
               <AddToCollectionButton movie={movie} showRankButton={true} />
               <div style={{ flexGrow: 1 }} />

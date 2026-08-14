@@ -7,6 +7,7 @@ import { MustWatch } from '@/lib/types';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Star, Play, Bookmark } from 'lucide-react';
+import { getEnglishTitle } from '@/lib/utils';
 
 export default function MustWatchPage() {
   const [movies, setMovies] = useState<MustWatch[]>([]);
@@ -275,7 +276,7 @@ function MovieCard({ movie, index, aspectRatio = 'aspect-[2/3]', isMobile = fals
             className="text-white font-semibold text-xs leading-tight line-clamp-2"
             style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}
           >
-            {movie.title}
+            {getEnglishTitle(movie)}
           </p>
           {movie.release_date && (
             <p className="text-white/50 text-[10px] mt-0.5 font-medium">

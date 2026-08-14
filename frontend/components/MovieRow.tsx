@@ -103,7 +103,7 @@ export default function MovieRow({
           <ArrowBtn dir="left" />
           <div
             ref={rowRef}
-            className="scroll-row flex gap-3 sm:gap-4 overflow-x-auto py-2 px-1 scrollbar-none snap-x snap-mandatory"
+            className="scroll-row flex gap-3 sm:gap-4 overflow-x-auto pt-6 pb-6 sm:pt-8 sm:pb-8 px-2 scrollbar-none snap-x snap-mandatory"
             onScroll={handleScroll}
           >
             {movies.map((movie) => (

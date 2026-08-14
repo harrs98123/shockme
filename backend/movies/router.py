@@ -84,12 +84,61 @@ def _get_fallback_data(path: str) -> dict:
         "cast": [], "crew": [], "known_for": []
     }
 
+import re
+
+# Regex matching Non-Latin Unicode character blocks (Indic, CJK, Arabic, Cyrillic, Thai, etc.)
+_NON_LATIN_PATTERN = re.compile(
+    r"[\u0600-\u06FF\u0750-\u077F\u0900-\u0DFF\u0E00-\u0E7F\u1100-\u11FF\u3040-\u30FF\u3130-\u318F\u3400-\u4DBF\u4E00-\u9FFF\uAC00-\uD7AF\u0400-\u04FF\u0370-\u03FF]"
+)
+
+def _is_non_latin(s: Optional[str]) -> bool:
+    if not s or not isinstance(s, str):
+        return False
+    return bool(_NON_LATIN_PATTERN.search(s))
+
+def _sanitize_media_item(item: dict) -> dict:
+    if not isinstance(item, dict):
+        return item
+
+    # If title has non-Latin script, replace with original_title or name if in Latin/English
+    title = item.get("title")
+    orig_title = item.get("original_title")
+    name = item.get("name")
+    orig_name = item.get("original_name")
+
+    if title and _is_non_latin(title):
+        if orig_title and not _is_non_latin(orig_title):
+            item["title"] = orig_title
+        elif orig_name and not _is_non_latin(orig_name):
+            item["title"] = orig_name
+
+    if name and _is_non_latin(name):
+        if orig_name and not _is_non_latin(orig_name):
+            item["name"] = orig_name
+        elif orig_title and not _is_non_latin(orig_title):
+            item["name"] = orig_title
+
+    return item
+
+def _sanitize_tmdb_data(data: Any) -> Any:
+    if isinstance(data, dict):
+        if "results" in data and isinstance(data["results"], list):
+            data["results"] = [_sanitize_media_item(m) for m in data["results"]]
+        elif "id" in data and ("title" in data or "name" in data):
+            _sanitize_media_item(data)
+    elif isinstance(data, list):
+        data = [_sanitize_media_item(m) for m in data]
+    return data
+
 async def tmdb_get(path: str, params: dict = {}, ttl: int = 600) -> dict:
     import json
     from fastapi_cache import FastAPICache
 
+    # Always ensure en-US language unless explicitly requested differently
+    merged_params = {"language": "en-US", **params}
+
     # Create a unique cache key
-    cache_key = f"tmdb:{path}:{json.dumps(params, sort_keys=True)}"
+    cache_key = f"tmdb:{path}:{json.dumps(merged_params, sort_keys=True)}"
 
     # Try to get from cache (Redis or InMemory)
     backend = None
@@ -106,10 +155,11 @@ async def tmdb_get(path: str, params: dict = {}, ttl: int = 600) -> dict:
     try:
         response = await _tmdb_client.get(
             f"{TMDB_BASE_URL}{path}",
-            params={"api_key": TMDB_API_KEY, **params}
+            params={"api_key": TMDB_API_KEY, **merged_params}
         )
         response.raise_for_status()
         data = response.json()
+        data = _sanitize_tmdb_data(data)
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code in (401, 404):
             raise HTTPException(status_code=exc.response.status_code, detail=f"TMDB API error {exc.response.status_code}")
@@ -159,7 +209,7 @@ async def get_trending_indian(page: int = 1):
             "with_origin_country": "IN",
             "sort_by": "popularity.desc",
             "page": page,
-            "language": "hi-IN",
+            "language": "en-US",
         }
     )
     return data
@@ -247,6 +297,21 @@ async def get_tv_popular(page: int = 1):
 async def get_tv_top_rated(page: int = 1):
     data = await tmdb_get("/tv/top_rated", {"page": page, "language": "en-US"})
     return data
+
+@router.get("/tv/{tv_id}/season/{season_number}")
+async def get_tv_season_episodes(tv_id: int, season_number: int):
+    """Fetch all episodes for a specific TV show season with English titles, ratings, stills, and overviews."""
+    try:
+        data = await tmdb_get(f"/tv/{tv_id}/season/{season_number}", {"language": "en-US"})
+        if isinstance(data, dict):
+            return data
+    except Exception as e:
+        print(f"⚠️ Season fetch error for TV {tv_id} Season {season_number}: {e}")
+    
+    return {
+        "season_number": season_number,
+        "episodes": []
+    }
 
 @router.get("/anime")
 @cache(expire=3600)

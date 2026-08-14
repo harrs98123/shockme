@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Movie, Genre } from '@/lib/types';
 import { backdropUrl, posterUrl, releaseYear } from '@/lib/api';
+import { getEnglishTitle } from '@/lib/utils';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -100,6 +101,7 @@ export default function HeroSection({ movies }: Props) {
   const genres = details?.genres || movie.genres || [];
   const runtime = details?.runtime;
   const similarMovies = details?.similar?.results?.slice(0, 10) || [];
+  const movieTitle = getEnglishTitle(movie);
 
   const formatRuntime = (min: number) => {
     const h = Math.floor(min / 60);
@@ -124,7 +126,7 @@ export default function HeroSection({ movies }: Props) {
         >
           <Image
             src={backdropUrl(movie.backdrop_path, 'w1280')}
-            alt={movie.title || movie.name || ''}
+            alt={movieTitle}
             fill
             priority
             sizes="100vw"
@@ -152,7 +154,7 @@ export default function HeroSection({ movies }: Props) {
           >
             {/* Title */}
             <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2 sm:mb-4 uppercase leading-[1.15] drop-shadow-lg">
-              {movie.title || movie.name}
+              {movieTitle}
             </h1>
 
             {/* Metadata Row */}

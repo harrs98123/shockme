@@ -490,7 +490,6 @@ h6 {
   width: 135px;
   height: 202px;
   box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
-  contain: paint;
   will-change: transform;
 }
 

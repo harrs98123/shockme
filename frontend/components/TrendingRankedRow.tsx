@@ -52,9 +52,9 @@ export default function TrendingRankedRow({
   if (!movies?.length) return null;
 
   return (
-    <section className="py-6 sm:py-12 overflow-hidden">
+    <section className="py-2 sm:py-6 overflow-hidden">
       <div className="container">
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-2 sm:mb-4">
           <h2 className="text-lg sm:text-2xl font-extrabold tracking-tight text-white m-0 flex items-center gap-2.5 sm:gap-3">
             <span className="w-1 h-5 sm:h-7 bg-[var(--primary)] rounded-full" />
             {title}
@@ -83,7 +83,7 @@ export default function TrendingRankedRow({
 
           <div
             ref={rowRef}
-            className="scroll-row hide-scrollbar flex gap-4 sm:gap-10 py-3 sm:py-5 px-3 sm:px-10 overflow-x-auto scroll-smooth snap-x snap-mandatory"
+            className="scroll-row hide-scrollbar flex gap-4 sm:gap-10 pt-8 pb-8 sm:pt-10 sm:pb-10 px-3 sm:px-10 overflow-x-auto scroll-smooth snap-x snap-mandatory"
             onScroll={handleScroll}
           >
             {movies.slice(0, 10).map((movie, index) => (

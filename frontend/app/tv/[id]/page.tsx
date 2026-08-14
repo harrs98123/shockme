@@ -40,7 +40,7 @@ export default async function TVPage({
 
       {/* ── Seasons Section ─────────────────────────────── */}
       {tv.seasons && tv.seasons.length > 0 && (
-        <SeasonsSection seasons={tv.seasons} />
+        <SeasonsSection seasons={tv.seasons} seriesId={tv.id} seriesName={tv.name || tv.title} />
       )}
 
       {/* ── Community: Moctale Meter + Debates ─────────────── */}

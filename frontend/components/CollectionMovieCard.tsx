@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Movie } from '@/lib/types';
+import { getEnglishTitle } from '@/lib/utils';
 import AddToCollectionButton from './AddToCollectionButton';
 
 interface Props {
@@ -17,6 +18,7 @@ const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 export default function CollectionMovieCard({ movie, index }: Props) {
   const [isHovered, setIsHovered] = useState(false);
   const year = movie.release_date?.slice(0, 4) || 'N/A';
+  const title = getEnglishTitle(movie);
   
   return (
     <motion.div
@@ -88,7 +90,7 @@ export default function CollectionMovieCard({ movie, index }: Props) {
               lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
               textShadow: '0 2px 8px rgba(0,0,0,0.8)', letterSpacing: '-0.2px'
             }}>
-              {movie.title || 'Untitled'}
+              {title}
             </h4>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
               <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>{year}</span>

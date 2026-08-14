@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Media } from '@/lib/types';
 import { backdropUrl, posterUrl, releaseYear } from '@/lib/api';
+import { getEnglishTitle } from '@/lib/utils';
 import FavoriteButton from './FavoriteButton';
 import WatchlistButton from './WatchlistButton';
 import WatchedButton from './WatchedButton';
@@ -30,7 +31,7 @@ export default function MovieDetailHero({ movie }: Props) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const isTV = !movie.title && !!movie.name;
-  const title = movie.title || movie.name || 'Untitled';
+  const title = getEnglishTitle(movie);
   const mediaType = isTV ? 'tv' : 'movie';
   const dateStr = movie.release_date || movie.first_air_date;
   const year = releaseYear(dateStr);

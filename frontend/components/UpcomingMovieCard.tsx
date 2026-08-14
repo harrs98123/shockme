@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Bell, Heart, Plus, Check, Star, Calendar, Info, Play, X } from 'lucide-react';
 import { Media, InterestInfo } from '@/lib/types';
 import { posterUrl } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, getEnglishTitle } from '@/lib/utils';
 
 interface UpcomingMovieCardProps {
   movie: Media;
@@ -31,7 +31,7 @@ export default function UpcomingMovieCard({
   const [showTrailer, setShowTrailer] = useState(false);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
 
-  const title = movie.title || movie.name || 'Untitled';
+  const title = getEnglishTitle(movie);
   const releaseDate = movie.release_date || movie.first_air_date;
   const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : 'TBA';
 
