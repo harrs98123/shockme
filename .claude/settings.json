@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -c \"import ast; ast.parse\\(open\\('movies/router.py'\\).read\\(\\)\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('movies/router.py'\\).read\\(\\)\\)\")",
+      "Bash(xargs grep -liE \"axios\\\\.create|API_BASE|api\\\\.get|fetch\\\\\\(\")"
     ]
   }
 }

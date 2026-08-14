@@ -528,6 +528,59 @@ class FranchiseOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class FranchiseEntryOut(BaseModel):
+    id: int
+    franchise_id: int
+    movie_id: int
+    media_type: str
+    title: str
+    poster_path: Optional[str] = None
+    release_date: Optional[str] = None
+    saga: Optional[str] = None
+    phase: Optional[str] = None
+    sub_timeline: Optional[str] = None
+    timeline_order: Optional[int] = None
+    release_order: Optional[int] = None
+    watch_order: Optional[int] = None
+    canon: bool = True
+    multiverse: bool = False
+    requires_movie_ids: List[int] = []
+    notes: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class FranchiseEntryUpdate(BaseModel):
+    saga: Optional[str] = None
+    phase: Optional[str] = None
+    sub_timeline: Optional[str] = None
+    timeline_order: Optional[int] = None
+    release_order: Optional[int] = None
+    watch_order: Optional[int] = None
+    canon: Optional[bool] = None
+    multiverse: Optional[bool] = None
+    requires_movie_ids: Optional[List[int]] = None
+    notes: Optional[str] = None
+
+
+class FranchiseSummary(BaseModel):
+    id: int
+    name: str
+    color: str
+    icon_emoji: str
+
+    model_config = {"from_attributes": True}
+
+
+class FranchiseInfoOut(BaseModel):
+    in_franchise: bool
+    franchise: Optional[FranchiseSummary] = None
+    entry: Optional[FranchiseEntryOut] = None
+    previous: Optional[FranchiseEntryOut] = None
+    next: Optional[FranchiseEntryOut] = None
+    requires: List[FranchiseEntryOut] = []
+
+
 class GemOverrideCreate(BaseModel):
     movie_id: int
     title: str

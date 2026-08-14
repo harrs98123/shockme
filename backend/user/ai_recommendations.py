@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.utils import get_current_user
+from movies.router import tmdb_get
+from cache_utils import cache_get, cache_set
 import models
 import schemas
 from dotenv import load_dotenv
@@ -12,10 +14,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-TMDB_API_KEY = os.getenv("TMDB_API_KEY", "")
-TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
 router = APIRouter(prefix="/recommendations/mood", tags=["ai-recommendations"])
+
+# Same free-text mood phrase -> same genre/keyword mapping; safe to reuse for a day
+MOOD_ANALYSIS_TTL = 24 * 3600
 
 
 @router.post("", response_model=schemas.MoodRecommendationResponse)
@@ -44,34 +47,39 @@ async def get_mood_recommendations(
     JSON ONLY. NO MARKDOWN. DO NOT INCLUDE THINKING OR CHAIN OF THOUGHT IN THE OUTPUT.
     """
 
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": "nvidia/nemotron-3-super-120b-a12b:free",
-                    "messages": [{"role": "user", "content": prompt}],
-                },
-                timeout=60.0
-            )
-            response.raise_for_status()
-            res_data = response.json()
-            content = res_data['choices'][0]['message'].get('content', "").strip()
+    mood_key = f"mood_analysis:{request.mood.strip().lower()}"
+    ai_data = await cache_get(mood_key)
 
-            # Clean content from potential markdown blocks if AI ignored "RAW JSON" instruction
-            if content.startswith("```json"):
-                content = content.replace("```json", "").replace("```", "").strip()
-            elif content.startswith("```"):
-                content = content.replace("```", "").strip()
+    if not ai_data:
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": "nvidia/nemotron-3-super-120b-a12b:free",
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                    timeout=60.0
+                )
+                response.raise_for_status()
+                res_data = response.json()
+                content = res_data['choices'][0]['message'].get('content', "").strip()
 
-            ai_data = json.loads(content)
-        except Exception as e:
-            print(f"OpenRouter Error: {str(e)}")
-            raise HTTPException(status_code=502, detail=f"OpenRouter/AI Brain Error: {str(e)}")
+                # Clean content from potential markdown blocks if AI ignored "RAW JSON" instruction
+                if content.startswith("```json"):
+                    content = content.replace("```json", "").replace("```", "").strip()
+                elif content.startswith("```"):
+                    content = content.replace("```", "").strip()
+
+                ai_data = json.loads(content)
+                await cache_set(mood_key, ai_data, MOOD_ANALYSIS_TTL)
+            except Exception as e:
+                print(f"OpenRouter Error: {str(e)}")
+                raise HTTPException(status_code=502, detail=f"OpenRouter/AI Brain Error: {str(e)}")
 
     # 2. Search for movies on TMDB using genres and keywords.
     results = []
@@ -80,100 +88,89 @@ async def get_mood_recommendations(
     explanation = ai_data.get("explanation", f"Selected specifically for your vibe: {request.mood}")
     TARGET_COUNT = 24
 
-    async def discover(client, params):
+    async def discover(params):
         try:
-            resp = await client.get(f"{TMDB_BASE_URL}/discover/movie", params=params)
-            if resp.status_code == 200:
-                return resp.json().get("results", [])
+            data = await tmdb_get("/discover/movie", params, ttl=600)
+            return data.get("results", [])
         except Exception:
-            pass
-        return []
+            return []
 
-    async with httpx.AsyncClient() as client:
-        try:
-            # Resolve keyword strings to TMDB keyword IDs
-            keyword_ids = []
-            if keywords:
-                for kw in keywords[:5]:  # limit to top 5 keywords
-                    kw_resp = await client.get(
-                        f"{TMDB_BASE_URL}/search/keyword",
-                        params={"api_key": TMDB_API_KEY, "query": kw}
-                    )
-                    if kw_resp.status_code == 200:
-                        kw_data = kw_resp.json()
-                        if kw_data.get("results"):
-                            keyword_ids.append(str(kw_data["results"][0]["id"]))
+    try:
+        # Resolve keyword strings to TMDB keyword IDs (keyword -> id mapping barely ever changes)
+        keyword_ids = []
+        if keywords:
+            for kw in keywords[:5]:  # limit to top 5 keywords
+                kw_data = await tmdb_get("/search/keyword", {"query": kw}, ttl=7 * 24 * 3600)
+                if kw_data.get("results"):
+                    keyword_ids.append(str(kw_data["results"][0]["id"]))
 
-            movies_by_id: dict[int, dict] = {}
-            order: list[int] = []
+        movies_by_id: dict[int, dict] = {}
+        order: list[int] = []
 
-            def merge(movie_list):
-                for m in movie_list:
-                    mid = m.get("id")
-                    if mid and mid not in movies_by_id:
-                        movies_by_id[mid] = m
-                        order.append(mid)
+        def merge(movie_list):
+            for m in movie_list:
+                mid = m.get("id")
+                if mid and mid not in movies_by_id:
+                    movies_by_id[mid] = m
+                    order.append(mid)
 
-            genre_and = ",".join(map(str, genre_ids))  # TMDB: comma = ALL genres (precise)
-            genre_or = "|".join(map(str, genre_ids))   # TMDB: pipe = ANY genre (broad)
+        genre_and = ",".join(map(str, genre_ids))  # TMDB: comma = ALL genres (precise)
+        genre_or = "|".join(map(str, genre_ids))   # TMDB: pipe = ANY genre (broad)
 
-            # Tier 1: precise — must match every AI-picked genre + at least one keyword
-            if genre_ids:
-                tier1_params = {
-                    "api_key": TMDB_API_KEY,
+        # Tier 1: precise — must match every AI-picked genre + at least one keyword
+        if genre_ids:
+            tier1_params = {
+                "language": "en-US",
+                "sort_by": "vote_average.desc",
+                "page": 1,
+                "vote_count.gte": 100,
+                "with_genres": genre_and,
+            }
+            if keyword_ids:
+                tier1_params["with_keywords"] = "|".join(keyword_ids)
+            merge(await discover(tier1_params))
+
+        # Tier 2: drop the keyword filter, keep the precise genre match
+        if len(order) < TARGET_COUNT and genre_ids:
+            tier2_params = {
+                "language": "en-US",
+                "sort_by": "vote_average.desc",
+                "page": 1,
+                "vote_count.gte": 100,
+                "with_genres": genre_and,
+            }
+            merge(await discover(tier2_params))
+
+        # Tier 3: relax to "ANY of these genres", drop the vote-count floor, pull two pages
+        if len(order) < TARGET_COUNT and genre_ids:
+            for page in (1, 2):
+                if len(order) >= TARGET_COUNT:
+                    break
+                tier3_params = {
                     "language": "en-US",
-                    "sort_by": "vote_average.desc",
-                    "page": 1,
-                    "vote_count.gte": 100,
-                    "with_genres": genre_and,
+                    "sort_by": "popularity.desc",
+                    "page": page,
+                    "with_genres": genre_or,
                 }
-                if keyword_ids:
-                    tier1_params["with_keywords"] = "|".join(keyword_ids)
-                merge(await discover(client, tier1_params))
+                merge(await discover(tier3_params))
 
-            # Tier 2: drop the keyword filter, keep the precise genre match
-            if len(order) < TARGET_COUNT and genre_ids:
-                tier2_params = {
-                    "api_key": TMDB_API_KEY,
-                    "language": "en-US",
-                    "sort_by": "vote_average.desc",
-                    "page": 1,
-                    "vote_count.gte": 100,
-                    "with_genres": genre_and,
-                }
-                merge(await discover(client, tier2_params))
+        movies = [movies_by_id[mid] for mid in order][:TARGET_COUNT]
 
-            # Tier 3: relax to "ANY of these genres", drop the vote-count floor, pull two pages
-            if len(order) < TARGET_COUNT and genre_ids:
-                for page in (1, 2):
-                    if len(order) >= TARGET_COUNT:
-                        break
-                    tier3_params = {
-                        "api_key": TMDB_API_KEY,
-                        "language": "en-US",
-                        "sort_by": "popularity.desc",
-                        "page": page,
-                        "with_genres": genre_or,
-                    }
-                    merge(await discover(client, tier3_params))
+        if movies:
+            for movie in movies:
+                results.append(schemas.MovieRecommendation(
+                    id=movie["id"],
+                    title=movie["title"],
+                    poster_path=movie.get("poster_path"),
+                    backdrop_path=movie.get("backdrop_path"),
+                    vote_average=movie.get("vote_average", 0.0),
+                    release_date=movie.get("release_date"),
+                    genre_ids=movie.get("genre_ids", []),
+                    reason=explanation
+                ))
 
-            movies = [movies_by_id[mid] for mid in order][:TARGET_COUNT]
-
-            if movies:
-                for movie in movies:
-                    results.append(schemas.MovieRecommendation(
-                        id=movie["id"],
-                        title=movie["title"],
-                        poster_path=movie.get("poster_path"),
-                        backdrop_path=movie.get("backdrop_path"),
-                        vote_average=movie.get("vote_average", 0.0),
-                        release_date=movie.get("release_date"),
-                        genre_ids=movie.get("genre_ids", []),
-                        reason=explanation
-                    ))
-
-        except Exception as e:
-            print(f"TMDB/Logic Error: {str(e)}")
+    except Exception as e:
+        print(f"TMDB/Logic Error: {str(e)}")
 
     return schemas.MoodRecommendationResponse(
         results=results,

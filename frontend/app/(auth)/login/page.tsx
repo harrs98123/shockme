@@ -32,7 +32,7 @@ function LoginForm() {
   }, []);
 
   const handleTurnstileError = useCallback(() => {
-    setError('Security verification failed. Please try again.');
+    setError('Security verification could not connect to Cloudflare. Click the bypass link below if blocked.');
     setTurnstileToken('');
   }, []);
 

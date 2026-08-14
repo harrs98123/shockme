@@ -11,9 +11,9 @@ const cspDirectives = [
   // unsafe-eval is needed by React in DEV mode only (never used in production)
   `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://challenges.cloudflare.com https://widget.cloudinary.com https://upload-widget.cloudinary.com https://screenscape.me`,
   // Styles: self + inline (needed for many CSS-in-JS patterns)
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://challenges.cloudflare.com",
   // Images: self + TMDB + Cloudinary + Google avatars + data URIs
-  "img-src 'self' data: blob: https://image.tmdb.org https://res.cloudinary.com https://lh3.googleusercontent.com https://ui-avatars.com",
+  "img-src 'self' data: blob: https://image.tmdb.org https://res.cloudinary.com https://lh3.googleusercontent.com https://ui-avatars.com https://challenges.cloudflare.com",
   // Fonts
   "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
   // API calls: self + backend + Render + TMDB API + Cloudflare Turnstile

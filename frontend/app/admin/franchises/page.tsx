@@ -17,9 +17,13 @@ import {
   Star,
   Calendar,
   Layers,
+  Settings2,
+  Tv,
+  Film,
+  Sparkles,
 } from 'lucide-react';
 import api, { posterUrl } from '@/lib/api';
-import { Franchise, Movie } from '@/lib/types';
+import { Franchise, Movie, FranchiseEntry } from '@/lib/types';
 
 export default function AdminFranchises() {
   const [franchises, setFranchises] = useState<Franchise[]>([]);
@@ -38,7 +42,19 @@ export default function AdminFranchises() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchMediaType, setSearchMediaType] = useState<'movie' | 'tv'>('movie');
   const [franchiseMovies, setFranchiseMovies] = useState<any[]>([]);
+
+  // Timeline Entry State
+  const [entries, setEntries] = useState<FranchiseEntry[]>([]);
+  const [editingEntry, setEditingEntry] = useState<FranchiseEntry | null>(null);
+  const [showEntryModal, setShowEntryModal] = useState(false);
+  const [entryForm, setEntryForm] = useState({
+    saga: '', phase: '', sub_timeline: '',
+    timeline_order: '', release_order: '', watch_order: '',
+    canon: true, multiverse: false, notes: '',
+    requires_movie_ids: [] as number[],
+  });
 
   useEffect(() => {
     fetchFranchises();
@@ -123,8 +139,10 @@ export default function AdminFranchises() {
   useEffect(() => {
     if (selectedFranchise) {
       fetchFranchiseMovies();
+      fetchEntries();
     } else {
       setFranchiseMovies([]);
+      setEntries([]);
     }
   }, [selectedFranchise?.id]); // Only re-fetch if franchise ID changes
 
@@ -140,11 +158,23 @@ export default function AdminFranchises() {
     setFranchiseMovies(movieDetails);
   };
 
+  const fetchEntries = async () => {
+    if (!selectedFranchise) return;
+    try {
+      const res = await api.get(`/admin/franchises/${selectedFranchise.id}/entries`);
+      setEntries(res.data);
+    } catch (err) {
+      console.error('Failed to fetch timeline entries:', err);
+    }
+  };
+
+  const entryForMovie = (movieId: number) => entries.find(e => e.movie_id === movieId);
+
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     setSearching(true);
     try {
-      const res = await api.get(`/admin/tmdb/search?q=${searchQuery}`);
+      const res = await api.get(`/admin/tmdb/search?q=${searchQuery}&media_type=${searchMediaType}`);
       setSearchResults(res.data);
     } catch (err) {
       console.error(err);
@@ -156,7 +186,7 @@ export default function AdminFranchises() {
   const addMovie = async (movie: any) => {
     if (!selectedFranchise || selectedFranchise.movie_ids.includes(movie.id)) return;
     try {
-      await api.post(`/admin/franchises/${selectedFranchise.id}/movies?movie_id=${movie.id}`);
+      await api.post(`/admin/franchises/${selectedFranchise.id}/movies?movie_id=${movie.id}&media_type=${searchMediaType}`);
       const updatedFranchise = {
         ...selectedFranchise,
         movie_ids: [...selectedFranchise.movie_ids, movie.id]
@@ -165,6 +195,7 @@ export default function AdminFranchises() {
       setFranchises(franchises.map(f => f.id === updatedFranchise.id ? updatedFranchise : f));
       setFranchiseMovies([...franchiseMovies, movie]);
       setSearchResults(searchResults.filter(m => m.id !== movie.id));
+      fetchEntries();
     } catch (err) {
       console.error(err);
     }
@@ -181,9 +212,63 @@ export default function AdminFranchises() {
       setSelectedFranchise(updatedFranchise);
       setFranchises(franchises.map(f => f.id === updatedFranchise.id ? updatedFranchise : f));
       setFranchiseMovies(franchiseMovies.filter(m => m.id !== movieId));
+      setEntries(entries.filter(e => e.movie_id !== movieId));
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const openEntryEdit = (movieId: number) => {
+    const entry = entryForMovie(movieId);
+    if (!entry) return;
+    setEditingEntry(entry);
+    setEntryForm({
+      saga: entry.saga || '',
+      phase: entry.phase || '',
+      sub_timeline: entry.sub_timeline || '',
+      timeline_order: entry.timeline_order?.toString() || '',
+      release_order: entry.release_order?.toString() || '',
+      watch_order: entry.watch_order?.toString() || '',
+      canon: entry.canon,
+      multiverse: entry.multiverse,
+      notes: entry.notes || '',
+      requires_movie_ids: entry.requires_movie_ids || [],
+    });
+    setShowEntryModal(true);
+  };
+
+  const handleEntrySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFranchise || !editingEntry) return;
+    try {
+      const payload = {
+        saga: entryForm.saga || null,
+        phase: entryForm.phase || null,
+        sub_timeline: entryForm.sub_timeline || null,
+        timeline_order: entryForm.timeline_order ? parseInt(entryForm.timeline_order) : null,
+        release_order: entryForm.release_order ? parseInt(entryForm.release_order) : null,
+        watch_order: entryForm.watch_order ? parseInt(entryForm.watch_order) : null,
+        canon: entryForm.canon,
+        multiverse: entryForm.multiverse,
+        notes: entryForm.notes || null,
+        requires_movie_ids: entryForm.requires_movie_ids,
+      };
+      const res = await api.put(`/admin/franchises/${selectedFranchise.id}/entries/${editingEntry.id}`, payload);
+      setEntries(entries.map(e => e.id === res.data.id ? res.data : e));
+      setShowEntryModal(false);
+      setEditingEntry(null);
+    } catch (err) {
+      console.error('Failed to update timeline entry:', err);
+    }
+  };
+
+  const toggleRequires = (movieId: number) => {
+    setEntryForm(f => ({
+      ...f,
+      requires_movie_ids: f.requires_movie_ids.includes(movieId)
+        ? f.requires_movie_ids.filter(id => id !== movieId)
+        : [...f.requires_movie_ids, movieId],
+    }));
   };
 
   if (loading) return (
@@ -341,6 +426,30 @@ export default function AdminFranchises() {
                   <h3 style={{ fontSize: 13, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Search size={14} /> Expand Timeline
                   </h3>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                    <button
+                      onClick={() => setSearchMediaType('movie')}
+                      style={{
+                        flex: 1, padding: '10px', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        background: searchMediaType === 'movie' ? selectedFranchise.color : 'rgba(255,255,255,0.04)',
+                        color: searchMediaType === 'movie' ? 'white' : 'rgba(255,255,255,0.5)',
+                        border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                      }}
+                    >
+                      <Film size={13} /> Movie
+                    </button>
+                    <button
+                      onClick={() => setSearchMediaType('tv')}
+                      style={{
+                        flex: 1, padding: '10px', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        background: searchMediaType === 'tv' ? selectedFranchise.color : 'rgba(255,255,255,0.04)',
+                        color: searchMediaType === 'tv' ? 'white' : 'rgba(255,255,255,0.5)',
+                        border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                      }}
+                    >
+                      <Tv size={13} /> TV Show
+                    </button>
+                  </div>
                   <div style={{ position: 'relative', marginBottom: 24 }}>
                     <input 
                       type="text" 
@@ -435,7 +544,7 @@ export default function AdminFranchises() {
                             background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)'
                           }}>
                             <img src={posterUrl(m.poster_path)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ 
+                            <div style={{
                               position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)',
                               display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 12
                             }}>
@@ -444,18 +553,39 @@ export default function AdminFranchises() {
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={8} /> {m.vote_average?.toFixed(1)}</span>
                                 <span>{m.release_date?.split('-')[0]}</span>
                               </div>
+                              {entryForMovie(m.id)?.watch_order != null && (
+                                <div style={{ marginTop: 6 }}>
+                                  <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: `${selectedFranchise.color}33`, color: 'white' }}>
+                                    Watch #{entryForMovie(m.id)?.watch_order}
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                            <button 
-                              onClick={() => removeMovie(m.id)}
-                              style={{ 
-                                position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: 8,
-                                background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', color: '#F87171',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer',
-                                opacity: 0.8
-                              }}
-                            >
-                              <X size={14} />
-                            </button>
+                            <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 6 }}>
+                              <button
+                                onClick={() => openEntryEdit(m.id)}
+                                title="Edit timeline metadata"
+                                style={{
+                                  width: 28, height: 28, borderRadius: 8,
+                                  background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', color: 'rgba(255,255,255,0.8)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer',
+                                  opacity: 0.8
+                                }}
+                              >
+                                <Settings2 size={13} />
+                              </button>
+                              <button
+                                onClick={() => removeMovie(m.id)}
+                                style={{
+                                  width: 28, height: 28, borderRadius: 8,
+                                  background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', color: '#F87171',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer',
+                                  opacity: 0.8
+                                }}
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
                           </div>
                         </motion.div>
                       ))}
@@ -541,6 +671,110 @@ export default function AdminFranchises() {
                   <button type="button" onClick={() => setShowCreateModal(false)} style={{ flex: 1, padding: '18px', borderRadius: 20, background: 'rgba(255,255,255,0.04)', color: 'white', fontWeight: 700, border: 'none', cursor: 'pointer' }}>Hold On</button>
                   <button type="submit" style={{ flex: 1, padding: '18px', borderRadius: 20, background: '#8B5CF6', color: 'white', fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(139, 92, 246, 0.4)' }}>
                     {isEditing ? 'Confirm Pulse' : 'Emerge'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Timeline Entry Modal */}
+      <AnimatePresence>
+        {showEntryModal && editingEntry && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEntryModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }} />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              style={{
+                width: 560, maxHeight: '85vh', overflowY: 'auto', background: '#12121A', padding: 40, borderRadius: 32, position: 'relative',
+                border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 64px rgba(0,0,0,0.6)'
+              }}
+            >
+              <div style={{ marginBottom: 28 }}>
+                <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', marginBottom: 6 }}>
+                  Timeline: {editingEntry.title}
+                </h2>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
+                  Where this fits in the universe's watch order.
+                </p>
+              </div>
+
+              <form onSubmit={handleEntrySubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Phase</label>
+                    <input type="text" value={entryForm.phase} onChange={(e) => setEntryForm({ ...entryForm, phase: e.target.value })} placeholder="e.g. Phase 1"
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 13 }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Saga</label>
+                    <input type="text" value={entryForm.saga} onChange={(e) => setEntryForm({ ...entryForm, saga: e.target.value })} placeholder="e.g. Infinity Saga"
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 13 }} />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Sub-timeline</label>
+                  <input type="text" value={entryForm.sub_timeline} onChange={(e) => setEntryForm({ ...entryForm, sub_timeline: e.target.value })} placeholder="e.g. Original Timeline"
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 13 }} />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Timeline #</label>
+                    <input type="number" value={entryForm.timeline_order} onChange={(e) => setEntryForm({ ...entryForm, timeline_order: e.target.value })}
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 13 }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Release #</label>
+                    <input type="number" value={entryForm.release_order} onChange={(e) => setEntryForm({ ...entryForm, release_order: e.target.value })}
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 13 }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Watch #</label>
+                    <input type="number" value={entryForm.watch_order} onChange={(e) => setEntryForm({ ...entryForm, watch_order: e.target.value })}
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 13 }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 24 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={entryForm.canon} onChange={(e) => setEntryForm({ ...entryForm, canon: e.target.checked })} />
+                    Canon
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={entryForm.multiverse} onChange={(e) => setEntryForm({ ...entryForm, multiverse: e.target.checked })} />
+                    <Sparkles size={13} /> Multiverse
+                  </label>
+                </div>
+
+                {entries.filter(en => en.id !== editingEntry.id).length > 0 && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Requires watching first</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 160, overflowY: 'auto', padding: 12, borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      {entries.filter(en => en.id !== editingEntry.id).map(en => (
+                        <label key={en.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={entryForm.requires_movie_ids.includes(en.movie_id)} onChange={() => toggleRequires(en.movie_id)} />
+                          {en.title}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Notes</label>
+                  <textarea rows={3} value={entryForm.notes} onChange={(e) => setEntryForm({ ...entryForm, notes: e.target.value })} placeholder="Post-credit connections, what it introduces, TV tie-ins..."
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', resize: 'none', fontSize: 13 }} />
+                </div>
+
+                <div style={{ marginTop: 8, display: 'flex', gap: 16 }}>
+                  <button type="button" onClick={() => setShowEntryModal(false)} style={{ flex: 1, padding: '16px', borderRadius: 18, background: 'rgba(255,255,255,0.04)', color: 'white', fontWeight: 700, border: 'none', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" style={{ flex: 1, padding: '16px', borderRadius: 18, background: selectedFranchise?.color || '#8B5CF6', color: 'white', fontWeight: 800, border: 'none', cursor: 'pointer' }}>
+                    Save Timeline
                   </button>
                 </div>
               </form>

@@ -6,6 +6,7 @@ from database import get_db
 import models
 import schemas
 from auth.utils import get_current_user
+from movies.router import tmdb_get
 from typing import List
 from dotenv import load_dotenv
 
@@ -163,9 +164,10 @@ def delete_franchise(
 
 
 @router.post("/franchises/{franchise_id}/movies")
-def add_movie_to_franchise(
+async def add_movie_to_franchise(
     franchise_id: int,
     movie_id: int = Query(...),
+    media_type: str = Query("movie"),
     db: Session = Depends(get_db),
     _: models.User = Depends(get_admin_user),
 ):
@@ -178,6 +180,31 @@ def add_movie_to_franchise(
         franchise.movie_ids = current_ids
         db.commit()
         db.refresh(franchise)
+
+    existing_entry = db.query(models.FranchiseEntry).filter(
+        models.FranchiseEntry.franchise_id == franchise_id,
+        models.FranchiseEntry.movie_id == movie_id,
+        models.FranchiseEntry.media_type == media_type,
+    ).first()
+    if not existing_entry:
+        try:
+            data = await tmdb_get(f"/{media_type}/{movie_id}", {"language": "en-US"})
+            title = data.get("title") or data.get("name") or "Unknown"
+            release_date = data.get("release_date") or data.get("first_air_date")
+            poster_path = data.get("poster_path")
+        except Exception:
+            title, release_date, poster_path = "Unknown", None, None
+        entry = models.FranchiseEntry(
+            franchise_id=franchise_id,
+            movie_id=movie_id,
+            media_type=media_type,
+            title=title,
+            poster_path=poster_path,
+            release_date=release_date,
+        )
+        db.add(entry)
+        db.commit()
+
     return {"message": "Movie added", "movie_ids": franchise.movie_ids}
 
 
@@ -197,7 +224,58 @@ def remove_movie_from_franchise(
         franchise.movie_ids = current_ids
         db.commit()
         db.refresh(franchise)
+
+    db.query(models.FranchiseEntry).filter(
+        models.FranchiseEntry.franchise_id == franchise_id,
+        models.FranchiseEntry.movie_id == movie_id,
+    ).delete()
+    db.commit()
+
     return {"message": "Movie removed", "movie_ids": franchise.movie_ids}
+
+
+# ─── Franchise Entries — Timeline / Watch-Order metadata ────────────────────
+
+@router.get("/franchises/{franchise_id}/entries", response_model=List[schemas.FranchiseEntryOut])
+def list_franchise_entries(
+    franchise_id: int,
+    db: Session = Depends(get_db),
+    _: models.User = Depends(get_admin_user),
+):
+    return (
+        db.query(models.FranchiseEntry)
+        .filter(models.FranchiseEntry.franchise_id == franchise_id)
+        .order_by(models.FranchiseEntry.release_order.asc().nulls_last(), models.FranchiseEntry.created_at.asc())
+        .all()
+    )
+
+
+@router.put("/franchises/{franchise_id}/entries/{entry_id}", response_model=schemas.FranchiseEntryOut)
+def update_franchise_entry(
+    franchise_id: int,
+    entry_id: int,
+    payload: schemas.FranchiseEntryUpdate,
+    db: Session = Depends(get_db),
+    _: models.User = Depends(get_admin_user),
+):
+    entry = db.query(models.FranchiseEntry).filter(
+        models.FranchiseEntry.id == entry_id,
+        models.FranchiseEntry.franchise_id == franchise_id,
+    ).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Timeline entry not found")
+
+    for field in (
+        "saga", "phase", "sub_timeline", "timeline_order", "release_order",
+        "watch_order", "canon", "multiverse", "requires_movie_ids", "notes",
+    ):
+        value = getattr(payload, field)
+        if value is not None:
+            setattr(entry, field, value)
+
+    db.commit()
+    db.refresh(entry)
+    return entry
 
 
 # ─── Gems — Public ───────────────────────────────────────────────────────────
@@ -328,12 +406,14 @@ def remove_must_watch(
 @router.get("/tmdb/search")
 async def admin_search_movies(
     q: str = Query(..., min_length=1),
+    media_type: str = Query("movie", pattern="^(movie|tv)$"),
     _: models.User = Depends(get_admin_user),
 ):
-    """Search TMDB for movies to add to franchises or gems."""
+    """Search TMDB for movies or TV shows to add to franchises or gems."""
+    search_path = "/search/movie" if media_type == "movie" else "/search/tv"
     async with httpx.AsyncClient() as client:
         resp = await client.get(
-            f"{TMDB_BASE_URL}/search/movie",
+            f"{TMDB_BASE_URL}{search_path}",
             params={
                 "api_key": TMDB_API_KEY,
                 "query": q,
@@ -348,9 +428,9 @@ async def admin_search_movies(
         return [
             {
                 "id": m["id"],
-                "title": m.get("title", ""),
+                "title": m.get("title") or m.get("name", ""),
                 "poster_path": m.get("poster_path"),
-                "release_date": m.get("release_date", ""),
+                "release_date": m.get("release_date") or m.get("first_air_date", ""),
                 "vote_average": m.get("vote_average", 0),
                 "vote_count": m.get("vote_count", 0),
                 "overview": m.get("overview", ""),

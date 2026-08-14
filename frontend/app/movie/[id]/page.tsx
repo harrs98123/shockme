@@ -6,12 +6,13 @@ import ExplanationEngine from '@/components/ExplanationEngine';
 import AlternateEnding from '@/components/AlternateEnding';
 import MoctaleMeter from '@/components/MoctaleMeter';
 import VerdictBattleSection from '@/components/VerdictBattle';
+import WatchOrderPanel from '@/components/WatchOrderPanel';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 async function fetchMovie(id: string) {
   try {
-    const res = await fetch(`${API_BASE}/movies/${id}`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/movies/${id}`, { next: { revalidate: 300 } });
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -54,6 +55,7 @@ export default async function MoviePage({
 
               {/* Right Column: AI & Extras (Compact) */}
               <div className="flex flex-col gap-12">
+                <WatchOrderPanel movieId={movie.id} mediaType="movie" />
                 <ExplanationEngine movieId={movie.id} mediaType="movie" />
                 <VerdictBattleSection movieId={movie.id} mediaType="movie" />
                 <AlternateEnding movieId={movie.id} mediaType="movie" />

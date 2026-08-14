@@ -2,14 +2,17 @@ import httpx
 import os
 from fastapi import APIRouter, HTTPException
 from dotenv import load_dotenv
+from movies.router import tmdb_get
+from cache_utils import cache_get, cache_set
 
 load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-TMDB_API_KEY = os.getenv("TMDB_API_KEY", "")
-TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
 router = APIRouter(prefix="/explanation", tags=["ai-explanation"])
+
+# Explanation text is static per movie/tv id — cache the generated result for a month
+EXPLANATION_TTL = 30 * 24 * 3600
 
 
 @router.get("/{movie_id}")
@@ -17,19 +20,19 @@ async def get_movie_explanation(movie_id: int, media_type: str = "movie"):
     if not OPENROUTER_API_KEY or "your_openrouter_api_key_here" in OPENROUTER_API_KEY:
         raise HTTPException(status_code=500, detail="OpenRouter API key is not configured.")
 
-    # 1. Fetch media details from TMDB to get its exact title and release year
-    async with httpx.AsyncClient() as client:
-        tmdb_resp = await client.get(
-            f"{TMDB_BASE_URL}/{media_type}/{movie_id}",
-            params={"api_key": TMDB_API_KEY, "language": "en-US"}
-        )
-        if tmdb_resp.status_code != 200:
-            raise HTTPException(status_code=404, detail=f"{media_type.capitalize()} not found on TMDB.")
-        
-        media_data = tmdb_resp.json()
-        media_title = media_data.get("title") or media_data.get("name") or "Unknown"
-        release_date = media_data.get("release_date") or media_data.get("first_air_date") or "Unknown Year"
-        year = release_date[:4] if release_date and len(release_date) >= 4 else "Unknown Year"
+    cache_key = f"explanation:{media_type}:{movie_id}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
+    # 1. Fetch media details from TMDB (shared pooled client + Redis cache)
+    media_data = await tmdb_get(f"/{media_type}/{movie_id}", {"language": "en-US"})
+    if not media_data or not (media_data.get("title") or media_data.get("name")):
+        raise HTTPException(status_code=404, detail=f"{media_type.capitalize()} not found on TMDB.")
+
+    media_title = media_data.get("title") or media_data.get("name") or "Unknown"
+    release_date = media_data.get("release_date") or media_data.get("first_air_date") or "Unknown Year"
+    year = release_date[:4] if release_date and len(release_date) >= 4 else "Unknown Year"
 
     # 2. Call OpenRouter to generate the explanation
     type_label = "movie" if media_type == "movie" else "TV series"
@@ -65,8 +68,10 @@ async def get_movie_explanation(movie_id: int, media_type: str = "movie"):
             
             message = res_data['choices'][0]['message']
             content = message.get('content', "").strip()
-            
-            return {"movie_id": movie_id, "media_type": media_type, "title": media_title, "explanation": content}
+
+            result = {"movie_id": movie_id, "media_type": media_type, "title": media_title, "explanation": content}
+            await cache_set(cache_key, result, EXPLANATION_TTL)
+            return result
             
         except Exception as e:
             print(f"OpenRouter Error: {str(e)}")

@@ -6,12 +6,13 @@ import ExplanationEngine from '@/components/ExplanationEngine';
 import AlternateEnding from '@/components/AlternateEnding';
 import MoctaleMeter from '@/components/MoctaleMeter';
 import SeasonsSection from '@/components/SeasonsSection';
+import WatchOrderPanel from '@/components/WatchOrderPanel';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 async function fetchTV(id: string) {
   try {
-    const res = await fetch(`${API_BASE}/movies/${id}?media_type=tv`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/movies/${id}?media_type=tv`, { next: { revalidate: 300 } });
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -52,6 +53,7 @@ export default async function TVPage({
       </div>
 
       <div className="container" style={{ padding: '0 24px 60px' }}>
+        <WatchOrderPanel movieId={tv.id} mediaType="tv" />
         <ExplanationEngine movieId={tv.id} mediaType="tv" />
       </div>
 

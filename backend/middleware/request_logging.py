@@ -17,6 +17,10 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
+# Silence verbose third-party loggers that leak sensitive query parameters (e.g., API keys) and spam logs
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
 logger = logging.getLogger("cinematch.access")
 
 # Paths to skip verbose logging (health checks etc.)

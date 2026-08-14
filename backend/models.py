@@ -454,6 +454,36 @@ class Franchise(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
+class FranchiseEntry(Base):
+    """Per-movie/show ordering & watch-order metadata within a Franchise (cinematic universe)."""
+    __tablename__ = "franchise_entries"
+    __table_args__ = (UniqueConstraint('franchise_id', 'movie_id', 'media_type', name='_franchise_entry_uc'),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    franchise_id = Column(Integer, ForeignKey("franchises.id"), nullable=False, index=True)
+    movie_id = Column(Integer, nullable=False, index=True)  # TMDB id, no FK — TMDB is source of truth
+    media_type = Column(String, default="movie")  # movie | tv
+    title = Column(String, nullable=False)
+    poster_path = Column(String, nullable=True)
+    release_date = Column(String, nullable=True)
+
+    saga = Column(String, nullable=True)          # e.g. "Infinity Saga"
+    phase = Column(String, nullable=True)          # e.g. "Phase 1"
+    sub_timeline = Column(String, nullable=True)   # e.g. "Original Timeline" (X-Men)
+
+    timeline_order = Column(Integer, nullable=True)   # in-universe chronological position
+    release_order = Column(Integer, nullable=True)    # real-world release position
+    watch_order = Column(Integer, nullable=True)       # recommended-watch position
+
+    canon = Column(Boolean, default=True)
+    multiverse = Column(Boolean, default=False)
+    requires_movie_ids = Column(JSON, default=list)   # hard prerequisites, TMDB ids
+    notes = Column(Text, nullable=True)  # post-credit / introduces / TV-connection notes
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
 # ─── Admin: Gem Overrides ────────────────────────────────────────────────────
 
 class GemOverride(Base):

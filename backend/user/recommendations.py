@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from database import get_db
@@ -43,13 +44,15 @@ async def get_recommendations(
     fav_ids = {int(f.movie_id) for f in favorites if f.movie_id}
 
     if not genre_weight and fav_ids:
-        for f_id in list(fav_ids)[:3]:
-            try:
-                detail = await tmdb_get(f"/movie/{f_id}", {})
-                for g in detail.get("genres", []):
-                    genre_weight[int(g.get("id"))] += 5
-            except Exception:
-                pass
+        details = await asyncio.gather(
+            *[tmdb_get(f"/movie/{f_id}", {}) for f_id in list(fav_ids)[:3]],
+            return_exceptions=True
+        )
+        for detail in details:
+            if isinstance(detail, Exception):
+                continue
+            for g in detail.get("genres", []):
+                genre_weight[int(g.get("id"))] += 5
 
     # 3. Get watched & favorite IDs to exclude from recommendations
     watched_ids = {

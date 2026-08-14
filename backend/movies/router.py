@@ -630,6 +630,76 @@ async def get_custom_info(movie_id: int):
         db.close()
 
 
+@router.get("/{movie_id}/franchise-info")
+async def get_franchise_info(movie_id: int, media_type: str = "movie"):
+    """
+    Cinematic-universe / watch-order info for a movie or show, computed from
+    admin-curated FranchiseEntry data. Returns {"in_franchise": False} when
+    the title isn't part of any curated universe.
+    """
+    from cache_utils import cache_get, cache_set
+    from database import SessionLocal
+    import models
+    import schemas
+
+    cache_key = f"franchise_info:{media_type}:{movie_id}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    db = SessionLocal()
+    try:
+        entry = db.query(models.FranchiseEntry).filter(
+            models.FranchiseEntry.movie_id == movie_id,
+            models.FranchiseEntry.media_type == media_type,
+        ).first()
+
+        if not entry:
+            result = {"in_franchise": False}
+            await cache_set(cache_key, result, 600)
+            return result
+
+        franchise = db.query(models.Franchise).filter(models.Franchise.id == entry.franchise_id).first()
+
+        siblings = (
+            db.query(models.FranchiseEntry)
+            .filter(models.FranchiseEntry.franchise_id == entry.franchise_id)
+            .all()
+        )
+
+        def sort_key(e):
+            if e.watch_order is not None:
+                return (0, e.watch_order)
+            if e.release_order is not None:
+                return (1, e.release_order)
+            return (2, e.id)
+
+        ordered = sorted(siblings, key=sort_key)
+        idx = next((i for i, e in enumerate(ordered) if e.id == entry.id), None)
+
+        previous_entry = ordered[idx - 1] if idx is not None and idx > 0 else None
+        next_entry = ordered[idx + 1] if idx is not None and idx < len(ordered) - 1 else None
+
+        requires_ids = set(entry.requires_movie_ids or [])
+        requires = [e for e in siblings if e.movie_id in requires_ids]
+
+        def entry_out(e):
+            return schemas.FranchiseEntryOut.model_validate(e).model_dump(mode="json")
+
+        result = {
+            "in_franchise": True,
+            "franchise": schemas.FranchiseSummary.model_validate(franchise).model_dump(mode="json") if franchise else None,
+            "entry": entry_out(entry),
+            "previous": entry_out(previous_entry) if previous_entry else None,
+            "next": entry_out(next_entry) if next_entry else None,
+            "requires": [entry_out(e) for e in requires],
+        }
+        await cache_set(cache_key, result, 600)
+        return result
+    finally:
+        db.close()
+
+
 @router.get("/person/{person_id}")
 async def get_person_details(person_id: int):
     """

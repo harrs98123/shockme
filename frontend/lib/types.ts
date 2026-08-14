@@ -421,6 +421,42 @@ export interface Franchise {
   created_at: string;
 }
 
+export interface FranchiseEntry {
+  id: number;
+  franchise_id: number;
+  movie_id: number;
+  media_type: string;
+  title: string;
+  poster_path: string | null;
+  release_date: string | null;
+  saga: string | null;
+  phase: string | null;
+  sub_timeline: string | null;
+  timeline_order: number | null;
+  release_order: number | null;
+  watch_order: number | null;
+  canon: boolean;
+  multiverse: boolean;
+  requires_movie_ids: number[];
+  notes: string | null;
+}
+
+export interface FranchiseSummary {
+  id: number;
+  name: string;
+  color: string;
+  icon_emoji: string;
+}
+
+export interface FranchiseInfo {
+  in_franchise: boolean;
+  franchise: FranchiseSummary | null;
+  entry: FranchiseEntry | null;
+  previous: FranchiseEntry | null;
+  next: FranchiseEntry | null;
+  requires: FranchiseEntry[];
+}
+
 export interface AdminStats {
   total_users: number;
   total_franchises: number;
