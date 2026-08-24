@@ -47,8 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
     localStorage.setItem('cinematch_token', tok);
     localStorage.setItem('cinematch_user', JSON.stringify(u));
-    // Also set cookie for proxy.ts auth guard
-    document.cookie = `cinematch_token=${tok}; path=/; max-age=${7 * 24 * 3600}`;
+    // Also set cookie for proxy.ts auth guard (30 days)
+    document.cookie = `cinematch_token=${tok}; path=/; max-age=${30 * 24 * 3600}; SameSite=Lax`;
   };
 
   const logout = async () => {

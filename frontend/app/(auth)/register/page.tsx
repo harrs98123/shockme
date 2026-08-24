@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, ShieldCheck, Check, X, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Check, X, Loader2, User, AtSign, Mail, Lock, KeyRound, ArrowRight } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import TurnstileWidget from '@/components/TurnstileWidget';
@@ -28,6 +28,7 @@ export default function RegisterPage() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
@@ -71,8 +72,6 @@ export default function RegisterPage() {
         setBollywood(getPaths(bollywoodRes.data?.results));
         setAnime(getPaths(animeRes.data?.results));
       } catch (err) {
-        console.log('Posters not available, using placeholders');
-        // Set empty arrays so the form still works without posters
         setHollywood([]);
         setBollywood([]);
         setAnime([]);
@@ -100,7 +99,7 @@ export default function RegisterPage() {
       } finally {
         setCheckingUsername(false);
       }
-    }, 500);
+    }, 450);
 
     return () => clearTimeout(timeoutId);
   }, [username]);
@@ -114,46 +113,47 @@ export default function RegisterPage() {
   const col2Posters = useMemo(() => getInfinite(bollywood), [bollywood]);
   const col3Posters = useMemo(() => getInfinite(anime), [anime]);
 
-  // Show loading while checking auth
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-screen overflow-hidden bg-[#000000] text-white font-sans items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="animate-spin" size={20} />
-          <span>Loading...</span>
-        </div>
-      </div>
-    );
-  }
+  const passwordChecks = useMemo(() => ({
+    hasMinLength: password.length >= 8,
+    hasUpper: /[A-Z]/.test(password),
+    hasSymbol: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]/.test(password),
+    hasNumber: /\d/.test(password),
+  }), [password]);
 
-  // Don't render if user is logged in
-  if (user) {
-    return null;
-  }
+  const passedChecksCount = useMemo(() => {
+    return Object.values(passwordChecks).filter(Boolean).length;
+  }, [passwordChecks]);
 
-  const calculateStrength = (pass: string) => {
-    let strength = 0;
-    if (pass.length > 5) strength += 1;
-    if (pass.length > 7) strength += 1;
-    if (/[A-Z]/.test(pass)) strength += 1;
-    if (/[0-9]/.test(pass)) strength += 1;
-    return Math.min(strength, 4);
-  };
-
-  const strength = calculateStrength(password);
-  const strengthColors = ['bg-zinc-800', 'bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-500'];
+  const isPasswordValid = passedChecksCount === 4;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (usernameAvailable === false) {
-      setError("Please choose a different username");
+      setError("Please choose an available username");
+      return;
+    }
+
+    if (!passwordChecks.hasMinLength) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+    if (!passwordChecks.hasUpper) {
+      setError("Password must contain at least one uppercase letter (A-Z).");
+      return;
+    }
+    if (!passwordChecks.hasSymbol) {
+      setError("Password must contain at least one unique symbol (e.g. @, #, $, !).");
+      return;
+    }
+    if (!passwordChecks.hasNumber) {
+      setError("Password must contain at least one number (0-9).");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords don't match");
+      setError("Passwords do not match");
       return;
     }
 
@@ -175,163 +175,252 @@ export default function RegisterPage() {
     }
   };
 
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-screen overflow-hidden bg-[#050505] text-white font-sans items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="animate-spin text-red-500" size={24} />
+          <span className="text-zinc-400 text-sm">Loading Plotmint...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if user is logged in
+  if (user) {
+    return null;
+  }
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#000000] text-white font-sans">
       {/* Left side: Infinite Scrolling Poster Wall */}
       <div className="relative hidden w-[55%] overflow-hidden lg:flex select-none">
-        <div className="flex w-full gap-5 px-5 py-8 opacity-80">
+        <div className="flex w-full gap-5 px-5 py-8 opacity-75">
           <div className="flex-1 space-y-5" style={{ animation: 'scrollUp 50s linear infinite' }}>
             {col1Posters.map((src, i) => (
-              <div key={`col1-${i}`} className="aspect-[2/3] w-full overflow-hidden rounded-xl border border-white/10 bg-zinc-900/50 shadow-2xl">
+              <div key={`col1-${i}`} className="aspect-[2/3] w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/50 shadow-2xl">
                 {src ? <img src={src} alt="" className="h-full w-full object-cover transition-opacity duration-1000" /> : <div className="h-full w-full bg-white/5 animate-pulse" />}
               </div>
             ))}
           </div>
           <div className="flex-1 space-y-5" style={{ animation: 'scrollDown 60s linear infinite' }}>
             {col2Posters.map((src, i) => (
-              <div key={`col2-${i}`} className="aspect-[2/3] w-full overflow-hidden rounded-xl border border-white/10 bg-zinc-900/50 shadow-2xl">
+              <div key={`col2-${i}`} className="aspect-[2/3] w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/50 shadow-2xl">
                 {src ? <img src={src} alt="" className="h-full w-full object-cover transition-opacity duration-1000" /> : <div className="h-full w-full bg-white/5 animate-pulse" />}
               </div>
             ))}
           </div>
           <div className="flex-1 space-y-5" style={{ animation: 'scrollUp 80s linear infinite' }}>
             {col3Posters.map((src, i) => (
-              <div key={`col3-${i}`} className="aspect-[2/3] w-full overflow-hidden rounded-xl border border-white/10 bg-zinc-900/50 shadow-2xl">
+              <div key={`col3-${i}`} className="aspect-[2/3] w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/50 shadow-2xl">
                 {src ? <img src={src} alt="" className="h-full w-full object-cover transition-opacity duration-1000" /> : <div className="h-full w-full bg-white/5 animate-pulse" />}
               </div>
             ))}
           </div>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-black/0 via-black/20 to-[#000000] z-10" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/40 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/0 via-black/30 to-[#000000] z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/50 z-10" />
       </div>
 
       {/* Right side: Modern Register Form */}
-      <div className="flex w-full flex-col items-center justify-center p-6 lg:w-[45%] border-l border-white/5 bg-[#000000] z-20 overflow-y-auto">
-        <div className="mb-8 text-center select-none mt-auto lg:mt-0 pt-10 lg:pt-0">
-          <div className="flex items-center justify-center">
-            <Link href="/" className="cursor-pointer">
-              <PlotmintLogo size="large" />
-            </Link>
-          </div>
+      <div className="flex w-full flex-col items-center justify-center p-4 sm:p-6 lg:w-[45%] border-l border-white/[0.08] bg-[#050507] z-20 overflow-y-auto">
+        <div className="mb-3 text-center select-none">
+          <Link href="/" className="cursor-pointer inline-block transition-transform hover:scale-105">
+            <PlotmintLogo size="medium" />
+          </Link>
         </div>
 
-        <div className="w-full max-w-[400px] animate-in fade-in zoom-in duration-500">
-          <div className="glass rounded-[2rem] bg-[#121212]/30 p-8 shadow-2xl border border-white/10">
-            <h2 className="mb-6 text-center text-xl font-bold tracking-tight text-zinc-100">Create Account</h2>
+        <div className="w-full max-w-[420px] animate-in fade-in zoom-in duration-300">
+          <div className="relative rounded-2xl sm:rounded-[1.75rem] bg-[#0e0e12]/80 backdrop-blur-2xl p-5 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.7)] border border-white/[0.08]">
+            <div className="text-center mb-3.5">
+              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">Create Account</h2>
+              <p className="text-[11px] text-zinc-400 mt-0.5">Join plotmint to discover and track movies</p>
+            </div>
 
             {error && (
-              <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 py-3 px-4 text-center text-[13px] text-red-500">
+              <div className="mb-3 rounded-xl bg-red-500/10 border border-red-500/20 py-2 px-3 text-center text-xs text-red-400 font-medium">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 ml-1">Full Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-xl bg-white/[0.03] border border-white/10 px-5 py-3 text-sm font-medium placeholder:text-zinc-600 focus:border-white/20 focus:bg-white/[0.06] focus:outline-none transition-all duration-300"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 ml-1">Username</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Choose a unique username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
-                    className={`w-full rounded-xl bg-white/[0.03] border px-5 py-3 text-sm font-medium placeholder:text-zinc-600 focus:bg-white/[0.06] focus:outline-none transition-all duration-300 ${usernameAvailable === true ? 'border-emerald-500/50' :
-                      usernameAvailable === false ? 'border-red-500/50' : 'border-white/10'
-                      }`}
-                    required
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    {checkingUsername && <Loader2 size={16} className="animate-spin text-zinc-500" />}
-                    {!checkingUsername && usernameAvailable === true && <Check size={16} className="text-emerald-500" />}
-                    {!checkingUsername && usernameAvailable === false && <X size={16} className="text-red-500" />}
+            <form onSubmit={handleSubmit} className="space-y-2.5">
+              {/* Full Name & Username */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Full Name</label>
+                  <div className="relative">
+                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                    <input
+                      type="text"
+                      placeholder="Your name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full rounded-xl bg-white/[0.03] border border-white/10 pl-8 pr-3 py-2.5 text-xs sm:text-sm font-medium text-white placeholder:text-zinc-600 focus:border-red-500/50 focus:bg-white/[0.06] focus:outline-none transition-all"
+                      required
+                    />
                   </div>
                 </div>
 
-                {usernameAvailable === false && suggestions.length > 0 && (
-                  <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-1">
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 text-red-500/80">Username taken</p>
-                    <div className="flex flex-wrap gap-2">
-                      {suggestions.map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setUsername(s)}
-                          className="rounded-full bg-white/[0.05] border border-white/10 px-3 py-1 text-[11px] font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-all"
-                        >
-                          {s}
-                        </button>
-                      ))}
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Username</label>
+                  <div className="relative">
+                    <AtSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                    <input
+                      type="text"
+                      placeholder="Username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
+                      className={`w-full rounded-xl bg-white/[0.03] border pl-8 pr-8 py-2.5 text-xs sm:text-sm font-medium text-white placeholder:text-zinc-600 focus:outline-none transition-all ${
+                        usernameAvailable === true ? 'border-emerald-500/50 focus:border-emerald-500' :
+                        usernameAvailable === false ? 'border-red-500/50 focus:border-red-500' :
+                        'border-white/10 focus:border-red-500/50'
+                      }`}
+                      required
+                    />
+                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center">
+                      {checkingUsername && <Loader2 size={13} className="animate-spin text-zinc-500" />}
+                      {!checkingUsername && usernameAvailable === true && <Check size={14} className="text-emerald-400" />}
+                      {!checkingUsername && usernameAvailable === false && <X size={14} className="text-red-400" />}
                     </div>
                   </div>
-                )}
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 ml-1">Email Address</label>
-                <input
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl bg-white/[0.03] border border-white/10 px-5 py-3 text-sm font-medium placeholder:text-zinc-600 focus:border-white/20 focus:bg-white/[0.06] focus:outline-none transition-all duration-300"
-                  required
-                />
-              </div>
+              {usernameAvailable === false && suggestions.length > 0 && (
+                <div className="space-y-1 animate-in fade-in slide-in-from-top-1">
+                  <p className="text-[9px] font-bold uppercase tracking-widest ml-1 text-red-400">Username taken, try:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {suggestions.slice(0, 3).map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setUsername(s)}
+                        className="rounded-md bg-white/[0.05] border border-white/10 px-2 py-0.5 text-[10px] font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 ml-1">Password</label>
+              {/* Email Address */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Email Address</label>
                 <div className="relative">
+                  <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-xl bg-white/[0.03] border border-white/10 pl-8 pr-3 py-2.5 text-xs sm:text-sm font-medium text-white placeholder:text-zinc-600 focus:border-red-500/50 focus:bg-white/[0.06] focus:outline-none transition-all"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between ml-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Password</label>
+                  {password.length > 0 && (
+                    <span className={`text-[10px] font-semibold ${isPasswordValid ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {isPasswordValid ? 'Strong' : `${passedChecksCount}/4 requirements`}
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
+                    placeholder="Create a strong password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl bg-white/[0.03] border border-white/10 px-5 py-3 text-sm font-medium placeholder:text-zinc-600 focus:border-white/20 focus:bg-white/[0.06] focus:outline-none transition-all duration-300"
+                    className={`w-full rounded-xl bg-white/[0.03] border pl-8 pr-9 py-2.5 text-xs sm:text-sm font-medium text-white placeholder:text-zinc-600 focus:bg-white/[0.06] focus:outline-none transition-all ${
+                      password.length > 0
+                        ? isPasswordValid
+                          ? 'border-emerald-500/50 focus:border-emerald-500'
+                          : 'border-white/15 focus:border-amber-500/50'
+                        : 'border-white/10 focus:border-red-500/50'
+                    }`}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white p-1"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white p-1 transition-colors cursor-pointer"
                   >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
                 </div>
-                {password.length > 0 && (
-                  <div className="flex gap-1.5 mt-2 px-1">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className={`h-1 flex-1 rounded-full ${strength >= i ? strengthColors[strength] : 'bg-zinc-800'} transition-colors`} />
-                    ))}
+
+                {/* Compact Modern Password Criteria Pills */}
+                {password.length > 0 && !isPasswordValid && (
+                  <div className="grid grid-cols-2 gap-1 pt-1 text-[10px]">
+                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${
+                      passwordChecks.hasMinLength ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-white/[0.02] border-white/5 text-zinc-500'
+                    }`}>
+                      {passwordChecks.hasMinLength ? <Check size={11} className="shrink-0 text-emerald-400" /> : <span className="w-1 h-1 rounded-full bg-zinc-600 shrink-0" />}
+                      <span>8+ characters</span>
+                    </div>
+
+                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${
+                      passwordChecks.hasUpper ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-white/[0.02] border-white/5 text-zinc-500'
+                    }`}>
+                      {passwordChecks.hasUpper ? <Check size={11} className="shrink-0 text-emerald-400" /> : <span className="w-1 h-1 rounded-full bg-zinc-600 shrink-0" />}
+                      <span>1 uppercase (A-Z)</span>
+                    </div>
+
+                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${
+                      passwordChecks.hasSymbol ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-white/[0.02] border-white/5 text-zinc-500'
+                    }`}>
+                      {passwordChecks.hasSymbol ? <Check size={11} className="shrink-0 text-emerald-400" /> : <span className="w-1 h-1 rounded-full bg-zinc-600 shrink-0" />}
+                      <span>1 symbol (!@#$%)</span>
+                    </div>
+
+                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${
+                      passwordChecks.hasNumber ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-white/[0.02] border-white/5 text-zinc-500'
+                    }`}>
+                      {passwordChecks.hasNumber ? <Check size={11} className="shrink-0 text-emerald-400" /> : <span className="w-1 h-1 rounded-full bg-zinc-600 shrink-0" />}
+                      <span>1 number (0-9)</span>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 ml-1">Confirm Password</label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full rounded-xl bg-white/[0.03] border border-white/10 px-5 py-3 text-sm font-medium placeholder:text-zinc-600 focus:border-white/20 focus:bg-white/[0.06] focus:outline-none transition-all duration-300"
-                  required
-                />
+              {/* Confirm Password */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Confirm Password</label>
+                <div className="relative">
+                  <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Repeat your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full rounded-xl bg-white/[0.03] border pl-8 pr-9 py-2.5 text-xs sm:text-sm font-medium text-white placeholder:text-zinc-600 focus:bg-white/[0.06] focus:outline-none transition-all ${
+                      confirmPassword.length > 0
+                        ? password === confirmPassword
+                          ? 'border-emerald-500/50 focus:border-emerald-500'
+                          : 'border-rose-500/50 focus:border-rose-500'
+                        : 'border-white/10 focus:border-red-500/50'
+                    }`}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white p-1 transition-colors cursor-pointer"
+                  >
+                    {showConfirmPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
               </div>
 
               {/* Turnstile Widget */}
-              <div className="flex justify-center">
+              <div className="flex justify-center pt-0.5">
                 <TurnstileWidget
                   onVerify={handleTurnstileVerify}
                   onError={handleTurnstileError}
@@ -341,17 +430,28 @@ export default function RegisterPage() {
                 />
               </div>
 
+              {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading || checkingUsername || usernameAvailable === false || !turnstileToken}
-                className="w-full rounded-full bg-zinc-200 py-3.5 font-bold text-black text-sm transition-all hover:bg-white active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-white/5"
+                disabled={loading || checkingUsername || usernameAvailable === false || !turnstileToken || (password.length > 0 && !isPasswordValid) || (confirmPassword.length > 0 && password !== confirmPassword)}
+                className="w-full rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white py-2.5 sm:py-3 font-bold text-xs sm:text-sm tracking-wide shadow-[0_0_20px_rgba(225,29,72,0.35)] transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
               >
-                {loading ? 'Creating Account...' : 'Sign Up'}
+                {loading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Creating Account...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign Up</span>
+                    <ArrowRight size={15} />
+                  </>
+                )}
               </button>
 
-              <div className="text-center pt-2">
-                <p className="text-[12px] font-medium text-zinc-500">
-                  Already have an account? <Link href="/login" className="font-bold text-zinc-100 hover:underline underline-offset-4 ml-1">Sign In</Link>
+              <div className="text-center pt-0.5">
+                <p className="text-[11px] font-medium text-zinc-400">
+                  Already have an account? <Link href="/login" className="font-bold text-red-400 hover:text-red-300 hover:underline underline-offset-4 ml-1 transition-colors">Sign In</Link>
                 </p>
               </div>
             </form>

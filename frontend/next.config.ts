@@ -59,6 +59,16 @@ const nextConfig: NextConfig = {
   // Enable Brotli/gzip compression
   compress: true,
 
+  // Auto-memoizes components/hooks, cutting unnecessary re-renders across
+  // the many framer-motion-heavy client components without manual useMemo/useCallback.
+  reactCompiler: true,
+
+  // Only bundle the modules actually imported from these packages instead of
+  // pulling in the whole library graph — meaningfully shrinks client JS.
+  experimental: {
+    optimizePackageImports: ['framer-motion', 'radix-ui', 'react-markdown'],
+  },
+
   // Optimized image handling
   images: {
     formats: ["image/avif", "image/webp"],

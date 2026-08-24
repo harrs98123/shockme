@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import MovieDetailHero from '@/components/MovieDetailHero';
 import CastSection from '@/components/CastSection';
@@ -7,6 +8,8 @@ import AlternateEnding from '@/components/AlternateEnding';
 import MoctaleMeter from '@/components/MoctaleMeter';
 import VerdictBattleSection from '@/components/VerdictBattle';
 import WatchOrderPanel from '@/components/WatchOrderPanel';
+import CommunityPosts from '@/components/CommunityPosts';
+import { absoluteUrl, buildMovieJsonLd, jsonLdScript, posterAbsoluteUrl, toDescription } from '@/lib/seo';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -18,6 +21,45 @@ async function fetchMovie(id: string) {
   } catch {
     return null;
   }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const movie = await fetchMovie(id);
+  if (!movie) return { title: 'Movie not found' };
+
+  const title = movie.title || movie.name || 'Untitled';
+  const year = (movie.release_date || movie.first_air_date || '').slice(0, 4);
+  const pageTitle = year ? `${title} (${year})` : title;
+  const description = toDescription(
+    movie.overview,
+    `Watch trailers, ratings, cast info, and community reviews for ${title} on plotmint.`
+  );
+  const image = posterAbsoluteUrl(movie.poster_path, 'w780');
+  const path = `/movie/${id}`;
+
+  return {
+    title: pageTitle,
+    description,
+    alternates: { canonical: path },
+    openGraph: {
+      type: 'video.movie',
+      title: pageTitle,
+      description,
+      url: absoluteUrl(path),
+      images: image ? [{ url: image, width: 780, height: 1170, alt: title }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: pageTitle,
+      description,
+      images: image ? [image] : undefined,
+    },
+  };
 }
 
 export default async function MoviePage({
@@ -35,6 +77,10 @@ export default async function MoviePage({
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript(buildMovieJsonLd(movie, `/movie/${id}`))}
+      />
       <div className="bg-black">
         <MovieDetailHero movie={movie} />
 
@@ -61,6 +107,11 @@ export default async function MoviePage({
                 <AlternateEnding movieId={movie.id} mediaType="movie" />
               </div>
 
+            </div>
+            
+            {/* ─── Community Posts (New Social Hub) ───────────────────────── */}
+            <div className="mt-12">
+              <CommunityPosts movieId={movie.id} />
             </div>
           </div>
         )}

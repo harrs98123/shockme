@@ -30,7 +30,31 @@ import {
   Coffee,
   LayoutGrid,
   Bookmark,
+  Sparkles,
 } from 'lucide-react';
+
+const StackedBarsIcon = ({ size = 24, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {/* Block 1 */}
+    <g>
+      <path d="M3 4L15 9L19 7L7 2Z" fill="currentColor" fillOpacity="0.2" />
+      <path d="M3 4V6L15 11V9Z" fill="currentColor" fillOpacity="0.6" />
+      <path d="M15 9V11L19 9V7Z" fill="currentColor" fillOpacity="0.8" />
+    </g>
+    {/* Block 2 */}
+    <g>
+      <path d="M3 10L15 15L19 13L7 8Z" fill="currentColor" fillOpacity="0.2" />
+      <path d="M3 10V12L15 17V15Z" fill="currentColor" fillOpacity="0.6" />
+      <path d="M15 15V17L19 15V13Z" fill="currentColor" fillOpacity="0.8" />
+    </g>
+    {/* Block 3 */}
+    <g>
+      <path d="M3 16L15 21L19 19L7 14Z" fill="currentColor" fillOpacity="0.2" />
+      <path d="M3 16V18L15 23V21Z" fill="currentColor" fillOpacity="0.6" />
+      <path d="M15 21V23L19 21V19Z" fill="currentColor" fillOpacity="0.8" />
+    </g>
+  </svg>
+);
 
 
 export default function Navbar() {
@@ -79,6 +103,7 @@ export default function Navbar() {
   if (pathname?.startsWith('/watch')) return null;
 
   const navLinks = [
+    { href: '/feed', label: 'Feed', icon: StackedBarsIcon },
     { href: '/upcoming', label: 'Upcoming', icon: Calendar },
     { href: '/must-watch', label: 'Must Watch', icon: Eye },
     { href: '/finder', label: 'Finder', icon: LayoutGrid },

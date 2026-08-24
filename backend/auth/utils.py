@@ -25,10 +25,10 @@ SECRET_KEY = os.getenv("SECRET_KEY", "cinematch-default-secret-you-must-change-t
 REFRESH_SECRET_KEY = os.getenv("REFRESH_SECRET_KEY", SECRET_KEY + "-refresh")
 ALGORITHM = "HS256"
 
-# Short-lived access token (30 minutes)
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
-# Longer-lived refresh token (7 days)
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+# Long-lived access token (30 days = 43200 minutes)
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200"))
+# Refresh token (30 days)
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
 
 # Account lockout: 5 failed attempts → 15-minute lockout
 MAX_FAILED_ATTEMPTS = 5
@@ -177,3 +177,17 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+def get_current_user_optional(
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db),
+) -> Optional[models.User]:
+    if not token:
+        return None
+    user_id = decode_access_token(token)
+    if not user_id:
+        return None
+    return db.query(models.User).filter(models.User.id == user_id).first()

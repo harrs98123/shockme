@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -12,6 +14,8 @@ interface ReviewComment {
   review_id: number;
   user_id: number;
   author_name: string;
+  author_username?: string;
+  author_avatar?: string;
   content: string;
   created_at: string;
   parent_id?: number | null;
@@ -24,6 +28,8 @@ interface Review {
   id: number;
   user_id: number;
   author_name: string;
+  author_username?: string;
+  author_avatar?: string;
   label: string;
   review_text: string;
   created_at: string;
@@ -98,17 +104,15 @@ function Gauge({ stats, hoveredSegment, setHoveredSegment }: {
   const polarToY = (angle: number) => cy - R * Math.sin((Math.PI * angle) / 180);
 
   const arcs: { d: string; color: string; key: string }[] = [];
+  const totalGaps = segments.length > 1 ? (segments.length - 1) * gapAngle : 0;
+  const availableAngle = Math.max(0, 180 - totalGaps);
+
   let current = 0;
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i];
-    let sweep = (seg.pct / totalPct) * 180;
+    const sweep = (seg.pct / totalPct) * availableAngle;
     
-    // Adjust for gap
-    if (segments.length > 1) {
-       sweep -= gapAngle;
-    }
-    
-    if (sweep < 1) sweep = 1; // Min visual size
+    if (sweep <= 0) continue;
 
     const startAngle = 180 - current;
     const endAngle = 180 - (current + sweep);
@@ -116,7 +120,8 @@ function Gauge({ stats, hoveredSegment, setHoveredSegment }: {
     const y1 = polarToY(startAngle);
     const x2 = polarToX(endAngle);
     const y2 = polarToY(endAngle);
-    const largeArc = sweep > 90 ? 1 : 0;
+    const largeArc = sweep > 180 ? 1 : 0;
+    
     arcs.push({
       d: `M ${x1} ${y1} A ${R} ${R} 0 ${largeArc} 1 ${x2} ${y2}`,
       color: seg.color,
@@ -248,12 +253,20 @@ function CommentNode({ comment, currentUser, onReply, onLike, onDelete }: {
   return (
     <div className="flex flex-col gap-1 w-full relative">
       <div className="flex gap-3 mt-1">
-        <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[9px] font-bold shrink-0 mt-1 border border-white/5">
-          {comment.author_name.slice(0, 2).toUpperCase()}
-        </div>
+        <Link href={`/user/${comment.user_id}`} className="shrink-0 group">
+          <div className="w-6 h-6 rounded-full bg-white/10 group-hover:border-primary/50 group-hover:scale-105 transition-all flex items-center justify-center text-[9px] font-bold shrink-0 mt-1 border border-white/5 overflow-hidden">
+            {comment.author_avatar ? (
+              <Image src={comment.author_avatar} alt={comment.author_name} width={24} height={24} className="object-cover w-full h-full" />
+            ) : (
+              comment.author_name.slice(0, 2).toUpperCase()
+            )}
+          </div>
+        </Link>
         <div className="flex flex-col max-w-[85%]">
           <div className="flex flex-col bg-white/5 rounded-2xl rounded-tl-none px-4 py-2 border border-white/5 backdrop-blur-sm">
-            <span className="text-[11px] font-bold text-white/60 mb-0.5">{comment.author_name}</span>
+            <Link href={`/user/${comment.user_id}`} className="text-[11px] font-bold text-white/70 hover:text-white hover:underline mb-0.5 inline-block w-fit">
+              {comment.author_name}
+            </Link>
             <span className="text-[13px] text-white/90 leading-snug">{comment.content}</span>
           </div>
           <div className="flex items-center gap-3 mt-1 px-2 text-[10px] font-bold text-white/40">
@@ -625,18 +638,27 @@ export default function MoctaleMeter({ movieId, mediaType = 'movie' }: { movieId
                    style={{ opacity: hoveredSegment && !isHoveredChart ? 0.3 : 1 }}
                  >
                     <div className="flex items-center justify-between">
-                       <div className="flex items-center gap-3">
+                       <Link href={`/user/${review.user_id}`} style={{ textDecoration: 'none' }} className="flex items-center gap-3 group">
                           {/* Avatar */}
-                          <div className="w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center shrink-0"
+                          <div className="w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"
                             style={{ borderColor: meta.color, background: `${meta.color}20`, color: meta.color, fontSize: 13, fontWeight: 'bold' }}
                           >
-                             {initials}
+                             {review.author_avatar ? (
+                               <Image src={review.author_avatar} alt={review.author_name} width={40} height={40} className="object-cover w-full h-full" />
+                             ) : (
+                               initials
+                             )}
                           </div>
-                          <div className="flex items-center gap-2">
-                             <div className="font-bold text-[14px]">{review.author_name}</div>
-                             <div className="w-[14px] h-[14px] bg-blue-500 rounded-full flex items-center justify-center text-[10px]">✓</div>
+                          <div className="flex flex-col">
+                             <div className="flex items-center gap-2">
+                                <span className="font-bold text-[14px] text-white group-hover:text-primary transition-colors">{review.author_name}</span>
+                                <div className="w-[14px] h-[14px] bg-blue-500 rounded-full flex items-center justify-center text-[10px] text-white">✓</div>
+                             </div>
+                             {review.author_username && (
+                                <span className="text-[11px] font-semibold text-white/40 group-hover:text-white/70 transition-colors">@{review.author_username}</span>
+                             )}
                           </div>
-                       </div>
+                       </Link>
                        
                        {/* Rating Badge */}
                        <div 

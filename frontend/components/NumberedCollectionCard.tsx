@@ -5,14 +5,19 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 
+import SarcasticPosterFallback from '@/components/SarcasticPosterFallback';
+
 interface Props {
   index: number;
   movie: {
+    id?: number;
     movie_id: number;
     title: string;
     poster_path: string | null;
-    release_year: string | null;
-    vote_average: number | null;
+    release_year?: string | null;
+    vote_average?: number | null;
+    rank?: number;
+    custom_note?: string | null;
   };
   isOwner?: boolean;
   onRemove?: (id: number) => void;
@@ -22,6 +27,7 @@ const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 
 export default function NumberedCollectionCard({ index, movie, isOwner, onRemove }: Props) {
   const [isHovered, setIsHovered] = useState(false);
+  const [imgError, setImgError] = useState(!movie.poster_path);
 
   return (
     <motion.div
@@ -52,23 +58,30 @@ export default function NumberedCollectionCard({ index, movie, isOwner, onRemove
             {index + 1}
           </span>
 
-          <Image
-            src={movie.poster_path ? `${TMDB_IMG}${movie.poster_path}` : '/no-poster.png'}
-            alt={movie.title}
-            fill
-            style={{ 
-              objectFit: 'cover',
-              transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-              transform: isHovered ? 'scale(1.05)' : 'scale(1)'
-            }}
-          />
-          
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%)',
-            opacity: isHovered ? 1 : 0.6,
-            transition: 'opacity 0.3s'
-          }} />
+          {!imgError && movie.poster_path ? (
+            <>
+              <Image
+                src={`${TMDB_IMG}${movie.poster_path}`}
+                alt={movie.title}
+                fill
+                style={{ 
+                  objectFit: 'cover',
+                  transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: isHovered ? 'scale(1.05)' : 'scale(1)'
+                }}
+                onError={() => setImgError(true)}
+              />
+              
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%)',
+                opacity: isHovered ? 1 : 0.6,
+                transition: 'opacity 0.3s'
+              }} />
+            </>
+          ) : (
+            <SarcasticPosterFallback title={movie.title} seed={movie.movie_id || index} />
+          )}
 
           {movie.vote_average && (
             <div style={{
@@ -111,21 +124,13 @@ export default function NumberedCollectionCard({ index, movie, isOwner, onRemove
             fontSize: 20, fontWeight: 800,
             boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
             zIndex: 20,
-            transition: 'transform 0.2s'
           }}
-          className="remove-btn"
+          className="remove-btn hover:scale-110 hover:!bg-[#dc2626] transition-transform duration-200"
           title="Remove from collection"
         >
           ×
         </button>
       )}
-
-      <style jsx>{`
-        .remove-btn:hover {
-          transform: scale(1.1);
-          background: #dc2626;
-        }
-      `}</style>
     </motion.div>
   );
 }

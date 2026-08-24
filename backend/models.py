@@ -33,7 +33,22 @@ class User(Base):
     badges = relationship("UserBadge", back_populates="user", cascade="all, delete")
     predictions = relationship("UserPrediction", back_populates="user", cascade="all, delete")
     interests = relationship("MovieInterest", back_populates="user", cascade="all, delete")
+    followers = relationship("UserFollow", foreign_keys="UserFollow.following_id", back_populates="following", cascade="all, delete-orphan")
+    following = relationship("UserFollow", foreign_keys="UserFollow.follower_id", back_populates="follower", cascade="all, delete-orphan")
+    social_posts = relationship("SocialPost", back_populates="user", cascade="all, delete")
 
+
+class UserFollow(Base):
+    __tablename__ = "user_follows"
+    __table_args__ = (UniqueConstraint('follower_id', 'following_id', name='_user_follow_uc'),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    follower_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    following_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    follower = relationship("User", foreign_keys=[follower_id], back_populates="following")
+    following = relationship("User", foreign_keys=[following_id], back_populates="followers")
 
 
 class Favorite(Base):
@@ -566,3 +581,89 @@ class RefreshToken(Base):
 
     user = relationship("User")
 
+
+class SocialPost(Base):
+    __tablename__ = "social_posts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    post_type = Column(String, nullable=False, index=True) # review, watching, recommendation, poll, meme, scene, watchlist
+    movie_id = Column(Integer, nullable=True, index=True)
+    content = Column(Text, nullable=True)
+    payload = Column(JSON, nullable=True) # for poll options, episode numbers, etc.
+    is_spoiler = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="social_posts")
+    reactions = relationship("PostReaction", back_populates="post", cascade="all, delete")
+    post_comments = relationship("PostComment", back_populates="post", cascade="all, delete")
+
+
+class PostReaction(Base):
+    __tablename__ = "post_reactions"
+    __table_args__ = (UniqueConstraint('post_id', 'user_id', name='_post_reaction_uc'),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("social_posts.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    reaction_type = Column(String, nullable=False) # loved, amazing, funny, emotional, mindblown, disliked
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    post = relationship("SocialPost", back_populates="reactions")
+    user = relationship("User")
+
+
+class PostComment(Base):
+    __tablename__ = "post_comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("social_posts.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    content = Column(Text, nullable=False)
+    contains_spoiler = Column(Boolean, default=False)
+    media_url = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    post = relationship("SocialPost", back_populates="post_comments")
+    user = relationship("User")
+
+
+class TopicFollow(Base):
+    __tablename__ = "topic_follows"
+    __table_args__ = (UniqueConstraint('user_id', 'entity_type', 'entity_id', name='_topic_follow_uc'),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    entity_type = Column(String, nullable=False) # actor, director, movie, genre
+    entity_id = Column(String, nullable=False) # ID or name
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    user = relationship("User")
+
+
+class WatchParty(Base):
+    __tablename__ = "watch_parties"
+
+    id = Column(Integer, primary_key=True, index=True)
+    host_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    movie_id = Column(Integer, nullable=False)
+    title = Column(String, nullable=False)
+    scheduled_time = Column(DateTime(timezone=True), nullable=False)
+    status = Column(String, default="upcoming") # upcoming, live, finished
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    host = relationship("User")
+    participants = relationship("WatchPartyParticipant", back_populates="party", cascade="all, delete")
+
+
+class WatchPartyParticipant(Base):
+    __tablename__ = "watch_party_participants"
+    __table_args__ = (UniqueConstraint('party_id', 'user_id', name='_watch_party_participant_uc'),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    party_id = Column(Integer, ForeignKey("watch_parties.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    joined_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    party = relationship("WatchParty", back_populates="participants")
+    user = relationship("User")

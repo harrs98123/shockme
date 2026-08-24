@@ -328,22 +328,6 @@ export default function ForgotPasswordPage() {
            <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-widest">Secure Reset Protocol</span>
         </div>
       </div>
-      
-      {/* Animations */}
-      <style jsx global>{`
-        @keyframes scrollUp {
-          from { transform: translateY(0); }
-          to { transform: translateY(-33.33%); }
-        }
-        @keyframes scrollDown {
-          from { transform: translateY(-33.33%); }
-          to { transform: translateY(0); }
-        }
-        .glass {
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-        }
-      `}</style>
     </div>
   );
 }

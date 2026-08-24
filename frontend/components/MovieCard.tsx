@@ -10,6 +10,7 @@ import { Media, InterestInfo } from '@/lib/types';
 import { posterUrl } from '@/lib/api';
 import { getEnglishTitle } from '@/lib/utils';
 import AddToCollectionButton from './AddToCollectionButton';
+import SarcasticPosterFallback from './SarcasticPosterFallback';
 
 interface Props {
   movie: Media;
@@ -32,6 +33,7 @@ export default function MovieCard({
   onWatchedToggle,
   showFavButton = true,
 }: Props) {
+  const [imgError, setImgError] = useState(!movie.poster_path);
   const pathname = usePathname();
   const isGridView = pathname !== '/';
 
@@ -187,14 +189,19 @@ export default function MovieCard({
     >
       <Link href={`/${mediaType}/${movie.id}`} className="mc-link">
         <div className="mc-poster">
-          <Image
-            src={posterUrl(movie.poster_path)}
-            alt={title}
-            fill
-            sizes={isGridView ? "(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw" : "(max-width: 640px) 150px, (max-width: 1024px) 180px, 210px"}
-            style={{ objectFit: 'cover' }}
-            loading="lazy"
-          />
+          {!imgError && movie.poster_path ? (
+            <Image
+              src={posterUrl(movie.poster_path)}
+              alt={title}
+              fill
+              sizes={isGridView ? "(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw" : "(max-width: 640px) 150px, (max-width: 1024px) 180px, 210px"}
+              style={{ objectFit: 'cover' }}
+              loading="lazy"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <SarcasticPosterFallback title={title} seed={movie.id} />
+          )}
 
           {!isGridView && (
             mediaType === 'tv' && (

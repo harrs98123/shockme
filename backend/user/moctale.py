@@ -33,6 +33,8 @@ class MoctaleReviewCommentOut(BaseModel):
     review_id: int
     user_id: int
     author_name: str
+    author_username: Optional[str] = None
+    author_avatar: Optional[str] = None
     content: str
     created_at: datetime
     parent_id: Optional[int] = None
@@ -52,6 +54,8 @@ class ReviewOut(BaseModel):
     id: int
     user_id: int
     author_name: str
+    author_username: Optional[str] = None
+    author_avatar: Optional[str] = None
     label: str
     review_text: Optional[str]
     created_at: datetime
@@ -202,6 +206,8 @@ def get_stats(
                     review_id=c.review_id,
                     user_id=c.user_id,
                     author_name=c.user.name if c.user else "User",
+                    author_username=c.user.username if c.user else None,
+                    author_avatar=c.user.avatar_url if c.user else None,
                     content=c.content,
                     created_at=c.created_at,
                     parent_id=c.parent_id,
@@ -221,6 +227,8 @@ def get_stats(
                 id=r.id,
                 user_id=r.user_id,
                 author_name=r.user.name if r.user else "User",
+                author_username=r.user.username if r.user else None,
+                author_avatar=r.user.avatar_url if r.user else None,
                 label=r.label,
                 review_text=r.review_text,
                 created_at=r.created_at,

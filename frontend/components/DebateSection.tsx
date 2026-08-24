@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -206,15 +207,15 @@ export default function DebateSection({ movieId, mediaType = 'movie' }: Props) {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <Link href={`/user/${debate.user_id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }} className="group">
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '12px', border: '1px solid rgba(255,255,255,0.1)' }} className="group-hover:border-primary/50 transition-colors">
                         {debate.author_name[0].toUpperCase()}
                       </div>
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 700 }}>{debate.author_name}</div>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: 'white' }} className="group-hover:text-primary group-hover:underline">{debate.author_name}</div>
                         <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{new Date(debate.created_at).toLocaleDateString()}</div>
                       </div>
-                    </div>
+                    </Link>
                     <div style={{ 
                       padding: '4px 12px', borderRadius: '99px', fontWeight: 800, fontSize: '10px', letterSpacing: '0.5px',
                       background: debate.stance === 'agree' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',

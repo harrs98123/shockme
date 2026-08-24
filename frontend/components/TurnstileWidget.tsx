@@ -42,6 +42,19 @@ export default function TurnstileWidget({
   }, [onExpire]);
 
   useEffect(() => {
+    // Load the Cloudflare script on demand (only pages using this widget pay
+    // the cost) instead of injecting it globally on every route. Shares the
+    // same script id as @marsidev/react-turnstile so the two never double-load.
+    const scriptId = 'cf-turnstile-script';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+
     let checkAttempts = 0;
     const checkTurnstileLoaded = () => {
       if (typeof window !== 'undefined' && (window as any).turnstile) {

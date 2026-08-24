@@ -471,7 +471,7 @@ export default function AdminFranchises() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer'
                       }}
                     >
-                      {searching ? <div className="spinner-small" /> : <Search size={18} />}
+                      {searching ? <div className="spinner !w-5 !h-5 !border-2" /> : <Search size={18} />}
                     </button>
                   </div>
 
@@ -782,43 +782,6 @@ export default function AdminFranchises() {
           </div>
         )}
       </AnimatePresence>
-
-      <style jsx global>{`
-        .search-result-item:hover {
-          background: rgba(255,255,255,0.05) !important;
-        }
-        .search-result-item .add-icon {
-          opacity: 0;
-          transition: opacity 0.2s;
-        }
-        .search-result-item:hover .add-icon {
-          opacity: 1;
-        }
-        .spinner-small {
-          width: 20px;
-          height: 20px;
-          border: 2px solid rgba(255,255,255,0.1);
-          border-top-color: white;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        ::-webkit-scrollbar {
-          width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,0.05);
-          border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: rgba(255,255,255,0.1);
-        }
-      `}</style>
     </div>
   );
 }

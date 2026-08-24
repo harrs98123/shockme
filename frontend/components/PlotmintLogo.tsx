@@ -3,21 +3,24 @@
 import { motion } from 'framer-motion';
 
 interface PlotmintLogoProps {
-  size?: 'desktop' | 'mobile' | 'large' | number;
+  size?: 'desktop' | 'mobile' | 'medium' | 'large' | number;
   className?: string;
 }
 
 export default function PlotmintLogo({ size = 'desktop', className = '' }: PlotmintLogoProps) {
   const isMobile = size === 'mobile';
   const isLarge = size === 'large';
+  const isMedium = size === 'medium';
   
   const fontSize = typeof size === 'number' 
     ? size 
     : isLarge 
       ? 34 
-      : isMobile 
-        ? 23 
-        : 27;
+      : isMedium
+        ? 28
+        : isMobile 
+          ? 23 
+          : 27;
 
   return (
     <motion.span

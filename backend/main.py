@@ -40,6 +40,9 @@ from user.verdict_battles import router as battles_router
 from user.hidden_gems import router as hidden_gems_router
 from user.predictions import router as predictions_router
 from user.interests import router as interests_router
+from user.public_profile import router as public_profile_router
+from user.social_feed import router as social_feed_router
+from user.watch_party import router as watch_party_router
 from user.secret import router as secret_router, limiter
 from admin.router import router as admin_router
 from slowapi import _rate_limit_exceeded_handler
@@ -175,6 +178,9 @@ app.include_router(battles_router)
 app.include_router(hidden_gems_router)
 app.include_router(predictions_router)
 app.include_router(interests_router)
+app.include_router(public_profile_router)
+app.include_router(social_feed_router, tags=["Social Feed"])
+app.include_router(watch_party_router, prefix="/watch-parties", tags=["Watch Parties"])
 app.include_router(secret_router)
 app.include_router(admin_router)
 

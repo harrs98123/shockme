@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { Movie, Genre } from '@/lib/types';
-import CollectionMovieCard from '@/components/CollectionMovieCard';
-import { Loader2, Plus, ChevronDown } from 'lucide-react';
+import { Loader2, Search, X } from 'lucide-react';
+
+import SarcasticPosterFallback from '@/components/SarcasticPosterFallback';
 
 interface CollectionOut {
   id: number;
@@ -24,56 +24,80 @@ interface CollectionOut {
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w342';
 
-// ─── Local Components ────────────────────────────────────────────────────────
+// ─── Collection mood/vibe filters ───────────────────────────────────────────
+const FILTERS = [
+  { id: 'all',        label: '✨ All',         match: null },
+  { id: 'bollywood',  label: '🎭 Bollywood',   match: ['bollywood', 'indian', 'hindi', 'south asian', 'desi', 'telugu', 'malayalam'] },
+  { id: 'superhero',  label: '🦸 Superhero',   match: ['superhero', 'spider-man', 'batman', 'dark knight', 'marvel', 'dc ', 'joker', 'cape'] },
+  { id: 'emotional',  label: '😭 Gut-Punch',   match: ['cry', 'mom', 'broke', 'emotional', 'feel', 'comfort', 'soul', 'heart'] },
+  { id: 'classics',   label: '🏛️ Classics',   match: ['old man', 'pre-2000', 'oscar', 'godfather', 'kubrick', 'hitchcock', 'classics', 'angry men'] },
+  { id: 'thriller',   label: '🔪 Thriller',    match: ['thriller', 'gaslit', 'villain', 'horror', 'scare', 'psycho', 'memento', 'dark'] },
+  { id: 'scifi',      label: '🚀 Sci-Fi',      match: ['space', 'nolan', 'interstellar', 'blade runner', 'sci-fi', 'science', 'alien'] },
+  { id: 'animated',   label: '🎨 Animated',    match: ['animated', 'spirited', 'howl', 'pixar', 'ghibli', 'anime'] },
+  { id: 'controversial', label: '🔥 Hot Takes', match: ['fight me', 'hot take', 'ranked', 'debate', 'controversial', 'unpopular', 'lowkey'] },
+  { id: 'cinephile',  label: '🎬 Cinephile',   match: ['cinematography', 'soundtrack', 'director', 'dialogue', 'tarantino', 'kubrick', 'one-take', 'lens'] },
+  { id: 'datenight',  label: '❤️ Date Night',  match: ['date night', 'romance', 'titanic', 'together', 'relationship'] },
+  { id: 'world',      label: '🌍 World Cinema', match: ['korean', 'non-english', 'foreign', 'subtitle', 'parasite', 'world', 'french', 'italian'] },
+];
 
+// ─── Collection Card ─────────────────────────────────────────────────────────
 function CollectionCard({ col, index }: { col: CollectionOut; index: number }) {
-  const coverSrc = col.cover_poster
-    ? `${TMDB_IMG}${col.cover_poster}`
-    : '/no-poster.png';
+  const [imgError, setImgError] = useState(!col.cover_poster);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.4 }}
+      transition={{ delay: Math.min(index * 0.04, 0.5), duration: 0.35 }}
+      className="group"
     >
-      <Link href={`/collections/${col.id}`} style={{ textDecoration: 'none', display: 'block' }}>
-        <div
-          className="card"
-          style={{
-            overflow: 'hidden', cursor: 'pointer',
-            height: '100%',
-          }}
+      <Link href={`/collections/${col.id}`} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
+        <div style={{
+          overflow: 'hidden', cursor: 'pointer', height: '100%',
+          borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)',
+          background: '#0e0e12',
+          transition: 'transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease',
+        }}
+          className="hover-card"
         >
-          {/* Cover image */}
+          {/* Cover image or Sarcastic Fallback */}
           <div style={{ position: 'relative', aspectRatio: '2/3', overflow: 'hidden', background: '#111' }}>
-            <Image
-              src={coverSrc}
-              alt={col.name}
-              fill
-              sizes="(max-width: 768px) 50vw, 20vw"
-              style={{ objectFit: 'cover' }}
-              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/no-poster.png'; }}
-            />
-            <div style={{
-              position: 'absolute', inset: 0,
-              background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%)',
-            }} />
-            <div style={{
-              position: 'absolute', bottom: 10, left: 10,
-              background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 99, padding: '3px 10px',
-              fontSize: 12, fontWeight: 700, color: 'white',
-            }}>
-              {col.item_count} {col.item_count === 1 ? 'Item' : 'Items'}
-            </div>
+            {!imgError && col.cover_poster ? (
+              <>
+                <Image
+                  src={`${TMDB_IMG}${col.cover_poster}`}
+                  alt={col.name}
+                  fill
+                  sizes="(max-width: 768px) 50vw, 20vw"
+                  style={{ objectFit: 'cover', transition: 'transform 0.4s ease' }}
+                  className="group-hover:scale-105"
+                  onError={() => setImgError(true)}
+                />
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)',
+                }} />
+                {/* Item count badge */}
+                <div style={{
+                  position: 'absolute', bottom: 10, left: 10,
+                  background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: 99, padding: '3px 10px',
+                  fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.85)',
+                  letterSpacing: '0.03em',
+                }}>
+                  {col.item_count} {col.item_count === 1 ? 'film' : 'films'}
+                </div>
+              </>
+            ) : (
+              <SarcasticPosterFallback title={col.name} itemCount={col.item_count} seed={col.id} />
+            )}
           </div>
 
-          <div style={{ padding: '14px' }}>
+          <div style={{ padding: '14px 14px 16px' }}>
             <h3 style={{
-              margin: 0, fontSize: 14, fontWeight: 700, fontFamily: 'Poppins, sans-serif',
-              color: 'white', lineHeight: 1.3,
+              margin: 0, fontSize: 13, fontWeight: 700,
+              color: 'white', lineHeight: 1.4,
               display: '-webkit-box', WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical', overflow: 'hidden',
             }}>
@@ -81,8 +105,8 @@ function CollectionCard({ col, index }: { col: CollectionOut; index: number }) {
             </h3>
             {col.description && (
               <p style={{
-                margin: '5px 0 0', fontSize: 12, color: 'var(--text-dim)',
-                lineHeight: 1.4,
+                margin: '5px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.4)',
+                lineHeight: 1.5,
                 display: '-webkit-box', WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical', overflow: 'hidden',
               }}>
@@ -96,111 +120,67 @@ function CollectionCard({ col, index }: { col: CollectionOut; index: number }) {
   );
 }
 
-
-// ─── Main Component ──────────────────────────────────────────────────────────
-
+// ─── Main Page ───────────────────────────────────────────────────────────────
 export default function CollectionsPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState<'discover' | 'mine'>('discover');
 
-  // Community Collections
   const [discoverCols, setDiscoverCols] = useState<CollectionOut[]>([]);
   const [mineCols, setMineCols] = useState<CollectionOut[]>([]);
   const [loadingCols, setLoadingCols] = useState(true);
 
-  const [genres, setGenres] = useState<Genre[]>([]);
-  const [selectedGenreId, setSelectedGenreId] = useState<number | null>(null);
-  const [genreMovies, setGenreMovies] = useState<Movie[]>([]);
-  const [loadingMovies, setLoadingMovies] = useState(false);
-  const [moviePage, setMoviePage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  // Filter & search state
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Observer Ref
-  const observerRef = useRef<HTMLDivElement | null>(null);
-
-  // UI state
+  // Create modal
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [creating, setCreating] = useState(false);
 
-  // Initialize
   useEffect(() => {
-    // Genres
-    api.get('/movies/genres').then(r => setGenres(r.data.genres)).catch(() => { });
-
-    // Collections
     setLoadingCols(true);
     const fetches = [
-      api.get('/collections').then(r => setDiscoverCols(r.data)).catch(() => { }),
+      api.get('/collections').then(r => setDiscoverCols(r.data)).catch(() => {}),
     ];
     if (user) {
-      fetches.push(api.get('/collections/my').then(r => setMineCols(r.data)).catch(() => { }));
+      fetches.push(api.get('/collections/my').then(r => setMineCols(r.data)).catch(() => {}));
     }
     Promise.all(fetches).finally(() => setLoadingCols(false));
   }, [user]);
 
-  // Fetch movies when genre changes or on load more
-  const fetchGenreMovies = useCallback(async (id: number, page: number = 1) => {
-    if (page === 1) setLoadingMovies(true);
-    else setLoadingMore(true);
+  // ── Filter logic ──────────────────────────────────────────────────────────
+  const filterCollections = (cols: CollectionOut[]) => {
+    let result = cols;
 
-    try {
-      const res = await api.get(`/movies/discover?with_genres=${id}&page=${page}`);
-      const newMovies = res.data.results || [];
-
-      if (page === 1) {
-        setGenreMovies(newMovies);
-      } else {
-        setGenreMovies(prev => [...prev, ...newMovies]);
+    // Apply mood filter
+    if (activeFilter !== 'all') {
+      const filter = FILTERS.find(f => f.id === activeFilter);
+      if (filter?.match) {
+        const keywords = filter.match;
+        result = result.filter(col => {
+          const text = `${col.name} ${col.description || ''}`.toLowerCase();
+          return keywords.some(kw => text.includes(kw));
+        });
       }
-
-      setHasMore(page < (res.data.total_pages || 1));
-    } catch {
-      if (page === 1) setGenreMovies([]);
-    } finally {
-      setLoadingMovies(false);
-      setLoadingMore(false);
     }
-  }, []);
 
-  // Reset and fetch on genre change
-  useEffect(() => {
-    if (selectedGenreId) {
-      setMoviePage(1);
-      setHasMore(true);
-      fetchGenreMovies(selectedGenreId, 1);
-    } else {
-      setGenreMovies([]);
+    // Apply search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(col =>
+        col.name.toLowerCase().includes(q) ||
+        (col.description || '').toLowerCase().includes(q)
+      );
     }
-  }, [selectedGenreId, fetchGenreMovies]);
 
-  const handleLoadMore = () => {
-    if (!loadingMore && hasMore && selectedGenreId) {
-      const nextPage = moviePage + 1;
-      setMoviePage(nextPage);
-      fetchGenreMovies(selectedGenreId, nextPage);
-    }
+    return result;
   };
 
-  // Intersection Observer for Lazy Loading
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore && !loadingMovies && selectedGenreId) {
-          handleLoadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (observerRef.current) {
-      observer.observe(observerRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, loadingMore, loadingMovies, selectedGenreId, moviePage]);
+  const filteredDiscover = filterCollections(discoverCols);
+  const filteredMine = filterCollections(mineCols);
+  const displayCols = tab === 'discover' ? filteredDiscover : filteredMine;
 
   const createCollection = async () => {
     if (!newName.trim()) return;
@@ -209,7 +189,7 @@ export default function CollectionsPage() {
       const col = await api.post('/collections', {
         name: newName.trim(),
         description: newDesc.trim() || null,
-        is_public: true
+        is_public: true,
       });
       setMineCols(prev => [col.data, ...prev]);
       setDiscoverCols(prev => [col.data, ...prev]);
@@ -222,54 +202,54 @@ export default function CollectionsPage() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 100, paddingBottom: 80 }}>
-      {/* ── Ambient Background Blur ── */}
+      {/* Ambient glow */}
       <div style={{
-        position: 'fixed', top: 0, right: 0, width: '40vw', height: '40vw',
-        background: 'radial-gradient(circle, rgba(229,9,20,0.08) 0%, transparent 70%)',
-        filter: 'blur(100px)', zIndex: -1, pointerEvents: 'none'
+        position: 'fixed', top: 0, right: 0, width: '50vw', height: '50vw',
+        background: 'radial-gradient(circle, rgba(229,9,20,0.06) 0%, transparent 70%)',
+        filter: 'blur(120px)', zIndex: -1, pointerEvents: 'none',
       }} />
 
       <div className="container">
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 40, flexWrap: 'wrap', gap: 24 }}>
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 36, flexWrap: 'wrap', gap: 20 }}>
           <div>
-            <h1 style={{ fontSize: 40, fontWeight: 900, letterSpacing: '-1px', margin: 0, color: 'white' }}>
+            <h1 style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-1px', margin: 0, color: 'white' }}>
               Explore <span style={{ color: 'var(--primary)' }}>Collections</span>
             </h1>
-            <p style={{ color: 'var(--text-dim)', fontSize: 16, marginTop: 8, maxWidth: 480 }}>
-              Discover curated lists from the community or explore by genre to build your own masterpiece.
+            <p style={{ color: 'var(--text-dim)', fontSize: 15, marginTop: 6, maxWidth: 460 }}>
+              Curated lists by the community — from masterpieces to spicy hot takes.
             </p>
           </div>
           {user && (
             <button
               onClick={() => setShowCreate(true)}
               className="btn-primary"
-              style={{ padding: '12px 24px', borderRadius: 12 }}
+              style={{ padding: '11px 22px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8 }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Create New
+              New Collection
             </button>
           )}
         </div>
 
-        {/* Tab Controls */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 40, borderBottom: '1px solid var(--border)', paddingBottom: 1 }}>
+        {/* ── Tab Controls ────────────────────────────────────────────────── */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 28, borderBottom: '1px solid var(--border)', paddingBottom: 1 }}>
           {[
             { id: 'discover', label: 'Community Feed' },
             { id: 'mine', label: 'My Vault', auth: true },
           ].map(t => {
-            if (t.auth && !user) return null;
+            if ((t as any).auth && !user) return null;
             const active = tab === t.id;
             return (
               <button
                 key={t.id}
-                onClick={() => setTab(t.id as any)}
+                onClick={() => setTab(t.id as 'discover' | 'mine')}
                 style={{
-                  padding: '12px 24px', position: 'relative', border: 'none', background: 'transparent',
+                  padding: '11px 22px', position: 'relative', border: 'none', background: 'transparent',
                   color: active ? 'white' : 'var(--text-dim)',
-                  fontWeight: 700, fontSize: 15, cursor: 'pointer', transition: 'color 0.2s'
+                  fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'color 0.2s',
                 }}
               >
                 {t.label}
@@ -278,7 +258,7 @@ export default function CollectionsPage() {
                     layoutId="tab-active"
                     style={{
                       position: 'absolute', bottom: -1, left: 0, right: 0, height: 2,
-                      background: 'var(--primary)', boxShadow: '0 0 10px var(--primary-glow)'
+                      background: 'var(--primary)', boxShadow: '0 0 10px var(--primary-glow)',
                     }}
                   />
                 )}
@@ -287,194 +267,124 @@ export default function CollectionsPage() {
           })}
         </div>
 
-        <section>
-          {tab === 'discover' ? (
-            <>
-              {/* Genre Browse Row */}
-              <div style={{ marginBottom: 48 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  Browse by Genre
-                </h2>
-                <div style={{
-                  display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 16,
-                  scrollbarWidth: 'none', msOverflowStyle: 'none'
-                }}>
-                  <button
-                    onClick={() => setSelectedGenreId(null)}
-                    style={{
-                      padding: '8px 20px', borderRadius: 99, whiteSpace: 'nowrap', border: '1px solid var(--border)',
-                      background: selectedGenreId === null ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                      color: selectedGenreId === null ? 'white' : 'var(--text-muted)',
-                      fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'all 0.2s'
-                    }}
-                  >
-                    Hot Now
-                  </button>
-                  {genres.map(g => (
-                    <button
-                      key={g.id}
-                      onClick={() => setSelectedGenreId(g.id)}
-                      style={{
-                        padding: '8px 20px', borderRadius: 99, whiteSpace: 'nowrap', border: '1px solid var(--border)',
-                        background: selectedGenreId === g.id ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                        color: selectedGenreId === g.id ? 'white' : 'var(--text-muted)',
-                        fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'all 0.2s'
-                      }}
-                    >
-                      {g.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Dynamic Content Grid */}
-              <AnimatePresence mode="wait">
-                {selectedGenreId ? (
-                  <motion.div
-                    key={`genre-${selectedGenreId}`}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-                      <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>
-                        {genres.find(g => g.id === selectedGenreId)?.name} Masterpieces
-                      </h3>
-                      <button
-                        onClick={() => setSelectedGenreId(null)}
-                        style={{ background: 'transparent', border: 'none', color: 'var(--primary)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-                      >
-                        Clear Filter ×
-                      </button>
-                    </div>
-
-                    {loadingMovies ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 24 }}>
-                        {[...Array(12)].map((_, i) => <div key={i} className="skeleton" style={{ aspectRatio: '2/3', borderRadius: 16 }} />)}
-                      </div>
-                    ) : (
-                      <>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 32 }}>
-                          {genreMovies.map((m, i) => (
-                            <CollectionMovieCard key={`${m.id}-${i}`} movie={m} index={i} />
-                          ))}
-                        </div>
-
-                        {/* Load More / Observer Target */}
-                        <div
-                          ref={observerRef}
-                          style={{
-                            marginTop: 64,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 16,
-                            paddingBottom: 40
-                          }}
-                        >
-                          {hasMore ? (
-                            <button
-                              onClick={handleLoadMore}
-                              disabled={loadingMore}
-                              className="btn-ghost"
-                              style={{
-                                padding: '16px 40px',
-                                borderRadius: 16,
-                                background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid var(--border)',
-                                fontSize: 16,
-                                fontWeight: 700,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 12,
-                                color: 'white'
-                              }}
-                            >
-                              {loadingMore ? (
-                                <>
-                                  <Loader2 size={20} className="animate-spin text-primary" />
-                                  Summoning More...
-                                </>
-                              ) : (
-                                <>
-                                  <ChevronDown size={20} />
-                                  Explore More
-                                </>
-                              )}
-                            </button>
-                          ) : genreMovies.length > 0 && (
-                            <div style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>
-                              You've reached the end of the {genres.find(g => g.id === selectedGenreId)?.name} universe.
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="trending-cols"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Trending Collections</h3>
-                    {loadingCols ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 24 }}>
-                        {[...Array(8)].map((_, i) => <div key={i} className="skeleton" style={{ aspectRatio: '2/3', borderRadius: 16 }} />)}
-                      </div>
-                    ) : discoverCols.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '100px 0', opacity: 0.5 }}>No collections found.</div>
-                    ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 24 }}>
-                        {discoverCols.map((col, i) => (
-                          <CollectionCard key={col.id} col={col} index={i} />
-                        ))}
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </>
-          ) : (
-            <motion.div
-              key="my-cols"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4 }}
+        {/* ── Search Bar ──────────────────────────────────────────────────── */}
+        <div style={{ position: 'relative', marginBottom: 20, maxWidth: 420 }}>
+          <Search size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', pointerEvents: 'none' }} />
+          <input
+            type="text"
+            placeholder="Search collections..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%', background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 12, padding: '10px 40px 10px 40px',
+              color: 'white', fontSize: 13, outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: 2 }}
             >
-              <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Your Private Vault</h3>
-              {loadingCols ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 24 }}>
-                  {[...Array(4)].map((_, i) => <div key={i} className="skeleton" style={{ aspectRatio: '2/3', borderRadius: 16 }} />)}
-                </div>
-              ) : mineCols.length === 0 ? (
-                <div style={{
-                  padding: '80px 24px', textAlign: 'center', background: 'var(--surface)',
-                  borderRadius: 20, border: '1px dashed var(--border)'
-                }}>
-                  <div style={{ fontSize: 40, marginBottom: 16 }}>🎬</div>
-                  <h4 style={{ margin: '0 0 8px', fontSize: 18 }}>Empty Vault</h4>
-                  <p style={{ color: 'var(--text-dim)', margin: '0 0 24px', fontSize: 14 }}>
-                    Start by creating a collection or exploring genres to save movies here.
-                  </p>
-                  <button onClick={() => setShowCreate(true)} className="btn-primary" style={{ padding: '10px 24px' }}>
-                    Setup First Collection
-                  </button>
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 24 }}>
-                  {mineCols.map((col, i) => (
-                    <CollectionCard key={col.id} col={col} index={i} />
-                  ))}
-                </div>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* ── Mood/Vibe Filters (Collections only) ────────────────────────── */}
+        <div style={{ marginBottom: 36 }}>
+          <div style={{
+            display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 10,
+            scrollbarWidth: 'none', msOverflowStyle: 'none',
+          }}>
+            {FILTERS.map(f => {
+              const active = activeFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setActiveFilter(f.id)}
+                  style={{
+                    padding: '7px 16px', borderRadius: 99, whiteSpace: 'nowrap', cursor: 'pointer',
+                    fontSize: 13, fontWeight: 600, transition: 'all 0.2s',
+                    border: active ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)',
+                    background: active ? 'rgba(229,9,20,0.15)' : 'rgba(255,255,255,0.04)',
+                    color: active ? 'white' : 'rgba(255,255,255,0.5)',
+                    boxShadow: active ? '0 0 12px rgba(229,9,20,0.25)' : 'none',
+                  }}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Collections Grid ─────────────────────────────────────────────── */}
+        <AnimatePresence mode="wait">
+          {loadingCols ? (
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 20 }}>
+                {[...Array(12)].map((_, i) => (
+                  <div key={i} className="skeleton" style={{ aspectRatio: '2/3', borderRadius: 16 }} />
+                ))}
+              </div>
+            </motion.div>
+          ) : tab === 'mine' && !user ? (
+            <motion.div key="no-auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-dim)' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+              <p>Sign in to see your personal vault.</p>
+              <Link href="/login" className="btn-primary" style={{ display: 'inline-block', marginTop: 16, padding: '10px 24px', borderRadius: 12 }}>Sign In</Link>
+            </motion.div>
+          ) : displayCols.length === 0 ? (
+            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              style={{ textAlign: 'center', padding: '80px 0' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🎬</div>
+              <p style={{ color: 'var(--text-dim)', fontSize: 15 }}>
+                {searchQuery || activeFilter !== 'all'
+                  ? 'No collections match your filter. Try another vibe.'
+                  : tab === 'mine' ? 'Your vault is empty. Create your first collection!' : 'No collections yet.'}
+              </p>
+              {(searchQuery || activeFilter !== 'all') && (
+                <button
+                  onClick={() => { setSearchQuery(''); setActiveFilter('all'); }}
+                  style={{ marginTop: 16, background: 'transparent', border: '1px solid var(--border)', borderRadius: 12, color: 'white', padding: '9px 20px', cursor: 'pointer', fontSize: 13 }}
+                >
+                  Clear filters
+                </button>
+              )}
+              {tab === 'mine' && !searchQuery && activeFilter === 'all' && (
+                <button onClick={() => setShowCreate(true)} className="btn-primary" style={{ display: 'inline-block', marginTop: 16, padding: '10px 24px', borderRadius: 12 }}>
+                  Create Collection
+                </button>
               )}
             </motion.div>
+          ) : (
+            <motion.div
+              key={`grid-${tab}-${activeFilter}-${searchQuery}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              {/* Result count */}
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 20, fontWeight: 600 }}>
+                {displayCols.length} collection{displayCols.length !== 1 ? 's' : ''}
+                {activeFilter !== 'all' && ` · ${FILTERS.find(f => f.id === activeFilter)?.label}`}
+                {searchQuery && ` · "${searchQuery}"`}
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 20 }}>
+                {displayCols.map((col, i) => (
+                  <CollectionCard key={col.id} col={col} index={i} />
+                ))}
+              </div>
+            </motion.div>
           )}
-        </section>
+        </AnimatePresence>
       </div>
 
-      {/* Create Collection Modal */}
+      {/* ── Create Collection Modal ──────────────────────────────────────── */}
       <AnimatePresence>
         {showCreate && (
           <motion.div
@@ -499,17 +409,17 @@ export default function CollectionsPage() {
               }}
               onClick={e => e.stopPropagation()}
             >
-              <h2 style={{ fontWeight: 800, fontSize: 24, margin: '0 0 8px', letterSpacing: '-0.5px' }}>
+              <h2 style={{ fontWeight: 800, fontSize: 22, margin: '0 0 6px', letterSpacing: '-0.5px' }}>
                 New Collection
               </h2>
-              <p style={{ color: 'var(--text-dim)', fontSize: 14, marginBottom: 28 }}>
+              <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 24 }}>
                 Curate a list for yourself or share it with the world.
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                 <div>
-                  <label style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: 8 }}>
-                    COLLECTION TITLE
+                  <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    Collection Title
                   </label>
                   <input
                     className="input-field"
@@ -520,8 +430,8 @@ export default function CollectionsPage() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: 8 }}>
-                    DESCRIPTION (OPTIONAL)
+                  <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    Description (Optional)
                   </label>
                   <textarea
                     className="input-field"
@@ -532,10 +442,10 @@ export default function CollectionsPage() {
                   />
                 </div>
 
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 12 }}>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
                   <button
                     onClick={() => setShowCreate(false)}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontWeight: 700, cursor: 'pointer' }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontWeight: 700, cursor: 'pointer', padding: '10px 16px' }}
                   >
                     Cancel
                   </button>
@@ -543,9 +453,9 @@ export default function CollectionsPage() {
                     onClick={createCollection}
                     disabled={creating || !newName.trim()}
                     className="btn-primary"
-                    style={{ padding: '12px 28px', borderRadius: 12 }}
+                    style={{ padding: '11px 26px', borderRadius: 12 }}
                   >
-                    {creating ? 'Creating…' : 'Finalize List'}
+                    {creating ? <><Loader2 size={15} className="animate-spin" style={{ display: 'inline', marginRight: 8 }} />Creating…</> : 'Finalize List'}
                   </button>
                 </div>
               </div>
@@ -553,6 +463,17 @@ export default function CollectionsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <style>{`
+        .hover-card:hover {
+          transform: translateY(-4px);
+          border-color: rgba(255,255,255,0.14) !important;
+          box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+        }
+        .group:hover .group-hover\\:scale-105 {
+          transform: scale(1.05);
+        }
+      `}</style>
     </div>
   );
 }

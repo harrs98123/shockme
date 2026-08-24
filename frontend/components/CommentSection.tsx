@@ -188,14 +188,16 @@ export default function CommentSection({ movieId, mediaType = 'movie' }: Props) 
               <div key={comment.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ 
-                      width: 32, height: 32, borderRadius: '50%', 
-                      background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 700, fontSize: 12, color: 'white'
-                    }}>
-                      {comment.author_name[0].toUpperCase()}
-                    </div>
-                    <strong style={{ fontSize: 15 }}>{comment.author_name}</strong>
+                    <Link href={`/user/${comment.user_id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }} className="group">
+                      <div style={{ 
+                        width: 32, height: 32, borderRadius: '50%', 
+                        background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: 12, color: 'white'
+                      }}>
+                        {comment.author_name[0].toUpperCase()}
+                      </div>
+                      <strong style={{ fontSize: 15, color: 'white' }} className="group-hover:text-primary group-hover:underline">{comment.author_name}</strong>
+                    </Link>
                     <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
                       {new Date(comment.created_at).toLocaleDateString()}
                     </span>

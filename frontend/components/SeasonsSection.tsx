@@ -330,8 +330,6 @@ export default function SeasonsSection({ seasons, seriesId, seriesName }: Props)
           }} 
           className="hide-scrollbar"
         >
-          <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
-          
           {displaySeasons.map((season) => {
             const isSelected = season.season_number === selectedSeasonNumber;
             const year = season.air_date ? new Date(season.air_date).getFullYear() : 'TBA';

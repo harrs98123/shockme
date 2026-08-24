@@ -1,4 +1,10 @@
+import type { Metadata } from 'next';
 import SecurityVerification from '@/components/SecurityVerification';
+
+export const metadata: Metadata = {
+  title: 'Verifying…',
+  robots: { index: false, follow: false },
+};
 
 export default function VerifyPage() {
   return (

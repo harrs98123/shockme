@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, ShieldCheck, Mail, User, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, ShieldCheck, Mail, User, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import TurnstileWidget from '@/components/TurnstileWidget';
@@ -154,66 +154,73 @@ function LoginForm() {
       </div>
 
       {/* Right side: Modern Login Form */}
-      <div className="flex w-full flex-col items-center justify-center p-6 lg:w-[45%] border-l border-white/5 bg-[#000000] z-20 overflow-y-auto">
-        <div className="mb-10 text-center select-none mt-auto lg:mt-0 pt-10 lg:pt-0">
-          <div className="flex items-center justify-center">
-            <Link href="/" className="cursor-pointer">
-              <PlotmintLogo size="large" />
-            </Link>
-          </div>
+      <div className="flex w-full flex-col items-center justify-center p-4 sm:p-6 lg:w-[45%] border-l border-white/[0.08] bg-[#050507] z-20 overflow-y-auto">
+        <div className="mb-4 text-center select-none">
+          <Link href="/" className="cursor-pointer inline-block transition-transform hover:scale-105">
+            <PlotmintLogo size="medium" />
+          </Link>
         </div>
 
-        <div className="w-full max-w-[370px] animate-in fade-in zoom-in duration-500">
-          <div className="glass rounded-[2rem] bg-[#121212]/30 p-8 shadow-2xl border border-white/10">
-            <h2 className="mb-8 text-center text-xl font-bold tracking-tight text-zinc-100">Login</h2>
+        <div className="w-full max-w-[390px] animate-in fade-in zoom-in duration-300">
+          <div className="relative rounded-2xl sm:rounded-[1.75rem] bg-[#0e0e12]/80 backdrop-blur-2xl p-5 sm:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.7)] border border-white/[0.08]">
+            <div className="text-center mb-5">
+              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">Welcome Back</h2>
+              <p className="text-[11px] text-zinc-400 mt-0.5">Sign in to your plotmint account</p>
+            </div>
 
             {error && (
-              <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 py-3 px-4 text-center text-[13px] text-red-500">
+              <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 py-2.5 px-3.5 text-center text-xs text-red-400 font-medium">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 ml-1">Username / Email</label>
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Username / Email</label>
                 <div className="relative">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500">
+                    {loginId.includes('@') ? <Mail size={15} /> : <User size={15} />}
+                  </div>
                   <input
                     type="text"
                     placeholder="Enter username or email"
                     value={loginId}
                     onChange={(e) => setLoginId(e.target.value)}
-                    className="w-full rounded-xl bg-white/[0.03] border border-white/10 pl-12 pr-5 py-3.5 text-sm font-medium placeholder:text-zinc-600 focus:border-white/20 focus:bg-white/[0.06] focus:outline-none transition-all duration-300"
+                    className="w-full rounded-xl bg-white/[0.03] border border-white/10 pl-9 pr-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-white placeholder:text-zinc-600 focus:border-red-500/50 focus:bg-white/[0.06] focus:outline-none transition-all"
                     required
                   />
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
-                    {loginId.includes('@') ? <Mail size={18} /> : <User size={18} />}
-                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 ml-1">Password</label>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between ml-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Password</label>
+                  <Link href="/forgot-password" className="text-[10px] font-semibold text-zinc-400 hover:text-red-400 transition-colors">
+                    Forgot?
+                  </Link>
+                </div>
                 <div className="relative">
+                  <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl bg-white/[0.03] border border-white/10 px-5 py-3.5 text-sm font-medium placeholder:text-zinc-600 focus:border-white/20 focus:bg-white/[0.06] focus:outline-none transition-all duration-300"
+                    className="w-full rounded-xl bg-white/[0.03] border border-white/10 pl-9 pr-9 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-white placeholder:text-zinc-600 focus:border-red-500/50 focus:bg-white/[0.06] focus:outline-none transition-all"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors p-1 cursor-pointer"
                   >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
               </div>
 
               {/* Turnstile Widget */}
-              <div className="flex justify-center">
+              <div className="flex justify-center pt-1">
                 <TurnstileWidget 
                   onVerify={handleTurnstileVerify}
                   onError={handleTurnstileError}
@@ -226,18 +233,24 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading || !turnstileToken}
-                className="w-full rounded-full bg-zinc-200 py-3.5 font-bold text-black text-sm transition-all hover:bg-white active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-white/5"
+                className="w-full rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white py-2.5 sm:py-3 font-bold text-xs sm:text-sm tracking-wide shadow-[0_0_20px_rgba(225,29,72,0.35)] transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
               >
-                {loading ? 'Authenticating...' : 'Sign In'}
+                {loading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Authenticating...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign In</span>
+                    <ArrowRight size={15} />
+                  </>
+                )}
               </button>
 
-              <div className="flex flex-col items-center gap-4 pt-2">
-                <Link href="/forgot-password" title="Forgot Password? Reset it here" className="text-[10px] font-bold text-zinc-500 hover:text-zinc-300 transition-colors uppercase tracking-widest">
-                  Forgot Password?
-                </Link>
-                
-                <p className="text-[12px] font-medium text-zinc-500">
-                  Don't have an account? <Link href="/register" className="font-bold text-zinc-100 hover:underline underline-offset-4 ml-1">Sign Up</Link>
+              <div className="text-center pt-1">
+                <p className="text-[11px] font-medium text-zinc-400">
+                  Don't have an account? <Link href="/register" className="font-bold text-red-400 hover:text-red-300 hover:underline underline-offset-4 ml-1 transition-colors">Sign Up</Link>
                 </p>
               </div>
             </form>

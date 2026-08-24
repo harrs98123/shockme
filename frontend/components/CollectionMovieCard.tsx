@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Movie } from '@/lib/types';
 import { getEnglishTitle } from '@/lib/utils';
 import AddToCollectionButton from './AddToCollectionButton';
+import SarcasticPosterFallback from '@/components/SarcasticPosterFallback';
 
 interface Props {
   movie: Movie;
@@ -17,6 +18,7 @@ const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 
 export default function CollectionMovieCard({ movie, index }: Props) {
   const [isHovered, setIsHovered] = useState(false);
+  const [imgError, setImgError] = useState(!movie.poster_path);
   const year = movie.release_date?.slice(0, 4) || 'N/A';
   const title = getEnglishTitle(movie);
   
@@ -44,26 +46,33 @@ export default function CollectionMovieCard({ movie, index }: Props) {
       }}
     >
       <Link href={`/movie/${movie.id}`} style={{ display: 'block', height: '100%' }}>
-        {/* Poster Image */}
+        {/* Poster Image or Sarcastic Fallback */}
         <div style={{ position: 'absolute', inset: 0 }}>
-          <Image
-            src={movie.poster_path ? `${TMDB_IMG}${movie.poster_path}` : '/no-poster.png'}
-            alt={movie.title || 'Movie Poster'}
-            fill
-            sizes="(max-width: 768px) 50vw, 20vw"
-            style={{ 
-              objectFit: 'cover',
-              transition: 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-              transform: isHovered ? 'scale(1.15)' : 'scale(1)'
-            }}
-            loading="lazy"
-          />
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to top, #000 0%, rgba(0,0,0,0.4) 40%, transparent 100%)',
-            opacity: isHovered ? 0.95 : 0.7,
-            transition: 'opacity 0.3s'
-          }} />
+          {!imgError && movie.poster_path ? (
+            <>
+              <Image
+                src={`${TMDB_IMG}${movie.poster_path}`}
+                alt={movie.title || 'Movie Poster'}
+                fill
+                sizes="(max-width: 768px) 50vw, 20vw"
+                style={{ 
+                  objectFit: 'cover',
+                  transition: 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                  transform: isHovered ? 'scale(1.15)' : 'scale(1)'
+                }}
+                loading="lazy"
+                onError={() => setImgError(true)}
+              />
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(to top, #000 0%, rgba(0,0,0,0.4) 40%, transparent 100%)',
+                opacity: isHovered ? 0.95 : 0.7,
+                transition: 'opacity 0.3s'
+              }} />
+            </>
+          ) : (
+            <SarcasticPosterFallback title={title} seed={movie.id} />
+          )}
         </div>
 
         {/* Floating Rating */}

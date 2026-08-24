@@ -78,18 +78,18 @@ export default function SwipeCard({ movie, onSwipe, isFront, index, triggerDirec
   const targetX = isFront
     ? x
     : index === 1
-    ? leftOffset
-    : index === 2
-    ? rightOffset
-    : 0;
+      ? leftOffset
+      : index === 2
+        ? rightOffset
+        : 0;
 
   const targetRotate = isFront
     ? rotate
     : index === 1
-    ? -12
-    : index === 2
-    ? 12
-    : 0;
+      ? -12
+      : index === 2
+        ? 12
+        : 0;
 
   const targetY = isFront ? 0 : 14;
   const scale = isFront ? 1.02 : 0.88;
@@ -121,20 +121,19 @@ export default function SwipeCard({ movie, onSwipe, isFront, index, triggerDirec
       transition={{ type: 'spring', stiffness: 340, damping: 25 }}
       {...(isFront
         ? {
-            drag: 'x' as const,
-            dragConstraints: { left: 0, right: 0 },
-            dragElastic: 0.65,
-            onDragEnd: handleDragEnd,
-            whileTap: { cursor: 'grabbing', scale: 1.03 },
-          }
+          drag: 'x' as const,
+          dragConstraints: { left: 0, right: 0 },
+          dragElastic: 0.65,
+          onDragEnd: handleDragEnd,
+          whileTap: { cursor: 'grabbing', scale: 1.03 },
+        }
         : {})}
     >
       <div
-        className={`relative w-full h-full bg-[#0d0714] rounded-[28px] sm:rounded-[32px] overflow-hidden transition-all duration-300 ${
-          isFront
+        className={`relative w-full h-full bg-[#0d0714] rounded-[28px] sm:rounded-[32px] overflow-hidden transition-all duration-300 ${isFront
             ? 'border-[3px] border-violet-500 shadow-[0_0_35px_rgba(139,92,246,0.45),0_20px_50px_rgba(0,0,0,0.9)]'
             : 'border-[2.5px] border-violet-600/70 shadow-[0_0_20px_rgba(139,92,246,0.25),0_15px_35px_rgba(0,0,0,0.8)]'
-        }`}
+          }`}
       >
         {poster ? (
           <Image

@@ -66,7 +66,7 @@ export default function TrendingRankedRow({
           {canScrollLeft && (
             <button
               onClick={() => scroll('left')}
-              className="hidden md:flex scroll-btn left absolute -left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/80 border border-white/10 text-white cursor-pointer backdrop-blur-md items-center justify-center text-lg"
+              className="hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/80 border border-white/10 text-white cursor-pointer backdrop-blur-md items-center justify-center text-lg transition-all duration-300 opacity-80 hover:opacity-100 hover:!bg-[var(--primary)] hover:!border-[var(--primary)] hover:scale-110"
             >
               ←
             </button>
@@ -75,7 +75,7 @@ export default function TrendingRankedRow({
           {canScrollRight && (
             <button
               onClick={() => scroll('right')}
-              className="hidden md:flex scroll-btn right absolute -right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/80 border border-white/10 text-white cursor-pointer backdrop-blur-md items-center justify-center text-lg"
+              className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/80 border border-white/10 text-white cursor-pointer backdrop-blur-md items-center justify-center text-lg transition-all duration-300 opacity-80 hover:opacity-100 hover:!bg-[var(--primary)] hover:!border-[var(--primary)] hover:scale-110"
             >
               →
             </button>
@@ -122,26 +122,6 @@ export default function TrendingRankedRow({
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scroll-btn {
-          transition: all 0.3s ease;
-          opacity: 0.8;
-        }
-        .scroll-btn:hover {
-          opacity: 1;
-          background: var(--primary) !important;
-          border-color: var(--primary) !important;
-          transform: translateY(-50%) scale(1.1);
-        }
-      `}</style>
     </section>
   );
 }
