@@ -32,6 +32,8 @@ import {
   Bookmark,
   Sparkles,
 } from 'lucide-react';
+import Avatar from '@/components/Avatar';
+import AvatarCustomizerModal from '@/components/AvatarCustomizerModal';
 
 const StackedBarsIcon = ({ size = 24, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -70,6 +72,7 @@ export default function Navbar() {
   const [mobileBrowseOpen, setMobileBrowseOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -675,8 +678,31 @@ export default function Navbar() {
             </div>
             {user ? (
               <div style={{ position: 'relative' }}>
-                <button onClick={() => setMenuOpen(!menuOpen)} style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), #b0070f)', border: 'none', cursor: 'pointer', color: 'white', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}>
-                  {initials}
+                <button
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  aria-label={`${user.name}'s account menu`}
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: '50%',
+                    padding: 0,
+                    border: '2px solid rgba(255,255,255,0.15)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginLeft: 8,
+                    overflow: 'hidden',
+                    background: '#151515',
+                  }}
+                >
+                  <Avatar
+                    src={user.avatar_url}
+                    seed={user.id || user.username || user.name}
+                    name={user.name}
+                    size={38}
+                    decorative
+                  />
                 </button>
                 <AnimatePresence>
                   {menuOpen && (
@@ -706,6 +732,22 @@ export default function Navbar() {
 
                       {/* Dropdown Links */}
                       <DropdownItem icon={<User size={16} />} label="My Profile" href="/profile" onClick={() => setMenuOpen(false)} />
+                      <button
+                        type="button"
+                        onClick={() => { setMenuOpen(false); setIsAvatarModalOpen(true); }}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '12px 16px', color: 'rgba(255,255,255,0.7)',
+                          background: 'transparent', border: 'none', fontSize: 14, fontWeight: 600,
+                          borderRadius: 16, cursor: 'pointer', transition: 'all 0.2s',
+                          marginBottom: 2, textAlign: 'left',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#fff'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+                      >
+                        <div style={{ color: 'var(--primary, #E50914)' }}><Sparkles size={16} /></div>
+                        Customize Avatar
+                      </button>
                       <DropdownItem icon={<Library size={16} />} label="My Collections" href="/collections" onClick={() => setMenuOpen(false)} />
                       <DropdownItem icon={<ListChecks size={16} />} label="Movie Finder" href="/finder" onClick={() => setMenuOpen(false)} />
                       <DropdownItem icon={<Wand2 size={16} />} label="Movie Moods" href="/mood" onClick={() => setMenuOpen(false)} />
@@ -756,16 +798,28 @@ export default function Navbar() {
           {user ? (
             <button
               onClick={() => setMobileMenuOpen(true)}
+              aria-label={`${user.name}'s mobile menu`}
               style={{
-                width: 36, height: 36, borderRadius: '50%',
-                background: 'linear-gradient(135deg, var(--primary, #e11d48), #b0070f)',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
                 border: '2px solid rgba(255,255,255,0.15)',
-                color: 'white', fontWeight: 700, fontSize: 13,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 cursor: 'pointer',
+                overflow: 'hidden',
+                padding: 0,
+                background: '#151515',
               }}
             >
-              {initials}
+              <Avatar
+                src={user.avatar_url}
+                seed={user.id || user.username || user.name}
+                name={user.name}
+                size={36}
+                decorative
+              />
             </button>
           ) : (
             <Link href="/login" style={{
@@ -1042,8 +1096,14 @@ export default function Navbar() {
                           style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
                           <Link href="/profile" onClick={() => setMobileMenuOpen(false)}
                             style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                            <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary, #e11d48), #b0070f)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 13 }}>
-                              {initials}
+                            <div style={{ width: 38, height: 38, borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#151515' }}>
+                              <Avatar
+                                src={user.avatar_url}
+                                seed={user.id || user.username || user.name}
+                                name={user.name}
+                                size={38}
+                                decorative
+                              />
                             </div>
                             <div>
                               <div style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>{user.name}</div>
@@ -1188,6 +1248,14 @@ export default function Navbar() {
           }
         }
       `}</style>
+
+      {/* Avatar Customizer Modal */}
+      {isAvatarModalOpen && (
+        <AvatarCustomizerModal
+          isOpen={isAvatarModalOpen}
+          onClose={() => setIsAvatarModalOpen(false)}
+        />
+      )}
     </>
   );
 }

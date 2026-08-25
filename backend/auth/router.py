@@ -266,6 +266,7 @@ def get_me(current_user: models.User = Depends(get_current_user)):
 
 
 @router.patch("/profile", response_model=schemas.UserOut)
+@router.put("/profile", response_model=schemas.UserOut)
 def update_profile(
     payload: schemas.UserUpdate,
     db: Session = Depends(get_db),

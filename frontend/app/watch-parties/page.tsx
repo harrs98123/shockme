@@ -18,6 +18,7 @@ import {
   X,
   Check
 } from 'lucide-react';
+import Avatar from '@/components/Avatar';
 
 interface WatchPartyParticipant {
   user_id: number;
@@ -289,26 +290,28 @@ export default function WatchPartiesPage() {
                       </div>
                       <div className="flex items-center">
                         {/* Host avatar first, slightly larger */}
-                        <div className="w-8 h-8 rounded-full bg-primary p-0.5 z-10 border-2 border-[#0f0f14]" title={`Host: ${party.host.name}`}>
-                          {party.host.avatar_url ? (
-                            <Image src={party.host.avatar_url} alt="" width={32} height={32} className="w-full h-full object-cover rounded-full" />
-                          ) : (
-                            <div className="w-full h-full bg-[#222] rounded-full flex items-center justify-center text-[10px] font-bold text-white">
-                              {party.host.name.slice(0,2).toUpperCase()}
-                            </div>
-                          )}
+                        <div className="w-8 h-8 rounded-full bg-primary p-0.5 z-10 border-2 border-[#0f0f14] overflow-hidden" title={`Host: ${party.host.name}`}>
+                          <Avatar
+                            src={party.host.avatar_url}
+                            seed={party.host.id || party.host.name}
+                            name={party.host.name}
+                            size={28}
+                            className="w-full h-full object-cover rounded-full"
+                            decorative
+                          />
                         </div>
                         
                         {/* Other participants */}
                         {party.participants.filter(p => p.user_id !== party.host.id).slice(0, 4).map((p, idx) => (
-                          <div key={p.user_id} className={`w-8 h-8 rounded-full bg-white/10 border-2 border-[#0f0f14] ${idx > 0 ? '-ml-3' : '-ml-2'}`} style={{ zIndex: 9 - idx }} title={p.name}>
-                            {p.avatar_url ? (
-                              <Image src={p.avatar_url} alt="" width={32} height={32} className="w-full h-full object-cover rounded-full" />
-                            ) : (
-                              <div className="w-full h-full bg-[#333] rounded-full flex items-center justify-center text-[10px] font-bold text-white">
-                                {p.name.slice(0,2).toUpperCase()}
-                              </div>
-                            )}
+                          <div key={p.user_id} className={`w-8 h-8 rounded-full bg-white/10 border-2 border-[#0f0f14] overflow-hidden ${idx > 0 ? '-ml-3' : '-ml-2'}`} style={{ zIndex: 9 - idx }} title={p.name}>
+                            <Avatar
+                              src={p.avatar_url}
+                              seed={p.user_id || p.username || p.name}
+                              name={p.name}
+                              size={28}
+                              className="w-full h-full object-cover rounded-full"
+                              decorative
+                            />
                           </div>
                         ))}
                         

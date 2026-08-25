@@ -8,6 +8,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Sparkles, Zap, Star, MessageSquare, Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import Avatar from '@/components/Avatar';
 
 interface ReviewComment {
   id: number;
@@ -254,12 +255,15 @@ function CommentNode({ comment, currentUser, onReply, onLike, onDelete }: {
     <div className="flex flex-col gap-1 w-full relative">
       <div className="flex gap-3 mt-1">
         <Link href={`/user/${comment.user_id}`} className="shrink-0 group">
-          <div className="w-6 h-6 rounded-full bg-white/10 group-hover:border-primary/50 group-hover:scale-105 transition-all flex items-center justify-center text-[9px] font-bold shrink-0 mt-1 border border-white/5 overflow-hidden">
-            {comment.author_avatar ? (
-              <Image src={comment.author_avatar} alt={comment.author_name} width={24} height={24} className="object-cover w-full h-full" />
-            ) : (
-              comment.author_name.slice(0, 2).toUpperCase()
-            )}
+          <div className="w-6 h-6 rounded-full group-hover:border-primary/50 group-hover:scale-105 transition-all flex items-center justify-center shrink-0 mt-1 border border-white/5 overflow-hidden">
+            <Avatar
+              src={comment.author_avatar}
+              seed={comment.user_id || comment.author_username || comment.author_name}
+              name={comment.author_name}
+              size={24}
+              className="object-cover w-full h-full"
+              decorative
+            />
           </div>
         </Link>
         <div className="flex flex-col max-w-[85%]">
@@ -641,13 +645,16 @@ export default function MoctaleMeter({ movieId, mediaType = 'movie' }: { movieId
                        <Link href={`/user/${review.user_id}`} style={{ textDecoration: 'none' }} className="flex items-center gap-3 group">
                           {/* Avatar */}
                           <div className="w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"
-                            style={{ borderColor: meta.color, background: `${meta.color}20`, color: meta.color, fontSize: 13, fontWeight: 'bold' }}
+                            style={{ borderColor: meta.color, background: `${meta.color}20` }}
                           >
-                             {review.author_avatar ? (
-                               <Image src={review.author_avatar} alt={review.author_name} width={40} height={40} className="object-cover w-full h-full" />
-                             ) : (
-                               initials
-                             )}
+                             <Avatar
+                               src={review.author_avatar}
+                               seed={review.user_id || review.author_username || review.author_name}
+                               name={review.author_name}
+                               size={40}
+                               className="object-cover w-full h-full"
+                               decorative
+                             />
                           </div>
                           <div className="flex flex-col">
                              <div className="flex items-center gap-2">
@@ -727,8 +734,18 @@ export default function MoctaleMeter({ movieId, mediaType = 'movie' }: { movieId
                          
                          {/* Comment Input */}
                          <div className="flex gap-3 items-end mt-2">
-                            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold shrink-0 mb-1 border border-white/10">
-                              {user ? ((user.username || user.name || 'Guest').slice(0,2).toUpperCase()) : '❓'}
+                            <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0 mb-1 border border-white/10 bg-white/10">
+                              {user ? (
+                                <Avatar
+                                  src={user.avatar_url}
+                                  seed={user.id || user.username || user.name}
+                                  name={user.name}
+                                  size={28}
+                                  decorative
+                                />
+                              ) : (
+                                <span className="text-[10px] font-bold text-white">?</span>
+                              )}
                             </div>
                             <div className="relative flex-1 group">
                               <textarea

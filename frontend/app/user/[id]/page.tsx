@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import FollowersModal from '@/components/FollowersModal';
 import SarcasticPosterFallback from '@/components/SarcasticPosterFallback';
+import Avatar from '@/components/Avatar';
 
 interface PublicUser {
   id: number;
@@ -322,22 +323,14 @@ export default function PublicUserProfilePage() {
                     overflow: 'hidden',
                   }}
                 >
-                  {user.avatar_url ? (
-                    <Image
-                      src={user.avatar_url}
-                      alt={user.name}
-                      width={88}
-                      height={88}
-                      style={{ objectFit: 'cover' }}
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span style={{ fontSize: 28, fontWeight: 900, color: 'white', letterSpacing: '-1px' }}>
-                      {initials}
-                    </span>
-                  )}
+                  <Avatar
+                    src={user.avatar_url}
+                    seed={user.id || user.username || user.name}
+                    name={user.name}
+                    size={88}
+                    className="w-full h-full object-cover"
+                    alt={`${user.name}'s avatar`}
+                  />
                 </div>
               </div>
 
@@ -365,23 +358,37 @@ export default function PublicUserProfilePage() {
                 )}
 
                 {/* Follower / Following Quick Counters in Header */}
-                <div className="flex items-center gap-5 text-sm mt-3.5">
+                <div className="flex items-center gap-3 text-sm mt-4 flex-wrap">
                   <button
                     onClick={() => openFollowModal('followers')}
-                    className="hover:text-white transition-colors cursor-pointer bg-transparent border-none p-0 flex items-center gap-1.5"
-                    style={{ color: 'rgba(255,255,255,0.75)' }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 7,
+                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
+                      padding: '7px 15px', borderRadius: 14, color: '#fff', cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)'; }}
                   >
-                    <strong className="text-white text-base font-extrabold">{stats.followers_count}</strong>
-                    <span className="text-xs text-white/50">Followers</span>
+                    <Users size={14} style={{ color: 'var(--primary, #E50914)' }} />
+                    <strong className="text-white text-sm font-extrabold">{stats.followers_count}</strong>
+                    <span className="text-xs text-white/50 font-medium">Followers</span>
                   </button>
 
                   <button
                     onClick={() => openFollowModal('following')}
-                    className="hover:text-white transition-colors cursor-pointer bg-transparent border-none p-0 flex items-center gap-1.5"
-                    style={{ color: 'rgba(255,255,255,0.75)' }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 7,
+                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
+                      padding: '7px 15px', borderRadius: 14, color: '#fff', cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)'; }}
                   >
-                    <strong className="text-white text-base font-extrabold">{stats.following_count}</strong>
-                    <span className="text-xs text-white/50">Following</span>
+                    <UserCheck size={14} style={{ color: 'var(--primary, #E50914)' }} />
+                    <strong className="text-white text-sm font-extrabold">{stats.following_count}</strong>
+                    <span className="text-xs text-white/50 font-medium">Following</span>
                   </button>
 
                   {joinedYear && (

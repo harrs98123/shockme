@@ -3,12 +3,13 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Clapperboard, Eye, ThumbsUp, BarChart2, Image as ImageIcon, 
+import {
+  Clapperboard, Eye, ThumbsUp, BarChart2, Image as ImageIcon,
   PlaySquare, Bookmark, X, Search, ChevronDown, Check
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import api from '@/lib/api';
+import Avatar from '@/components/Avatar';
 
 const POST_TYPES = [
   { id: 'review', label: 'Movie Review', icon: ThumbsUp, color: '#c084fc', desc: 'Rate and review a movie' },
@@ -50,7 +51,7 @@ export default function PostComposer({ onPostCreated }: { onPostCreated: () => v
     setIsSubmitting(true);
     try {
       const payload: any = {};
-      
+
       if (activeType === 'review') {
         payload.rating = rating;
       } else if (activeType === 'poll') {
@@ -92,11 +93,14 @@ export default function PostComposer({ onPostCreated }: { onPostCreated: () => v
         // Closed State - Just input and buttons
         <div className="flex items-center gap-4">
           <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#222', flexShrink: 0, overflow: 'hidden' }}>
-            {user.avatar_url ? (
-              <Image src={user.avatar_url} alt="" width={44} height={44} className="object-cover w-full h-full" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center font-bold text-white text-xs">{initials}</div>
-            )}
+            <Avatar
+              src={user.avatar_url}
+              seed={user.id || user.username || user.name}
+              name={user.name}
+              size={44}
+              className="object-cover w-full h-full"
+              decorative
+            />
           </div>
           <input
             type="text"
@@ -157,9 +161,9 @@ export default function PostComposer({ onPostCreated }: { onPostCreated: () => v
                 <div className="mb-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-3 text-white/40" size={16} />
-                    <input 
-                      type="text" 
-                      placeholder="Search movie (mocked, using Interstellar ID: 157336)" 
+                    <input
+                      type="text"
+                      placeholder="Search movie (mocked, using Interstellar ID: 157336)"
                       value={selectedMovie ? selectedMovie.title : ''}
                       onChange={(e) => {
                         // In real app, fetch search results. Here we just hardcode Interstellar for demo
@@ -177,7 +181,7 @@ export default function PostComposer({ onPostCreated }: { onPostCreated: () => v
               {activeType === 'review' && (
                 <div className="mb-4 flex items-center gap-2">
                   <span className="text-sm font-semibold text-white/60">Rating:</span>
-                  {[1,2,3,4,5].map(star => (
+                  {[1, 2, 3, 4, 5].map(star => (
                     <button key={star} onClick={() => setRating(star)} className="text-xl hover:scale-110 transition-transform">
                       {star <= rating ? '⭐' : '☆'}
                     </button>
@@ -188,9 +192,9 @@ export default function PostComposer({ onPostCreated }: { onPostCreated: () => v
               {activeType === 'poll' && (
                 <div className="flex flex-col gap-2 mb-4">
                   {pollOptions.map((opt, idx) => (
-                    <input 
+                    <input
                       key={idx}
-                      type="text" 
+                      type="text"
                       placeholder={`Option ${idx + 1}`}
                       value={opt}
                       onChange={(e) => {
@@ -202,7 +206,7 @@ export default function PostComposer({ onPostCreated }: { onPostCreated: () => v
                     />
                   ))}
                   {pollOptions.length < 4 && (
-                    <button 
+                    <button
                       onClick={() => setPollOptions([...pollOptions, ''])}
                       className="text-xs text-primary font-bold self-start mt-1 hover:underline"
                     >
@@ -214,8 +218,8 @@ export default function PostComposer({ onPostCreated }: { onPostCreated: () => v
 
               {(activeType === 'meme' || activeType === 'scene') && (
                 <div className="mb-4">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Paste Image/GIF URL"
                     value={mediaUrl}
                     onChange={(e) => setMediaUrl(e.target.value)}
@@ -241,9 +245,9 @@ export default function PostComposer({ onPostCreated }: { onPostCreated: () => v
             {/* Footer */}
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
               <label className="flex items-center gap-2 text-xs font-bold text-white/50 cursor-pointer hover:text-white/80 transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={isSpoiler} 
+                <input
+                  type="checkbox"
+                  checked={isSpoiler}
                   onChange={(e) => setIsSpoiler(e.target.checked)}
                   className="accent-red-500 w-4 h-4"
                 />

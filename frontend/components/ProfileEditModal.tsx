@@ -7,6 +7,8 @@ import { User as UserType } from '@/lib/types';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { CldUploadWidget } from 'next-cloudinary';
+import Avatar from '@/components/Avatar';
+import AvatarCustomizerModal from '@/components/AvatarCustomizerModal';
 
 interface ProfileEditModalProps {
   user: UserType;
@@ -26,6 +28,7 @@ export default function ProfileEditModal({ user, onClose }: ProfileEditModalProp
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -116,18 +119,30 @@ export default function ProfileEditModal({ user, onClose }: ProfileEditModalProp
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  onClick={() => setIsCustomizerOpen(true)}
+                  title="Click to customize avatar"
                   style={{
                     width: 100, height: 100, borderRadius: '50%', overflow: 'hidden',
-                    background: 'linear-gradient(135deg, #1f1f1f, #0a0a0a)',
-                    border: '2px solid rgba(255,255,255,0.08)',
+                    background: '#151515',
+                    border: '2px solid rgba(255,255,255,0.15)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 32, fontWeight: 800, color: '#fff',
                     boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                    cursor: 'pointer',
                   }}
+                  className="group relative"
                 >
-                  {formData.avatar_url ? (
-                    <img src={formData.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : initials}
+                  <Avatar
+                    src={formData.avatar_url}
+                    seed={user.id || formData.username || user.username || formData.name || user.name}
+                    name={formData.name || user.name}
+                    size={100}
+                    className="w-full h-full object-cover"
+                    alt="Profile Avatar Preview"
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                    <Camera size={20} className="text-primary animate-pulse" />
+                    <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customize</span>
+                  </div>
                 </motion.div>
 
                 <CldUploadWidget
@@ -258,6 +273,17 @@ export default function ProfileEditModal({ user, onClose }: ProfileEditModalProp
 
           </form>
         </div>
+
+        {/* Avatar Customizer Submodal */}
+        {isCustomizerOpen && (
+          <AvatarCustomizerModal
+            isOpen={isCustomizerOpen}
+            onClose={() => setIsCustomizerOpen(false)}
+            onAvatarUpdated={(newUrl) => {
+              setFormData((prev) => ({ ...prev, avatar_url: newUrl }));
+            }}
+          />
+        )}
       </motion.div>
     </div>
   );

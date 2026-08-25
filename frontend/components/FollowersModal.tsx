@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { X, Search, UserCheck, UserPlus, Loader2 } from 'lucide-react';
+import Avatar from '@/components/Avatar';
 
 export interface FollowUser {
   id: number;
@@ -330,24 +331,24 @@ export default function FollowersModal({
                       >
                         <div
                           style={{
-                            width: '100%',
-                            height: '100%',
+                            width: 40,
+                            height: 40,
                             borderRadius: '50%',
                             background: '#1a1a20',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             overflow: 'hidden',
-                            fontWeight: 800,
-                            fontSize: 12,
-                            color: 'white',
                           }}
                         >
-                          {u.avatar_url ? (
-                            <Image src={u.avatar_url} alt={u.name} width={40} height={40} className="object-cover w-full h-full" />
-                          ) : (
-                            initials
-                          )}
+                          <Avatar
+                            src={u.avatar_url}
+                            seed={u.id || u.username || u.name}
+                            name={u.name}
+                            size={40}
+                            className="object-cover w-full h-full"
+                            decorative
+                          />
                         </div>
                       </div>
 

@@ -8,6 +8,7 @@ from datetime import datetime
 from database import get_db
 from models import User, SocialPost, PostReaction, PostComment, TopicFollow, UserFollow
 from auth.utils import get_current_user, get_current_user_optional
+from sqlalchemy.orm.attributes import flag_modified
 
 router = APIRouter()
 
@@ -22,6 +23,9 @@ class SocialPostCreate(BaseModel):
 
 class ReactionCreate(BaseModel):
     reaction_type: str
+
+class PollVoteRequest(BaseModel):
+    option_index: int
 
 class CommentCreate(BaseModel):
     content: str
@@ -75,6 +79,7 @@ def create_post(post: SocialPostCreate, db: Session = Depends(get_db), current_u
     return format_post(new_post, current_user.id)
 
 @router.post("/posts/{post_id}/react")
+@router.post("/posts/posts/{post_id}/react")
 def react_to_post(post_id: int, reaction: ReactionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     post = db.query(SocialPost).filter(SocialPost.id == post_id).first()
     if not post:
@@ -107,7 +112,51 @@ def react_to_post(post_id: int, reaction: ReactionCreate, db: Session = Depends(
         return {"status": "added"}
 
 
+@router.post("/posts/{post_id}/poll/vote", response_model=SocialPostOut)
+@router.post("/posts/posts/{post_id}/poll/vote", response_model=SocialPostOut)
+def vote_on_poll(
+    post_id: int,
+    vote_req: PollVoteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    post = db.query(SocialPost).filter(SocialPost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.post_type != "poll":
+        raise HTTPException(status_code=400, detail="Post is not a poll")
+    
+    payload = dict(post.payload or {})
+    options = payload.get("options", [])
+    if not options or vote_req.option_index < 0 or vote_req.option_index >= len(options):
+        raise HTTPException(status_code=400, detail="Invalid option index")
+    
+    voters = dict(payload.get("voters") or {})
+    user_key = str(current_user.id)
+    
+    # Record user vote
+    voters[user_key] = vote_req.option_index
+    payload["voters"] = voters
+    
+    # Re-calculate counts
+    counts = [0] * len(options)
+    for v_idx in voters.values():
+        if isinstance(v_idx, int) and 0 <= v_idx < len(options):
+            counts[v_idx] += 1
+            
+    payload["votes"] = counts
+    payload["total_votes"] = sum(counts)
+    
+    post.payload = payload
+    flag_modified(post, "payload")
+    db.commit()
+    db.refresh(post)
+    
+    return format_post(post, current_user.id)
+
+
 @router.post("/posts/{post_id}/comment", response_model=CommentOut)
+@router.post("/posts/posts/{post_id}/comment", response_model=CommentOut)
 def add_comment(post_id: int, comment: CommentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     post = db.query(SocialPost).filter(SocialPost.id == post_id).first()
     if not post:
@@ -150,6 +199,7 @@ def get_movie_posts(movie_id: int, db: Session = Depends(get_db), current_user: 
 
 
 @router.get("/posts/{post_id}/comments", response_model=List[CommentOut])
+@router.get("/posts/posts/{post_id}/comments", response_model=List[CommentOut])
 def get_comments(post_id: int, db: Session = Depends(get_db)):
     comments = db.query(PostComment).filter(PostComment.post_id == post_id).order_by(PostComment.created_at.asc()).all()
     return [
@@ -170,20 +220,27 @@ def get_comments(post_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/feed/following", response_model=List[SocialPostOut])
+@router.get("/posts/feed/following", response_model=List[SocialPostOut])
 def get_following_feed(limit: int = 50, offset: int = 0, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     # Get IDs of people the user follows
     following_ids = [f.following_id for f in current_user.following]
     if not following_ids:
-        return []
+        # Fallback to general recent so the feed is never empty!
+        posts = db.query(SocialPost).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+        return [format_post(p, current_user.id) for p in posts]
         
     posts = db.query(SocialPost).filter(
         SocialPost.user_id.in_(following_ids)
     ).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
     
+    if not posts:
+        posts = db.query(SocialPost).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+
     return [format_post(p, current_user.id) for p in posts]
 
 
 @router.get("/feed/for-you", response_model=List[SocialPostOut])
+@router.get("/posts/feed/for-you", response_model=List[SocialPostOut])
 def get_for_you_feed(limit: int = 50, offset: int = 0, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_optional)):
     if not current_user:
         # Public feed - just popular/recent posts
@@ -197,17 +254,18 @@ def get_for_you_feed(limit: int = 50, offset: int = 0, db: Session = Depends(get
     topic_follows = db.query(TopicFollow).filter(TopicFollow.user_id == current_user.id).all()
     followed_movie_ids = [int(t.entity_id) for t in topic_follows if t.entity_type == 'movie' and t.entity_id.isdigit()]
     
-    query = db.query(SocialPost).filter(
-        or_(
-            SocialPost.user_id.in_(following_ids) if following_ids else False,
-            SocialPost.movie_id.in_(followed_movie_ids) if followed_movie_ids else False,
-            # Could add logic for popular posts here
-        )
-    ).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit)
+    conditions = []
+    if following_ids:
+        conditions.append(SocialPost.user_id.in_(following_ids))
+    if followed_movie_ids:
+        conditions.append(SocialPost.movie_id.in_(followed_movie_ids))
+
+    if conditions:
+        posts = db.query(SocialPost).filter(or_(*conditions)).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+    else:
+        posts = []
     
-    posts = query.all()
-    
-    # Fallback to general recent if empty
+    # Fallback to general recent if empty so feed is always vibrant
     if not posts:
         posts = db.query(SocialPost).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
         
@@ -231,12 +289,37 @@ def format_post(post: SocialPost, current_user_id: Optional[int]) -> Dict[str, A
         if current_user_id and r.user_id == current_user_id:
             user_reaction = r.reaction_type
 
+    payload = dict(post.payload or {})
+    if post.post_type == "poll":
+        options = payload.get("options", [])
+        voters = payload.get("voters") or {}
+        counts = payload.get("votes")
+        if not counts or len(counts) != len(options):
+            counts = [0] * len(options)
+            for v_idx in voters.values():
+                if isinstance(v_idx, int) and 0 <= v_idx < len(options):
+                    counts[v_idx] += 1
+            payload["votes"] = counts
+            
+        total_votes = sum(counts)
+        payload["total_votes"] = total_votes
+        
+        if total_votes > 0:
+            payload["percentages"] = [round((c / total_votes) * 100, 1) for c in counts]
+        else:
+            payload["percentages"] = [0.0] * len(options)
+            
+        if current_user_id:
+            payload["user_vote"] = voters.get(str(current_user_id))
+        else:
+            payload["user_vote"] = None
+
     return {
         "id": post.id,
         "post_type": post.post_type,
         "content": post.content,
         "movie_id": post.movie_id,
-        "payload": post.payload,
+        "payload": payload,
         "is_spoiler": post.is_spoiler,
         "created_at": post.created_at,
         "author": {

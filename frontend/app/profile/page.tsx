@@ -40,10 +40,15 @@ import {
   Film,
   Bell,
   Users,
+  UserCheck,
   Sparkles,
+  Camera,
 } from 'lucide-react';
 
 import ProfileEditModal from '@/components/ProfileEditModal';
+import FollowersModal from '@/components/FollowersModal';
+import AvatarCustomizerModal from '@/components/AvatarCustomizerModal';
+import Avatar from '@/components/Avatar';
 
 type TabType = 'favorites' | 'suggestions' | 'reviews' | 'posts' | 'collections' | 'watchlist' | 'watched' | 'groups' | 'tierlists' | 'interested';
 
@@ -61,9 +66,14 @@ export default function ProfilePage() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [myPosts, setMyPosts] = useState<GroupPost[]>([]);
   const [interested, setInterested] = useState<MovieInterest[]>([]);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   const [dataLoading, setDataLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
+  const [followModalTab, setFollowModalTab] = useState<'followers' | 'following'>('followers');
 
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
@@ -77,6 +87,7 @@ export default function ProfilePage() {
   }, [user]);
 
   const fetchAllData = async () => {
+    if (!user) return;
     setDataLoading(true);
     const fetchItem = async (url: string, setter: (data: any) => void) => {
       try {
@@ -94,6 +105,8 @@ export default function ProfilePage() {
       fetchItem('/groups', setGroups),
       fetchItem('/groups/my/posts', setMyPosts),
       fetchItem('/interests/user/all', setInterested),
+      fetchItem(`/user/${user.id}/followers`, (data) => setFollowersCount(Array.isArray(data) ? data.length : 0)),
+      fetchItem(`/user/${user.id}/following`, (data) => setFollowingCount(Array.isArray(data) ? data.length : 0)),
     ]);
 
     setDataLoading(false);
@@ -177,38 +190,98 @@ export default function ProfilePage() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>
 
-              {/* Circular Avatar */}
+              {/* Circular Avatar with Sleek Click-to-Customize */}
               <div style={{ position: 'relative', flexShrink: 0 }}>
-                <div style={{
-                  width: 128, height: 128,
-                  borderRadius: '50%',
-                  padding: 4,
-                  background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-                }}>
-                  <div style={{
-                    width: '100%', height: '100%',
+                <button
+                  type="button"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                  aria-label="Customize avatar"
+                  style={{
+                    width: 128,
+                    height: 128,
                     borderRadius: '50%',
+                    padding: 4,
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 100%)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                    cursor: 'pointer',
+                    position: 'relative',
                     overflow: 'hidden',
-                    background: 'linear-gradient(135deg, #1f1f1f, #0a0a0a)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 40, fontWeight: 800, color: '#fff',
-                  }}>
-                    {user.avatar_url ? (
-                      <img src={user.avatar_url} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : initials}
+                    display: 'block',
+                    transition: 'all 0.3s ease',
+                  }}
+                  className="group"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.03)';
+                    e.currentTarget.style.borderColor = 'rgba(229, 9, 20, 0.4)';
+                    e.currentTarget.style.boxShadow = '0 20px 40px rgba(229,9,20,0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                    e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.4)';
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      background: '#151515',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative',
+                    }}
+                  >
+                    <Avatar
+                      src={user.avatar_url}
+                      seed={user.id || user.username || user.name}
+                      name={user.name}
+                      size={120}
+                      className="w-full h-full object-cover"
+                      alt={`${user.name}'s profile avatar`}
+                    />
+
+                    {/* Subtle Frosted Hover Ring & Camera Icon */}
+                    <div
+                      className="absolute inset-0 bg-black/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-white"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-lg">
+                        <Camera size={18} className="text-white" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                {/* Verified badge */}
-                <div style={{
-                  position: 'absolute', bottom: 4, right: 4,
-                  width: 32, height: 32, borderRadius: '50%',
-                  background: 'var(--primary, #E50914)', border: '4px solid #111',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <ShieldCheck size={16} color="#fff" strokeWidth={2.5} />
-                </div>
+                </button>
+
+                {/* Edit Camera Quick Pill Badge */}
+                <button
+                  type="button"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                  aria-label="Edit avatar"
+                  style={{
+                    position: 'absolute',
+                    bottom: 4,
+                    right: 4,
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: 'var(--primary, #E50914)',
+                    border: '3px solid #0a0a0d',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#fff',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
+                    transition: 'transform 0.2s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.15)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                >
+                  <Camera size={14} strokeWidth={2.5} />
+                </button>
               </div>
 
               {/* User Info */}
@@ -229,15 +302,64 @@ export default function ProfilePage() {
                     {user.bio}
                   </p>
                 )}
+
+                {/* Followers & Following Quick Badges */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => { setFollowModalTab('followers'); setIsFollowModalOpen(true); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                      padding: '8px 16px', borderRadius: 14, color: '#fff', cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                  >
+                    <Users size={15} style={{ color: 'var(--primary, #E50914)' }} />
+                    <strong style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{followersCount}</strong>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>Followers</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setFollowModalTab('following'); setIsFollowModalOpen(true); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                      padding: '8px 16px', borderRadius: 14, color: '#fff', cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                  >
+                    <UserCheck size={15} style={{ color: 'var(--primary, #E50914)' }} />
+                    <strong style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{followingCount}</strong>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>Following</span>
+                  </button>
+                </div>
               </div>
 
               {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: 12, flexShrink: 0, alignSelf: 'flex-start' }}>
+              <div style={{ display: 'flex', gap: 12, flexShrink: 0, alignSelf: 'flex-start', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setIsAvatarModalOpen(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '12px 20px', borderRadius: 16,
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                    color: '#fff', fontSize: 14, fontWeight: 700,
+                    cursor: 'pointer', transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                >
+                  <Sparkles size={16} style={{ color: 'var(--primary, #E50914)' }} /> Avatar Studio
+                </button>
                 <button
                   onClick={() => setIsEditModalOpen(true)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '12px 24px', borderRadius: 16,
+                    padding: '12px 22px', borderRadius: 16,
                     background: '#fff', color: '#000',
                     border: 'none', fontSize: 14, fontWeight: 700,
                     cursor: 'pointer', transition: 'transform 0.2s, opacity 0.2s',
@@ -526,8 +648,25 @@ export default function ProfilePage() {
 
       {/* Modals */}
       <AnimatePresence>
+        {isAvatarModalOpen && (
+          <AvatarCustomizerModal
+            isOpen={isAvatarModalOpen}
+            onClose={() => setIsAvatarModalOpen(false)}
+            onAvatarUpdated={() => fetchAllData()}
+          />
+        )}
         {isEditModalOpen && (
           <ProfileEditModal user={user} onClose={() => setIsEditModalOpen(false)} />
+        )}
+        {isFollowModalOpen && (
+          <FollowersModal
+            isOpen={isFollowModalOpen}
+            onClose={() => setIsFollowModalOpen(false)}
+            userId={user.id}
+            userName={user.name}
+            initialTab={followModalTab}
+            onFollowChange={fetchAllData}
+          />
         )}
       </AnimatePresence>
     </div>
