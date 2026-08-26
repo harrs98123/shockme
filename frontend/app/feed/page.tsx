@@ -1,62 +1,36 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import {
-  Sparkles,
   Users,
   Compass,
-  ArrowRight,
   TrendingUp,
   Loader2,
-  ThumbsUp,
   UserPlus,
   UserCheck,
-  MessageSquare,
-  PlaySquare,
-  BarChart2,
-  Bookmark,
-  Star,
-  Heart,
-  Share2,
-  AlertTriangle,
-  Eye,
-  EyeOff,
 } from 'lucide-react';
 import PostComposer from '@/components/PostComposer';
 import { FollowUser } from '@/components/FollowersModal';
 import Avatar from '@/components/Avatar';
-import ScenePlayer from '@/components/ScenePlayer';
-import PollCard from '@/components/PollCard';
 import ShareModal, { SharePostData } from '@/components/ShareModal';
+import FeedPostCard, { SocialPost } from '@/components/FeedPostCard';
 
-export interface SocialPost {
-  id: number;
-  post_type: 'review' | 'watching' | 'recommendation' | 'poll' | 'meme' | 'scene' | 'watchlist';
-  content: string | null;
-  movie_id: number | null;
-  movie_title?: string | null;
-  movie?: any;
-  payload: any | null;
-  is_spoiler: boolean;
-  created_at: string;
-  author: {
-    id: number;
-    name: string;
-    username: string | null;
-    avatar_url: string | null;
-    is_following: boolean;
-  };
-  reactions: any[];
-  comments_count: number;
-  user_reaction: string | null;
+const PAGE_SIZE = 12;
+
+type FeedTab = 'following' | 'discover';
+
+interface TabState {
+  posts: SocialPost[];
+  offset: number;
+  hasMore: boolean;
+  initialLoaded: boolean;
 }
 
-const TMDB_IMG = 'https://image.tmdb.org/t/p/w342';
+const emptyTabState = (): TabState => ({ posts: [], offset: 0, hasMore: true, initialLoaded: false });
 
 const StackedBarsIcon = ({ size = 24, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -83,49 +57,128 @@ const StackedBarsIcon = ({ size = 24, className = "" }) => (
 
 export default function SocialFeedPage() {
   const { user: currentUser } = useAuth();
-  const [feedTab, setFeedTab] = useState<'following' | 'discover'>('following');
-  const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [feedTab, setFeedTab] = useState<FeedTab>('following');
+  const [feedState, setFeedState] = useState<Record<FeedTab, TabState>>({
+    following: emptyTabState(),
+    discover: emptyTabState(),
+  });
+  const [initialLoading, setInitialLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [suggestions, setSuggestions] = useState<FollowUser[]>([]);
-  const [loading, setLoading] = useState(true);
   const [followLoadingId, setFollowLoadingId] = useState<number | null>(null);
-  const [revealedSpoilers, setRevealedSpoilers] = useState<Set<number>>(new Set());
   const [shareTargetPost, setShareTargetPost] = useState<SharePostData | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  const toggleSpoiler = (postId: number) => {
-    setRevealedSpoilers((prev) => {
-      const next = new Set(prev);
-      if (next.has(postId)) {
-        next.delete(postId);
-      } else {
-        next.add(postId);
-      }
-      return next;
-    });
+  const feedStateRef = useRef(feedState);
+  useEffect(() => { feedStateRef.current = feedState; }, [feedState]);
+
+  const loadingMoreRef = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const prevUserIdRef = useRef<number | undefined>(currentUser?.id);
+
+  const fetchPage = async (tab: FeedTab, offset: number): Promise<SocialPost[]> => {
+    const endpoint = tab === 'following'
+      ? `/posts/feed/following?limit=${PAGE_SIZE}&offset=${offset}`
+      : `/posts/feed/for-you?limit=${PAGE_SIZE}&offset=${offset}`;
+    const res = await api.get<SocialPost[]>(endpoint);
+    return res.data;
   };
 
-  const fetchFeed = async () => {
-    setLoading(true);
+  const loadInitial = useCallback(async (tab: FeedTab) => {
+    setInitialLoading(true);
     try {
-      const endpoint = feedTab === 'following' ? '/posts/feed/following?limit=50' : '/posts/feed/for-you?limit=50';
-      const [feedRes, sugRes] = await Promise.all([
-        api.get<SocialPost[]>(endpoint),
-        api.get<FollowUser[]>('/user/suggestions?limit=6'),
-      ]);
-      setPosts(feedRes.data);
-      setSuggestions(sugRes.data);
+      const posts = await fetchPage(tab, 0);
+      setFeedState((prev) => ({
+        ...prev,
+        [tab]: { posts, offset: posts.length, hasMore: posts.length === PAGE_SIZE, initialLoaded: true },
+      }));
+    } catch (err) {
+      console.error(err);
+      setFeedState((prev) => ({ ...prev, [tab]: { ...prev[tab], initialLoaded: true, hasMore: false } }));
+    } finally {
+      setInitialLoading(false);
+    }
+  }, []);
+
+  const loadMoreForTab = useCallback(async (tab: FeedTab) => {
+    if (loadingMoreRef.current) return;
+    const tabState = feedStateRef.current[tab];
+    if (!tabState?.initialLoaded || !tabState.hasMore) return;
+
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      const nextPosts = await fetchPage(tab, tabState.offset);
+      setFeedState((prev) => ({
+        ...prev,
+        [tab]: {
+          ...prev[tab],
+          posts: [...prev[tab].posts, ...nextPosts],
+          offset: prev[tab].offset + nextPosts.length,
+          hasMore: nextPosts.length === PAGE_SIZE,
+        },
+      }));
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
     }
-  };
+  }, []);
+
+  // Reset cached feed data when auth state changes (login/logout changes what's visible).
+  useEffect(() => {
+    if (prevUserIdRef.current !== currentUser?.id) {
+      prevUserIdRef.current = currentUser?.id;
+      setFeedState({ following: emptyTabState(), discover: emptyTabState() });
+    }
+  }, [currentUser?.id]);
+
+  // Load the active tab's first page the first time it's viewed.
+  useEffect(() => {
+    if (!feedState[feedTab].initialLoaded) {
+      loadInitial(feedTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feedTab, feedState.following.initialLoaded, feedState.discover.initialLoaded, currentUser?.id]);
+
+  // Infinite scroll sentinel.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMoreForTab(feedTab);
+      },
+      { rootMargin: '500px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [feedTab, loadMoreForTab]);
 
   useEffect(() => {
-    fetchFeed();
-  }, [currentUser, feedTab]);
+    api.get<FollowUser[]>('/user/suggestions?limit=6')
+      .then((res) => setSuggestions(res.data))
+      .catch((err) => console.error(err));
+  }, [currentUser?.id]);
 
-  const handleToggleFollow = async (targetUser: FollowUser | { id: number, is_following: boolean }) => {
+  const refreshAfterPost = useCallback(() => {
+    setFeedState((prev) => ({
+      ...prev,
+      [feedTab]: emptyTabState(),
+      // Mark the other tab stale too so it picks up the new post next visit.
+      ...(feedTab === 'following' ? { discover: { ...prev.discover, initialLoaded: false } } : { following: { ...prev.following, initialLoaded: false } }),
+    }));
+  }, [feedTab]);
+
+  const updateAllTabs = useCallback((updater: (posts: SocialPost[]) => SocialPost[]) => {
+    setFeedState((prev) => ({
+      following: { ...prev.following, posts: updater(prev.following.posts) },
+      discover: { ...prev.discover, posts: updater(prev.discover.posts) },
+    }));
+  }, []);
+
+  const handleToggleFollow = useCallback((targetUser: FollowUser | { id: number; is_following: boolean }) => {
     if (!currentUser) {
       window.location.href = '/login';
       return;
@@ -133,58 +186,75 @@ export default function SocialFeedPage() {
 
     setFollowLoadingId(targetUser.id);
 
-    // Optimistic UI for suggestions
     setSuggestions((prev) =>
       prev.map((u) => (u.id === targetUser.id ? { ...u, is_following: !u.is_following } : u))
     );
 
-    // Optimistic UI for posts
-    setPosts(prev => prev.map(p => {
-      if (p.author.id === targetUser.id) {
-        return { ...p, author: { ...p.author, is_following: !targetUser.is_following } };
-      }
-      return p;
-    }));
+    updateAllTabs((posts) => posts.map((p) => (
+      p.author.id === targetUser.id
+        ? { ...p, author: { ...p.author, is_following: !targetUser.is_following } }
+        : p
+    )));
 
-    try {
-      await api.post(`/user/${targetUser.id}/follow`);
-    } catch (err) {
-      console.error(err);
-      fetchFeed(); // Revert on failure
-    } finally {
-      setFollowLoadingId(null);
-    }
-  };
+    api.post(`/user/${targetUser.id}/follow`)
+      .catch((err) => {
+        console.error(err);
+        setSuggestions((prev) =>
+          prev.map((u) => (u.id === targetUser.id ? { ...u, is_following: targetUser.is_following } : u))
+        );
+        updateAllTabs((posts) => posts.map((p) => (
+          p.author.id === targetUser.id
+            ? { ...p, author: { ...p.author, is_following: targetUser.is_following } }
+            : p
+        )));
+      })
+      .finally(() => setFollowLoadingId(null));
+  }, [currentUser, updateAllTabs]);
 
-  const handleReaction = async (postId: number, reactionType: string) => {
+  const handleReaction = useCallback((postId: number, reactionType: string) => {
     if (!currentUser) return;
 
-    // Optimistic Update
-    setPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        const isRemoving = p.user_reaction === reactionType;
-        const newReaction = isRemoving ? null : reactionType;
+    updateAllTabs((posts) => posts.map((p) => {
+      if (p.id !== postId) return p;
 
-        let newReactions = [...p.reactions];
-        if (isRemoving) {
-          newReactions = newReactions.filter(r => r.user_id !== currentUser.id);
-        } else {
-          // Remove old reaction if any
-          newReactions = newReactions.filter(r => r.user_id !== currentUser.id);
-          newReactions.push({ id: Date.now(), reaction_type: reactionType, user_id: currentUser.id, author_name: currentUser.name, author_avatar: currentUser.avatar_url });
-        }
+      const isRemoving = p.user_reaction === reactionType;
+      const newReaction = isRemoving ? null : reactionType;
+      const optimisticId = -(currentUser.id * 1_000_000 + postId);
 
-        return { ...p, user_reaction: newReaction, reactions: newReactions };
+      let newReactions = p.reactions.filter((r) => r.user_id !== currentUser.id);
+      if (!isRemoving) {
+        newReactions = [...newReactions, {
+          id: optimisticId,
+          reaction_type: reactionType,
+          user_id: currentUser.id,
+          author_name: currentUser.name,
+          author_avatar: currentUser.avatar_url,
+        }];
       }
-      return p;
+
+      return { ...p, user_reaction: newReaction, reactions: newReactions };
     }));
 
-    try {
-      await api.post(`/posts/posts/${postId}/react`, { reaction_type: reactionType });
-    } catch (error) {
-      console.error(error);
-    }
-  };
+    api.post(`/posts/posts/${postId}/react`, { reaction_type: reactionType }).catch((err) => {
+      console.error(err);
+    });
+  }, [currentUser, updateAllTabs]);
+
+  const handlePollVoteSuccess = useCallback((postId: number, updatedPayload: any) => {
+    updateAllTabs((posts) => posts.map((p) => (p.id === postId ? { ...p, payload: updatedPayload } : p)));
+  }, [updateAllTabs]);
+
+  const handleCommentAdded = useCallback((postId: number) => {
+    updateAllTabs((posts) => posts.map((p) => (p.id === postId ? { ...p, comments_count: p.comments_count + 1 } : p)));
+  }, [updateAllTabs]);
+
+  const handleShare = useCallback((data: SharePostData) => {
+    setShareTargetPost(data);
+    setIsShareModalOpen(true);
+  }, []);
+
+  const activeTabState = feedState[feedTab];
+  const showSkeleton = initialLoading && !activeTabState.initialLoaded;
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 100, paddingBottom: 100 }}>
@@ -236,7 +306,7 @@ export default function SocialFeedPage() {
               return (
                 <button
                   key={t.id}
-                  onClick={() => setFeedTab(t.id as any)}
+                  onClick={() => setFeedTab(t.id as FeedTab)}
                   style={{
                     padding: '9px 20px',
                     borderRadius: 12,
@@ -268,9 +338,9 @@ export default function SocialFeedPage() {
           <div className="lg:col-span-8 flex flex-col gap-5">
 
             {/* Post Composer */}
-            <PostComposer onPostCreated={fetchFeed} />
+            <PostComposer onPostCreated={refreshAfterPost} />
 
-            {loading ? (
+            {showSkeleton ? (
               <div className="flex flex-col gap-4 animate-pulse">
                 {[...Array(5)].map((_, i) => (
                   <div
@@ -284,7 +354,7 @@ export default function SocialFeedPage() {
                   />
                 ))}
               </div>
-            ) : posts.length === 0 ? (
+            ) : activeTabState.posts.length === 0 ? (
               <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10">
                 <div style={{ fontSize: 44, marginBottom: 14 }}>🎬</div>
                 <h3 style={{ fontSize: 20, fontWeight: 800, color: 'white', margin: '0 0 8px' }}>No Posts Yet</h3>
@@ -293,227 +363,37 @@ export default function SocialFeedPage() {
                 </p>
               </div>
             ) : (
-              <AnimatePresence>
-                {posts.map((post, index) => {
-                  const author = post.author;
-                  const initials = author.name ? author.name.slice(0, 2).toUpperCase() : 'U';
-                  const timeStr = new Date(post.created_at).toLocaleDateString('en-US', {
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                  });
-
-                  return (
-                    <motion.div
+              <>
+                <AnimatePresence initial={false}>
+                  {activeTabState.posts.map((post, index) => (
+                    <FeedPostCard
                       key={post.id}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.4) }}
-                      className="bg-[#0f0f14] border border-white/10 rounded-2xl p-5 hover:border-white/20 transition-colors"
-                    >
-                      {/* Header */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <Link href={`/user/${author.id}`}>
-                            <div className="w-11 h-11 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
-                              <Avatar
-                                src={author.avatar_url}
-                                seed={author.id || author.username || author.name}
-                                name={author.name}
-                                size={44}
-                                className="object-cover w-full h-full"
-                                decorative
-                              />
-                            </div>
-                          </Link>
-                          <div>
-                            <Link href={`/user/${author.id}`} className="font-bold text-[15px] text-white hover:text-primary transition-colors flex items-center gap-2">
-                              {author.name}
-                            </Link>
-                            <div className="text-xs text-white/40 font-semibold mt-0.5">
-                              @{author.username} • {timeStr}
-                            </div>
-                          </div>
-                        </div>
+                      post={post}
+                      index={index}
+                      currentUserId={currentUser?.id}
+                      showFollowButton={feedTab === 'discover'}
+                      onReact={handleReaction}
+                      onToggleFollow={handleToggleFollow}
+                      onShare={handleShare}
+                      onPollVoteSuccess={handlePollVoteSuccess}
+                      onCommentAdded={handleCommentAdded}
+                    />
+                  ))}
+                </AnimatePresence>
 
-                        {/* Follow Button directly on Post if in 'For You' and not following */}
-                        {feedTab === 'discover' && currentUser?.id !== author.id && !author.is_following && (
-                          <button
-                            onClick={() => handleToggleFollow(author)}
-                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-white text-black hover:bg-white/90 flex items-center gap-1.5 transition-colors"
-                          >
-                            <UserPlus size={12} /> Follow
-                          </button>
-                        )}
-                      </div>
+                <div ref={sentinelRef} style={{ height: 1 }} />
 
-                      {/* Post Body with Tap-to-Reveal Spoiler */}
-                      {(() => {
-                        const isSpoilerPost = post.is_spoiler;
-                        const isRevealed = revealedSpoilers.has(post.id);
-                        const isBlurred = isSpoilerPost && !isRevealed;
-
-                        return (
-                          <div className="relative my-2">
-                            {/* Minimal Tap to Reveal Spoiler Overlay */}
-                            {isBlurred && (
-                              <div
-                                onClick={() => toggleSpoiler(post.id)}
-                                className="absolute inset-0 z-20 backdrop-blur-md bg-black/60 rounded-xl flex items-center justify-center p-4 cursor-pointer select-none border border-white/5"
-                              >
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleSpoiler(post.id);
-                                  }}
-                                  className="px-4 py-2 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-red-400 border border-red-500/30 text-xs font-bold transition-colors shadow-lg flex items-center gap-2"
-                                >
-                                  <AlertTriangle size={13} className="text-red-400" />
-                                  <span>Spoiler Warning • Tap to Reveal</span>
-                                </button>
-                              </div>
-                            )}
-
-                            {/* Minimal header badge if revealed */}
-                            {isSpoilerPost && isRevealed && (
-                              <div className="flex items-center justify-between mb-2 text-xs text-red-400/80">
-                                <span className="flex items-center gap-1.5 font-semibold">
-                                  <AlertTriangle size={12} /> Spoiler Warning
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleSpoiler(post.id)}
-                                  className="text-[11px] text-white/40 hover:text-white/80 transition-colors cursor-pointer"
-                                >
-                                  Hide
-                                </button>
-                              </div>
-                            )}
-
-                            {/* Content (Blurred when not revealed) */}
-                            <div
-                              style={{
-                                filter: isBlurred ? 'blur(8px)' : 'none',
-                                opacity: isBlurred ? 0.3 : 1,
-                                pointerEvents: isBlurred ? 'none' : 'auto',
-                                userSelect: isBlurred ? 'none' : 'auto',
-                                transition: 'filter 0.2s ease, opacity 0.2s ease',
-                              }}
-                            >
-                              <div className="text-white/90 text-[15px] leading-relaxed whitespace-pre-wrap mb-3">
-                                {post.content}
-                              </div>
-
-                              {/* Type specific UI */}
-                              {post.post_type === 'poll' && (
-                                <PollCard
-                                  postId={post.id}
-                                  payload={post.payload}
-                                  onVoteSuccess={(updated) => {
-                                    setPosts((prev) =>
-                                      prev.map((p) =>
-                                        p.id === post.id ? { ...p, payload: updated } : p
-                                      )
-                                    );
-                                  }}
-                                />
-                              )}
-
-                              {post.post_type === 'scene' ? (
-                                <ScenePlayer
-                                  mediaUrl={post.payload?.media_url}
-                                  videoUrl={post.payload?.video_url}
-                                  youtubeId={post.payload?.youtube_id}
-                                  movieTitle={post.movie_title || post.movie?.title}
-                                  movieId={post.movie_id}
-                                  sceneTitle={post.payload?.scene_title}
-                                  caption={post.content || undefined}
-                                />
-                              ) : post.post_type === 'meme' && post.payload?.media_url ? (
-                                <div className="rounded-xl overflow-hidden my-4 max-h-[400px] border border-white/10 relative">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img src={post.payload.media_url} alt="Post media" className="w-full object-cover" />
-                                </div>
-                              ) : null}
-
-                              {post.post_type === 'review' && post.payload?.rating && (
-                                <div className="flex items-center gap-1 mb-4 text-amber-400">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star key={i} size={16} fill={i < post.payload.rating ? "#fbbf24" : "transparent"} strokeWidth={i < post.payload.rating ? 0 : 1} stroke="currentColor" />
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      {/* Footer Actions (Reactions) */}
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-                        <div className="flex items-center gap-2">
-                          {[
-                            { emoji: '❤️', id: 'loved' },
-                            { emoji: '🔥', id: 'amazing' },
-                            { emoji: '😂', id: 'funny' },
-                            { emoji: '😱', id: 'mindblown' },
-                            { emoji: '👎', id: 'disliked' }
-                          ].map(reaction => {
-                            const count = post.reactions.filter(r => r.reaction_type === reaction.id).length;
-                            const isActive = post.user_reaction === reaction.id;
-
-                            if (count === 0 && !isActive) return null; // Only show active reactions for now, or build a picker
-
-                            return (
-                              <button
-                                key={reaction.id}
-                                onClick={() => handleReaction(post.id, reaction.id)}
-                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[13px] font-bold border transition-colors ${isActive ? 'bg-primary/20 border-primary/50 text-primary' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
-                                  }`}
-                              >
-                                <span>{reaction.emoji}</span> {count}
-                              </button>
-                            );
-                          })}
-
-                          {/* Generic Like/React button to open picker */}
-                          <button
-                            onClick={() => handleReaction(post.id, 'loved')} // Simplified for now
-                            className="flex items-center gap-1.5 text-white/50 hover:text-white text-[13px] font-bold px-3 py-1 ml-2 transition-colors"
-                          >
-                            <Heart size={15} className={post.user_reaction === 'loved' ? 'fill-red-500 text-red-500' : ''} />
-                            React
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-4 text-white/50">
-                          <button className="flex items-center gap-1.5 text-[13px] font-bold hover:text-white transition-colors">
-                            <MessageSquare size={15} />
-                            {post.comments_count}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShareTargetPost({
-                                id: post.id,
-                                content: post.content,
-                                authorName: author.name,
-                                authorUsername: author.username || undefined,
-                                authorAvatar: author.avatar_url,
-                                postType: post.post_type,
-                                movieTitle: post.movie_title || post.movie?.title,
-                              });
-                              setIsShareModalOpen(true);
-                            }}
-                            className="hover:text-white transition-colors cursor-pointer"
-                            title="Share post"
-                          >
-                            <Share2 size={15} />
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
+                {loadingMore && (
+                  <div className="flex items-center justify-center gap-2 text-white/40 text-sm font-semibold py-4">
+                    <Loader2 size={16} className="animate-spin" /> Loading more...
+                  </div>
+                )}
+                {!activeTabState.hasMore && activeTabState.posts.length > 0 && (
+                  <div className="text-center text-white/25 text-xs font-semibold py-4">
+                    You&rsquo;re all caught up
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -536,7 +416,6 @@ export default function SocialFeedPage() {
 
               <div className="flex flex-col gap-3.5">
                 {suggestions.map((u) => {
-                  const initials = u.name.slice(0, 2).toUpperCase();
                   return (
                     <div
                       key={u.id}

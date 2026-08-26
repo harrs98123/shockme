@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { SocialPost } from '@/app/feed/page';
+import { SocialPost } from '@/components/FeedPostCard';
 import {
   MessageSquare,
   Heart,

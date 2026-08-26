@@ -1,15 +1,23 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clapperboard, Eye, ThumbsUp, BarChart2, Image as ImageIcon,
-  PlaySquare, Bookmark, X, Search, ChevronDown, Check
+  PlaySquare, Bookmark, X, Search, Loader2
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-import api from '@/lib/api';
+import api, { posterUrl } from '@/lib/api';
 import Avatar from '@/components/Avatar';
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 const POST_TYPES = [
   { id: 'review', label: 'Movie Review', icon: ThumbsUp, color: '#c084fc', desc: 'Rate and review a movie' },
@@ -34,6 +42,13 @@ export default function PostComposer({ onPostCreated }: { onPostCreated: () => v
   const [pollOptions, setPollOptions] = useState(['', '']);
   const [mediaUrl, setMediaUrl] = useState('');
 
+  // Movie search
+  const [movieQuery, setMovieQuery] = useState('');
+  const debouncedMovieQuery = useDebounce(movieQuery, 400);
+  const [movieResults, setMovieResults] = useState<any[]>([]);
+  const [searchingMovies, setSearchingMovies] = useState(false);
+  const [movieDropdownOpen, setMovieDropdownOpen] = useState(false);
+
   const resetForm = () => {
     setActiveType(null);
     setContent('');
@@ -42,7 +57,31 @@ export default function PostComposer({ onPostCreated }: { onPostCreated: () => v
     setRating(0);
     setPollOptions(['', '']);
     setMediaUrl('');
+    setMovieQuery('');
+    setMovieResults([]);
+    setMovieDropdownOpen(false);
   };
+
+  useEffect(() => {
+    const q = debouncedMovieQuery.trim();
+    if (q.length < 2) {
+      setMovieResults([]);
+      return;
+    }
+    let cancelled = false;
+    setSearchingMovies(true);
+    api.get(`/movies/search?q=${encodeURIComponent(q)}`)
+      .then((res) => {
+        if (cancelled) return;
+        const filtered = (res.data?.results || []).filter((m: any) => m.media_type !== 'person');
+        setMovieResults(filtered);
+      })
+      .catch((err) => console.error(err))
+      .finally(() => {
+        if (!cancelled) setSearchingMovies(false);
+      });
+    return () => { cancelled = true; };
+  }, [debouncedMovieQuery]);
 
   const handleSubmit = async () => {
     if (!activeType) return;
@@ -78,8 +117,6 @@ export default function PostComposer({ onPostCreated }: { onPostCreated: () => v
   };
 
   if (!user) return null;
-
-  const initials = user.name?.slice(0, 2).toUpperCase();
 
   return (
     <div style={{
@@ -156,24 +193,91 @@ export default function PostComposer({ onPostCreated }: { onPostCreated: () => v
 
             {/* Dynamic Input Area */}
             <div className="mt-4">
-              {/* Optional Movie Search (Mocked for UI) */}
+              {/* Movie Search */}
               {['review', 'watching', 'recommendation', 'scene'].includes(activeType) && (
-                <div className="mb-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 text-white/40" size={16} />
-                    <input
-                      type="text"
-                      placeholder="Search movie (mocked, using Interstellar ID: 157336)"
-                      value={selectedMovie ? selectedMovie.title : ''}
-                      onChange={(e) => {
-                        // In real app, fetch search results. Here we just hardcode Interstellar for demo
-                        if (e.target.value.length > 2) {
-                          setSelectedMovie({ id: 157336, title: 'Interstellar', poster: '/np.png' })
-                        }
-                      }}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-primary/50"
-                    />
-                  </div>
+                <div className="mb-4 relative">
+                  {selectedMovie ? (
+                    <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl py-2 pl-2 pr-3">
+                      {selectedMovie.poster && (
+                        <img
+                          src={posterUrl(selectedMovie.poster, 'w92')}
+                          alt=""
+                          className="w-8 h-12 object-cover rounded-md"
+                        />
+                      )}
+                      <span className="flex-1 text-sm font-semibold text-white truncate">{selectedMovie.title}</span>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedMovie(null); setMovieQuery(''); }}
+                        className="text-white/40 hover:text-white transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 text-white/40" size={16} />
+                      <input
+                        type="text"
+                        placeholder="Search for a movie or show..."
+                        value={movieQuery}
+                        onChange={(e) => {
+                          setMovieQuery(e.target.value);
+                          setMovieDropdownOpen(true);
+                        }}
+                        onFocus={() => setMovieDropdownOpen(true)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-9 text-sm text-white focus:outline-none focus:border-primary/50"
+                      />
+                      {searchingMovies && (
+                        <Loader2 size={15} className="absolute right-3 top-3 text-white/40 animate-spin" />
+                      )}
+                    </div>
+                  )}
+
+                  {movieDropdownOpen && !selectedMovie && movieQuery.trim().length >= 2 && (
+                    <>
+                      <div className="fixed inset-0 z-30" onClick={() => setMovieDropdownOpen(false)} />
+                      <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-[#16161c] border border-white/15 rounded-xl shadow-xl max-h-72 overflow-y-auto">
+                        {movieResults.length === 0 ? (
+                          <div className="px-4 py-3 text-xs text-white/40 font-semibold">
+                            {searchingMovies ? 'Searching...' : 'No results found'}
+                          </div>
+                        ) : (
+                          movieResults.slice(0, 8).map((m) => {
+                            const title = m.title || m.name;
+                            return (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedMovie({ id: m.id, title, poster: m.poster_path });
+                                  setMovieDropdownOpen(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/5 transition-colors text-left"
+                              >
+                                {m.poster_path ? (
+                                  <img
+                                    src={posterUrl(m.poster_path, 'w92')}
+                                    alt=""
+                                    className="w-7 h-10 object-cover rounded shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-7 h-10 rounded bg-white/10 shrink-0" />
+                                )}
+                                <div className="min-w-0">
+                                  <div className="text-sm font-semibold text-white truncate">{title}</div>
+                                  <div className="text-[11px] text-white/40">
+                                    {m.media_type === 'tv' ? 'TV Show' : 'Movie'}
+                                    {(m.release_date || m.first_air_date) ? ` • ${(m.release_date || m.first_air_date).slice(0, 4)}` : ''}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 

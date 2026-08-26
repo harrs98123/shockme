@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, func, or_
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
@@ -9,8 +9,17 @@ from database import get_db
 from models import User, SocialPost, PostReaction, PostComment, TopicFollow, UserFollow
 from auth.utils import get_current_user, get_current_user_optional
 from sqlalchemy.orm.attributes import flag_modified
+from cache_utils import cache_get, cache_set
 
 router = APIRouter()
+
+FEED_CACHE_TTL = 20
+MAX_LIMIT = 100
+
+POST_LIST_OPTIONS = (
+    joinedload(SocialPost.user),
+    joinedload(SocialPost.reactions).joinedload(PostReaction.user),
+)
 
 # ----------------- SCHEMAS -----------------
 
@@ -76,7 +85,7 @@ def create_post(post: SocialPostCreate, db: Session = Depends(get_db), current_u
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
-    return format_post(new_post, current_user.id)
+    return format_post(db, new_post, current_user.id, comments_count=0, is_following=False)
 
 @router.post("/posts/{post_id}/react")
 @router.post("/posts/posts/{post_id}/react")
@@ -120,39 +129,49 @@ def vote_on_poll(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    post = db.query(SocialPost).filter(SocialPost.id == post_id).first()
+    # Lock the row for the duration of the read-modify-write so concurrent
+    # votes on the same poll can't clobber each other's counts.
+    post = db.query(SocialPost).filter(SocialPost.id == post_id).with_for_update().first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     if post.post_type != "poll":
         raise HTTPException(status_code=400, detail="Post is not a poll")
-    
+
     payload = dict(post.payload or {})
     options = payload.get("options", [])
     if not options or vote_req.option_index < 0 or vote_req.option_index >= len(options):
         raise HTTPException(status_code=400, detail="Invalid option index")
-    
+
     voters = dict(payload.get("voters") or {})
     user_key = str(current_user.id)
-    
-    # Record user vote
+    previous_vote = voters.get(user_key)
+
+    counts = payload.get("votes")
+    if not counts or len(counts) != len(options):
+        # No valid counts cached yet - derive them once from voters.
+        counts = [0] * len(options)
+        for v_idx in voters.values():
+            if isinstance(v_idx, int) and 0 <= v_idx < len(options):
+                counts[v_idx] += 1
+    else:
+        counts = list(counts)
+
+    # Incrementally adjust instead of recomputing over every voter.
+    if isinstance(previous_vote, int) and 0 <= previous_vote < len(options):
+        counts[previous_vote] = max(0, counts[previous_vote] - 1)
+    counts[vote_req.option_index] += 1
+
     voters[user_key] = vote_req.option_index
     payload["voters"] = voters
-    
-    # Re-calculate counts
-    counts = [0] * len(options)
-    for v_idx in voters.values():
-        if isinstance(v_idx, int) and 0 <= v_idx < len(options):
-            counts[v_idx] += 1
-            
     payload["votes"] = counts
     payload["total_votes"] = sum(counts)
-    
+
     post.payload = payload
     flag_modified(post, "payload")
     db.commit()
     db.refresh(post)
-    
-    return format_post(post, current_user.id)
+
+    return format_post(db, post, current_user.id)
 
 
 @router.post("/posts/{post_id}/comment", response_model=CommentOut)
@@ -189,19 +208,41 @@ def add_comment(post_id: int, comment: CommentCreate, db: Session = Depends(get_
 
 
 @router.get("/posts/movie/{movie_id}", response_model=List[SocialPostOut])
-def get_movie_posts(movie_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_optional)):
-    posts = db.query(SocialPost).filter(
-        SocialPost.movie_id == movie_id
-    ).order_by(SocialPost.created_at.desc()).limit(50).all()
-    
+async def get_movie_posts(
+    movie_id: int,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_optional),
+):
+    limit = min(max(limit, 1), MAX_LIMIT)
+    offset = max(offset, 0)
     current_id = current_user.id if current_user else None
-    return [format_post(p, current_id) for p in posts]
+
+    cache_key = f"feed:movie:{movie_id}:{current_id or 'anon'}:{limit}:{offset}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(
+        SocialPost.movie_id == movie_id
+    ).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+
+    result = format_posts(db, posts, current_id)
+    await cache_set(cache_key, _for_cache(result), FEED_CACHE_TTL)
+    return result
 
 
 @router.get("/posts/{post_id}/comments", response_model=List[CommentOut])
 @router.get("/posts/posts/{post_id}/comments", response_model=List[CommentOut])
-def get_comments(post_id: int, db: Session = Depends(get_db)):
-    comments = db.query(PostComment).filter(PostComment.post_id == post_id).order_by(PostComment.created_at.asc()).all()
+def get_comments(post_id: int, limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
+    limit = min(max(limit, 1), MAX_LIMIT)
+    offset = max(offset, 0)
+
+    comments = db.query(PostComment).options(joinedload(PostComment.user)).filter(
+        PostComment.post_id == post_id
+    ).order_by(PostComment.created_at.asc()).offset(offset).limit(limit).all()
+
     return [
         {
             "id": c.id,
@@ -221,39 +262,59 @@ def get_comments(post_id: int, db: Session = Depends(get_db)):
 
 @router.get("/feed/following", response_model=List[SocialPostOut])
 @router.get("/posts/feed/following", response_model=List[SocialPostOut])
-def get_following_feed(limit: int = 50, offset: int = 0, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_following_feed(limit: int = 50, offset: int = 0, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    limit = min(max(limit, 1), MAX_LIMIT)
+    offset = max(offset, 0)
+
+    cache_key = f"feed:following:{current_user.id}:{limit}:{offset}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     # Get IDs of people the user follows
     following_ids = [f.following_id for f in current_user.following]
     if not following_ids:
         # Fallback to general recent so the feed is never empty!
-        posts = db.query(SocialPost).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
-        return [format_post(p, current_user.id) for p in posts]
-        
-    posts = db.query(SocialPost).filter(
-        SocialPost.user_id.in_(following_ids)
-    ).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
-    
-    if not posts:
-        posts = db.query(SocialPost).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+    else:
+        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(
+            SocialPost.user_id.in_(following_ids)
+        ).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
 
-    return [format_post(p, current_user.id) for p in posts]
+        if not posts:
+            posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+
+    result = format_posts(db, posts, current_user.id)
+    await cache_set(cache_key, _for_cache(result), FEED_CACHE_TTL)
+    return result
 
 
 @router.get("/feed/for-you", response_model=List[SocialPostOut])
 @router.get("/posts/feed/for-you", response_model=List[SocialPostOut])
-def get_for_you_feed(limit: int = 50, offset: int = 0, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_optional)):
+async def get_for_you_feed(limit: int = 50, offset: int = 0, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_optional)):
+    limit = min(max(limit, 1), MAX_LIMIT)
+    offset = max(offset, 0)
+    current_id = current_user.id if current_user else None
+
+    cache_key = f"feed:foryou:{current_id or 'anon'}:{limit}:{offset}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     if not current_user:
         # Public feed - just popular/recent posts
-        posts = db.query(SocialPost).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
-        return [format_post(p, None) for p in posts]
-        
+        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+        result = format_posts(db, posts, None)
+        await cache_set(cache_key, _for_cache(result), FEED_CACHE_TTL)
+        return result
+
     # Intelligent Feed: Mix of following, topic follows, and popular
     following_ids = [f.following_id for f in current_user.following]
-    
+
     # Topic follows (e.g. movies, genres)
     topic_follows = db.query(TopicFollow).filter(TopicFollow.user_id == current_user.id).all()
     followed_movie_ids = [int(t.entity_id) for t in topic_follows if t.entity_type == 'movie' and t.entity_id.isdigit()]
-    
+
     conditions = []
     if following_ids:
         conditions.append(SocialPost.user_id.in_(following_ids))
@@ -261,23 +322,76 @@ def get_for_you_feed(limit: int = 50, offset: int = 0, db: Session = Depends(get
         conditions.append(SocialPost.movie_id.in_(followed_movie_ids))
 
     if conditions:
-        posts = db.query(SocialPost).filter(or_(*conditions)).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(or_(*conditions)).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
     else:
         posts = []
-    
+
     # Fallback to general recent if empty so feed is always vibrant
     if not posts:
-        posts = db.query(SocialPost).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
-        
-    return [format_post(p, current_user.id) for p in posts]
+        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+
+    result = format_posts(db, posts, current_user.id)
+    await cache_set(cache_key, _for_cache(result), FEED_CACHE_TTL)
+    return result
 
 
 # ----------------- HELPERS -----------------
 
-def format_post(post: SocialPost, current_user_id: Optional[int]) -> Dict[str, Any]:
+def _for_cache(posts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Datetime objects aren't JSON-serializable; stringify before caching.
+    Pydantic parses ISO datetime strings back on the way out via response_model."""
+    out = []
+    for p in posts:
+        p = dict(p)
+        if isinstance(p.get("created_at"), datetime):
+            p["created_at"] = p["created_at"].isoformat()
+        out.append(p)
+    return out
+
+
+def format_posts(db: Session, posts: List[SocialPost], current_user_id: Optional[int]) -> List[Dict[str, Any]]:
+    """Batch-format posts, avoiding one lazy-load round trip per post per relationship."""
+    post_ids = [p.id for p in posts]
+
+    comments_count_map: Dict[int, int] = {}
+    if post_ids:
+        rows = db.query(PostComment.post_id, func.count(PostComment.id)).filter(
+            PostComment.post_id.in_(post_ids)
+        ).group_by(PostComment.post_id).all()
+        comments_count_map = {post_id: count for post_id, count in rows}
+
+    following_ids: set = set()
+    if current_user_id:
+        author_ids = {p.user_id for p in posts}
+        if author_ids:
+            rows = db.query(UserFollow.following_id).filter(
+                UserFollow.follower_id == current_user_id,
+                UserFollow.following_id.in_(author_ids)
+            ).all()
+            following_ids = {row[0] for row in rows}
+
+    return [
+        format_post(
+            db,
+            post,
+            current_user_id,
+            comments_count=comments_count_map.get(post.id, 0),
+            is_following=post.user_id in following_ids,
+        )
+        for post in posts
+    ]
+
+
+def format_post(
+    db: Session,
+    post: SocialPost,
+    current_user_id: Optional[int],
+    comments_count: Optional[int] = None,
+    is_following: Optional[bool] = None,
+) -> Dict[str, Any]:
     reactions_list = []
     user_reaction = None
-    
+
     for r in post.reactions:
         reactions_list.append({
             "id": r.id,
@@ -288,6 +402,15 @@ def format_post(post: SocialPost, current_user_id: Optional[int]) -> Dict[str, A
         })
         if current_user_id and r.user_id == current_user_id:
             user_reaction = r.reaction_type
+
+    if comments_count is None:
+        comments_count = db.query(func.count(PostComment.id)).filter(PostComment.post_id == post.id).scalar() or 0
+
+    if is_following is None:
+        is_following = current_user_id is not None and db.query(UserFollow.id).filter(
+            UserFollow.follower_id == current_user_id,
+            UserFollow.following_id == post.user_id
+        ).first() is not None
 
     payload = dict(post.payload or {})
     if post.post_type == "poll":
@@ -327,9 +450,9 @@ def format_post(post: SocialPost, current_user_id: Optional[int]) -> Dict[str, A
             "name": post.user.name,
             "username": post.user.username,
             "avatar_url": post.user.avatar_url,
-            "is_following": any(f.follower_id == current_user_id for f in post.user.followers) if current_user_id else False
+            "is_following": is_following
         },
         "reactions": reactions_list,
-        "comments_count": len(post.post_comments),
+        "comments_count": comments_count,
         "user_reaction": user_reaction
     }

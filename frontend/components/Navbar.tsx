@@ -745,7 +745,14 @@ export default function Navbar() {
                         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#fff'; }}
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
                       >
-                        <div style={{ color: 'var(--primary, #E50914)' }}><Sparkles size={16} /></div>
+                        <div style={{ width: 18, height: 18, borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }}>
+                          <Avatar
+                            src={user.avatar_url}
+                            seed={user.id || user.username || user.name}
+                            size={18}
+                            decorative
+                          />
+                        </div>
                         Customize Avatar
                       </button>
                       <DropdownItem icon={<Library size={16} />} label="My Collections" href="/collections" onClick={() => setMenuOpen(false)} />
@@ -1110,6 +1117,21 @@ export default function Navbar() {
                               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{user.email}</div>
                             </div>
                           </Link>
+                          <button
+                            type="button"
+                            onClick={() => { setMobileMenuOpen(false); setIsAvatarModalOpen(true); }}
+                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                          >
+                            <div style={{ width: 22, height: 22, borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }}>
+                              <Avatar
+                                src={user.avatar_url}
+                                seed={user.id || user.username || user.name}
+                                size={22}
+                                decorative
+                              />
+                            </div>
+                            Customize Avatar
+                          </button>
                           <button
                             onClick={() => { setMobileMenuOpen(false); logout(); }}
                             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'transparent', border: 'none', color: '#f43f5e', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}
