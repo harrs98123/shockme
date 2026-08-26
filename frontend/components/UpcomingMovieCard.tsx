@@ -8,6 +8,7 @@ import { Bell, Heart, Plus, Check, Star, Calendar, Info, Play, X } from 'lucide-
 import { Media, InterestInfo } from '@/lib/types';
 import { posterUrl } from '@/lib/api';
 import { cn, getEnglishTitle } from '@/lib/utils';
+import toast from '@/lib/toast';
 
 interface UpcomingMovieCardProps {
   movie: Media;
@@ -24,6 +25,7 @@ export default function UpcomingMovieCard({
   onFavToggle,
   onWatchlistToggle,
 }: UpcomingMovieCardProps) {
+  const [imgError, setImgError] = useState(!movie.poster_path);
   const [isHovered, setIsHovered] = useState(false);
   const [isInterested, setIsInterested] = useState(false);
   const [interestCount, setInterestCount] = useState(0);
@@ -40,7 +42,7 @@ export default function UpcomingMovieCard({
     ? new Date(releaseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : 'Coming Soon';
 
-  // Fetch interest status
+  // Fetch initial interest count and user status
   useEffect(() => {
     const fetchInterest = async () => {
       const user = localStorage.getItem('cinematch_user');
@@ -67,7 +69,7 @@ export default function UpcomingMovieCard({
 
     const token = localStorage.getItem('cinematch_token');
     if (!token) {
-      alert("Please log in to express interest.");
+      toast.error('Please log in to express interest.');
       return;
     }
 
@@ -93,9 +95,15 @@ export default function UpcomingMovieCard({
         const data: InterestInfo = await res.json();
         setIsInterested(data.user_interested);
         setInterestCount(data.count);
+        if (data.user_interested) {
+          toast.success(`You're interested in "${title}" 🔔`);
+        } else {
+          toast.info(`Removed interest in "${title}"`);
+        }
       }
     } catch (err) {
       console.error('Failed to toggle interest:', err);
+      toast.error('Failed to toggle interest.');
     } finally {
       setLoading(false);
     }
@@ -127,11 +135,12 @@ export default function UpcomingMovieCard({
           setTrailerKey(trailer.key);
           setShowTrailer(true);
         } else {
-          alert("No trailer available for this movie.");
+          toast.info(`No trailer available for "${title}".`);
         }
       }
     } catch (err) {
       console.error('Failed to fetch trailer:', err);
+      toast.error('Failed to fetch trailer.');
     } finally {
       setLoading(false);
     }

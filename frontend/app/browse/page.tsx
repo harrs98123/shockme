@@ -9,7 +9,8 @@ import {
   Languages,
   ArrowUpRight,
   Search,
-  Sparkles,
+  Zap,
+  Tv,
   Trophy,
   Users,
   Clapperboard
@@ -63,7 +64,7 @@ const SPECIAL_COLLECTIONS = [
     id: 'anime',
     title: 'Anime',
     description: 'Legendary animation from Japanese studios.',
-    icon: Sparkles,
+    icon: Tv,
     color: '#EC4899',
     href: '/browse/anime',
   },
@@ -302,7 +303,7 @@ export default function BrowsePage() {
           }}
         >
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-dim)', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <Sparkles size={16} color="var(--primary)" /> Smart Recommendation
+            <Zap size={16} color="var(--primary)" /> Smart Recommendation
           </div>
           <h2 style={{ fontSize: 28, fontWeight: 700, color: 'white', marginBottom: 32 }}>
             Feeling indecisive? Let our AI suggest something for your mood.

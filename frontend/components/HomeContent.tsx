@@ -5,6 +5,7 @@ import HeroSection from '@/components/HeroSection';
 import FeaturedCollections from '@/components/FeaturedCollections';
 import MovieRow from '@/components/MovieRow';
 import TrendingRankedRow from '@/components/TrendingRankedRow';
+import HomeAnimeDecor from '@/components/HomeAnimeDecor';
 import { Movie } from '@/lib/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -63,11 +64,15 @@ export default function HomeContent({ trending, trendingIndian, popular, topRate
     });
   };
 
-  const heroSource = trending.length > 0 ? trending : popular;
-  const heroMovies = heroSource.slice(0, 8);
+  // Pick only top rated features that have verified high-definition backdrops & posters
+  const heroCandidates = (trending.length > 0 ? trending : popular).filter(
+    (m) => Boolean(m.backdrop_path && m.poster_path && m.overview && (m.vote_average ?? 0) >= 6)
+  );
+  const heroMovies = heroCandidates.length >= 4 ? heroCandidates.slice(0, 8) : (trending.length > 0 ? trending : popular).slice(0, 8);
 
   return (
     <>
+      <HomeAnimeDecor />
       {heroMovies.length > 0 && <HeroSection movies={heroMovies} />}
 
       <div className="relative z-10 -mt-2 sm:-mt-5">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Film, Globe, ChevronLeft, ChevronRight, Sparkles, Clock, Loader2 } from 'lucide-react';
+import { Calendar, Film, Globe, ChevronLeft, ChevronRight, Clock, Loader2 } from 'lucide-react';
 import UpcomingMovieCard from '@/components/UpcomingMovieCard';
 import { Movie } from '@/lib/types';
 import { useAuth } from '@/lib/auth-context';
@@ -499,7 +499,7 @@ export default function UpcomingPage() {
                   fontSize: 12,
                   color: 'var(--text-dim)',
                 }}>
-                  <Sparkles size={14} style={{ color: activeRegionData.color }} />
+                  <Film size={14} style={{ color: activeRegionData.color }} />
                   Showing releases from{' '}
                   <strong style={{ color: 'var(--text-muted)' }}>
                     {new Date(dateRange.from).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

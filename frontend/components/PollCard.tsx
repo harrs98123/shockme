@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, BarChart2, Loader2, Sparkles } from 'lucide-react';
+import { CheckCircle2, BarChart2, Loader2, Check } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import toast from '@/lib/toast';
 
 interface PollPayload {
   options?: string[];
@@ -52,7 +53,7 @@ export default function PollCard({
   const [isVoting, setIsVoting] = useState(false);
 
   // Sync state if payload prop updates from external refetch
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialUserVote !== null && initialUserVote !== undefined) {
       setSelectedOption(initialUserVote);
     }
@@ -62,16 +63,25 @@ export default function PollCard({
   }, [initialUserVote, payload?.votes, options.length]);
 
   const totalVotes = useMemo(() => {
-    return localVotes.reduce((sum, count) => sum + count, 0);
+    return localVotes.reduce((acc, v) => acc + (v || 0), 0);
   }, [localVotes]);
 
   const percentages = useMemo(() => {
     if (totalVotes === 0) return options.map(() => 0);
-    return localVotes.map((count) => Math.round((count / totalVotes) * 100));
+    return localVotes.map((v) => Math.round(((v || 0) / totalVotes) * 100));
   }, [localVotes, totalVotes, options]);
 
-  const highestVoteCount = useMemo(() => {
-    return Math.max(...localVotes, 0);
+  const highestVoteIdx = useMemo(() => {
+    if (totalVotes === 0) return -1;
+    let max = -1;
+    let maxIdx = -1;
+    localVotes.forEach((v, idx) => {
+      if ((v || 0) > max) {
+        max = v || 0;
+        maxIdx = idx;
+      }
+    });
+    return maxIdx;
   }, [localVotes]);
 
   const hasVoted = selectedOption !== null && selectedOption !== undefined;
@@ -79,7 +89,7 @@ export default function PollCard({
   const handleVote = async (index: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) {
-      alert('Please log in to vote in community polls.');
+      toast.error('Please log in to vote in community polls.');
       return;
     }
 
@@ -89,11 +99,11 @@ export default function PollCard({
     const previousSelected = selectedOption;
     const newVotes = [...localVotes];
 
-    if (previousSelected !== null && previousSelected !== index) {
+    if (previousSelected !== null && previousSelected !== index && previousSelected !== undefined) {
       newVotes[previousSelected] = Math.max(0, newVotes[previousSelected] - 1);
     }
     if (previousSelected !== index) {
-      newVotes[index] += 1;
+      newVotes[index] = (newVotes[index] || 0) + 1;
     }
 
     setSelectedOption(index);
@@ -109,13 +119,13 @@ export default function PollCard({
         const updated = res.data.payload as PollPayload;
         if (updated.votes) setLocalVotes(updated.votes);
         if (updated.user_vote !== undefined) setSelectedOption(updated.user_vote);
-        if (onVoteSuccess) onVoteSuccess(updated);
+        onVoteSuccess?.(postId, updated);
       }
-    } catch (err) {
-      console.error('Failed to submit vote:', err);
-      // Rollback on error
+      toast.success('Vote recorded! 🗳️');
+    } catch (err: any) {
       setSelectedOption(previousSelected);
-      setLocalVotes(payload?.votes || options.map(() => 0));
+      setLocalVotes(payload?.votes || []);
+      toast.error('Failed to register vote. Try again.');
     } finally {
       setIsVoting(false);
     }
@@ -136,7 +146,7 @@ export default function PollCard({
           const isSelected = selectedOption === i;
           const pct = percentages[i] || 0;
           const count = localVotes[i] || 0;
-          const isLeader = hasVoted && count === highestVoteCount && count > 0;
+          const isLeader = hasVoted && i === highestVoteIdx && count > 0;
 
           return (
             <button
@@ -245,7 +255,7 @@ export default function PollCard({
           </div>
         ) : hasVoted ? (
           <span className="text-emerald-400 font-bold flex items-center gap-1">
-            <Sparkles size={11} /> Voted
+            <Check size={12} strokeWidth={2.5} /> Voted
           </span>
         ) : (
           <span className="text-white/40">Click option to vote</span>

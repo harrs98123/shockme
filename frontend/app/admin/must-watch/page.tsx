@@ -13,38 +13,44 @@ import {
 } from 'lucide-react';
 import { adminApi, posterUrl } from '@/lib/api';
 import { MustWatch } from '@/lib/types';
+import toast from '@/lib/toast';
 
 export default function AdminMustWatch() {
   const [movies, setMovies] = useState<MustWatch[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Search State
+  // Search & Add state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    fetchMustWatch();
+    loadMustWatch();
   }, []);
 
-  const fetchMustWatch = async () => {
+  const loadMustWatch = async () => {
     try {
-      setLoading(true);
       const data = await adminApi.getMustWatch();
       setMovies(data);
     } catch (err) {
       console.error(err);
+      toast.error('Failed to load Must Watch list');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
     setSearching(true);
     try {
-      const results = await adminApi.tmdbSearch(searchQuery);
-      setSearchResults(results);
+      const data = await adminApi.searchMovies(query);
+      setSearchResults(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -58,9 +64,10 @@ export default function AdminMustWatch() {
       setMovies([res, ...movies]);
       setSearchResults([]);
       setSearchQuery('');
+      toast.success(`Added "${movie.title || movie.name}" to Must Watch`);
     } catch (err) {
       console.error(err);
-      alert('This movie is already in the list or there was an error.');
+      toast.error('This title is already in the list or an error occurred.');
     }
   };
 
@@ -69,8 +76,10 @@ export default function AdminMustWatch() {
     try {
       await adminApi.removeMustWatch(movieId);
       setMovies(movies.filter(m => m.movie_id !== movieId));
+      toast.info('Removed from Must Watch');
     } catch (err) {
       console.error(err);
+      toast.error('Failed to remove title');
     }
   };
 

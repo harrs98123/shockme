@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Film, Clapperboard, EyeOff, Sparkles, Skull, HelpCircle, Flame } from 'lucide-react';
+import { Film, Clapperboard, EyeOff, Camera, Skull, HelpCircle, Flame } from 'lucide-react';
 
 const SARCASTIC_TAKES = [
   {

@@ -3,6 +3,7 @@ import { Poppins, Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
 import NavbarWrapper from '@/components/NavbarWrapper';
+import ToastContainer from '@/components/Toast';
 import { SITE_URL, SITE_NAME, jsonLdScript } from '@/lib/seo';
 
 const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
@@ -130,6 +131,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <NavbarWrapper>
             {children}
           </NavbarWrapper>
+          <ToastContainer />
         </AuthProvider>
       </body>
     </html>

@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Movie } from '@/lib/types';
 import SwipeCard from './SwipeCard';
-import { Heart, X, RotateCcw, Info, Sparkles } from 'lucide-react';
+import { Heart, X, RotateCcw, Info, Film } from 'lucide-react';
 import Link from 'next/link';
 
 interface SwipeDeckProps {
@@ -67,7 +67,7 @@ export default function SwipeDeck({ initialMovies }: SwipeDeckProps) {
             className="text-center p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-md max-w-xs z-30"
           >
             <div className="w-16 h-16 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-purple-400" />
+              <Film className="w-8 h-8 text-purple-400" />
             </div>
             <h3 className="text-lg font-bold text-white mb-2">Reel Empty</h3>
             <p className="text-xs text-white/50 mb-6 leading-relaxed">

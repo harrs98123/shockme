@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { User } from '@/lib/types';
+import toast from '@/lib/toast';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
@@ -26,11 +27,13 @@ export default function AdminUsers() {
   }, [page]);
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
       const res = await api.get(`/admin/users?page=${page}`);
       setUsers(res.data);
     } catch (err) {
       console.error('Failed to fetch users:', err);
+      toast.error('Failed to fetch users');
     } finally {
       setLoading(false);
     }
@@ -41,9 +44,10 @@ export default function AdminUsers() {
     try {
       await api.delete(`/admin/users/${userId}`);
       setUsers(users.filter(u => u.id !== userId));
+      toast.success('User deleted successfully');
     } catch (err) {
       console.error('Failed to delete user:', err);
-      alert('Could not delete user. See console for details.');
+      toast.error('Could not delete user. See console for details.');
     }
   };
 

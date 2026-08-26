@@ -65,11 +65,9 @@ export default function MovieRow({
   const ArrowBtn = ({ dir }: { dir: 'left' | 'right' }) => (
     <button
       onClick={() => scroll(dir)}
-      className={`hidden md:flex absolute top-1/2 -translate-y-1/2 ${
-        dir === 'left' ? '-left-4' : '-right-4'
-      } z-10 w-10 h-10 rounded-full bg-[#0f0f0f]/95 border border-white/10 text-white cursor-pointer items-center justify-center text-base transition-all ${
-        dir === 'left' ? (canScrollLeft ? 'opacity-100 hover:bg-[var(--primary)]' : 'opacity-30') : (canScrollRight ? 'opacity-100 hover:bg-[var(--primary)]' : 'opacity-30')
-      }`}
+      className={`hidden md:flex absolute top-1/2 -translate-y-1/2 ${dir === 'left' ? '-left-4' : '-right-4'
+        } z-10 w-10 h-10 rounded-full bg-[#0f0f0f]/95 border border-white/10 text-white cursor-pointer items-center justify-center text-base transition-all ${dir === 'left' ? (canScrollLeft ? 'opacity-100 hover:bg-[var(--primary)]' : 'opacity-30') : (canScrollRight ? 'opacity-100 hover:bg-[var(--primary)]' : 'opacity-30')
+        }`}
     >
       {dir === 'left' ? '←' : '→'}
     </button>

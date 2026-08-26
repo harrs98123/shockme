@@ -20,7 +20,7 @@ import {
   Settings2,
   Tv,
   Film,
-  Sparkles,
+  Globe,
 } from 'lucide-react';
 import api, { posterUrl } from '@/lib/api';
 import { Franchise, Movie, FranchiseEntry } from '@/lib/types';
@@ -747,7 +747,7 @@ export default function AdminFranchises() {
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
                     <input type="checkbox" checked={entryForm.multiverse} onChange={(e) => setEntryForm({ ...entryForm, multiverse: e.target.checked })} />
-                    <Sparkles size={13} /> Multiverse
+                    <Globe size={13} /> Multiverse
                   </label>
                 </div>
 

@@ -26,7 +26,7 @@ const TMDB_IMG = 'https://image.tmdb.org/t/p/w342';
 
 // ─── Collection mood/vibe filters ───────────────────────────────────────────
 const FILTERS = [
-  { id: 'all',        label: '✨ All',         match: null },
+  { id: 'all',        label: '🎬 All',         match: null },
   { id: 'bollywood',  label: '🎭 Bollywood',   match: ['bollywood', 'indian', 'hindi', 'south asian', 'desi', 'telugu', 'malayalam'] },
   { id: 'superhero',  label: '🦸 Superhero',   match: ['superhero', 'spider-man', 'batman', 'dark knight', 'marvel', 'dc ', 'joker', 'cape'] },
   { id: 'emotional',  label: '😭 Gut-Punch',   match: ['cry', 'mom', 'broke', 'emotional', 'feel', 'comfort', 'soul', 'heart'] },

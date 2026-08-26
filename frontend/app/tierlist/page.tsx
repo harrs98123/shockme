@@ -8,6 +8,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Movie } from '@/lib/types';
 import { Trash2, RotateCcw, Save, Plus, X, Search, Loader2, Check } from 'lucide-react';
+import toast from '@/lib/toast';
 
 interface TierMovie {
   movie_id: number;
@@ -53,19 +54,7 @@ function TierListContent() {
   const [listId, setListId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState('');
-
   // Search state
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
-  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -164,7 +153,7 @@ function TierListContent() {
     const isAlreadyInPool = unranked.some(m => m.movie_id === tierMovie.movie_id);
     
     if (isAlreadyRanked || isAlreadyInPool) {
-      showToast('Movie already in your ranking!');
+      toast.info('Movie already in your ranking!');
       return;
     }
 
@@ -176,7 +165,7 @@ function TierListContent() {
       ));
     }
 
-    showToast(`Added ${movieData.title}!`);
+    toast.success(`Added "${movieData.title}"!`);
     setShowResults(false);
     setQuery('');
   };
@@ -191,14 +180,14 @@ function TierListContent() {
         tiers_json: JSON.stringify(tiers)
       });
       setListId(res.data.id);
-      showToast('Ranking saved! 💾');
+      toast.success('Ranking saved! 💾');
 
       // Update URL if it's a new list
       if (!targetId) {
         router.replace(`/tierlist?id=${res.data.id}`);
       }
     } catch {
-      showToast('Failed to save ranking');
+      toast.error('Failed to save ranking');
     }
     setSaving(false);
   };
@@ -209,7 +198,7 @@ function TierListContent() {
     const allRankedMovies = tiers.flatMap(t => t.movies);
     setUnranked(prev => [...prev, ...allRankedMovies]);
     setTiers(DEFAULT_TIERS.map(t => ({ ...t, movies: [] })));
-    showToast('List reset');
+    toast.info('List reset');
   };
 
   const removeMovie = async (movie: TierMovie, currentTierId: string) => {
@@ -576,20 +565,6 @@ function TierListContent() {
           ))}
         </div>
       </div>
-
-      {/* Toast */}
-      {toast && (
-        <div className="toast" style={{
-          position: 'fixed', bottom: 32, right: 32, zIndex: 9999,
-          background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 16, padding: '16px 24px',
-          color: 'white', fontSize: 14, fontWeight: 600,
-          boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-        }}>
-          {toast}
-        </div>
-      )}
     </div>
   );
 }

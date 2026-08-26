@@ -6,9 +6,10 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { Sparkles, Zap, Star, MessageSquare, Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
+import { Crown, Zap, Star, MessageSquare, Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import Avatar from '@/components/Avatar';
+import toast from '@/lib/toast';
 
 interface ReviewComment {
   id: number;
@@ -59,7 +60,7 @@ const LABELS = [
   { id: 'skip', label: 'Skip', color: '#f43f5e', glow: 'rgba(244,63,94,0.3)', icon: Zap },
   { id: 'timepass', label: 'Timepass', color: '#fbbf24', glow: 'rgba(251,191,36,0.3)', icon: MessageSquare },
   { id: 'goforit', label: 'Go for it', color: '#10b981', glow: 'rgba(16,185,129,0.3)', icon: Star },
-  { id: 'perfection', label: 'Perfection', color: '#a78bfa', glow: 'rgba(167,139,250,0.3)', icon: Sparkles },
+  { id: 'perfection', label: 'Perfection', color: '#a78bfa', glow: 'rgba(167,139,250,0.3)', icon: Crown },
 ] as const;
 
 type LabelId = 'skip' | 'timepass' | 'goforit' | 'perfection';
@@ -328,7 +329,6 @@ export default function MoctaleMeter({ movieId, mediaType = 'movie' }: { movieId
   const [selectedLabel, setSelectedLabel] = useState<LabelId | null>(null);
   const [reviewText, setReviewText] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [toastMsg, setToastMsg] = useState('');
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
 
   const [expandedComments, setExpandedComments] = useState<Set<number>>(new Set());
@@ -350,7 +350,10 @@ export default function MoctaleMeter({ movieId, mediaType = 'movie' }: { movieId
   };
 
   const handleToggleLike = async (reviewId: number) => {
-    if (!user) { setToastMsg('Login to like this review'); setTimeout(() => setToastMsg(''), 3000); return; }
+    if (!user) {
+      toast.error('Please log in to like this review');
+      return;
+    }
     try {
       setStats(prev => {
         if (!prev) return prev;
@@ -373,7 +376,10 @@ export default function MoctaleMeter({ movieId, mediaType = 'movie' }: { movieId
   const handlePostComment = async (reviewId: number) => {
     let text = commentTexts[reviewId]?.trim();
     if (!text) return;
-    if (!user) { setToastMsg('Login to comment'); setTimeout(() => setToastMsg(''), 3000); return; }
+    if (!user) {
+      toast.error('Please log in to comment');
+      return;
+    }
     
     // If replying to someone, maybe text starts with @username. The backend doesn't care, it just saves what's in content.
     const parentId = replyingTo[reviewId] || null;
@@ -399,15 +405,18 @@ export default function MoctaleMeter({ movieId, mediaType = 'movie' }: { movieId
       });
       setCommentTexts(prev => ({ ...prev, [reviewId]: '' }));
       setReplyingTo(prev => ({ ...prev, [reviewId]: null }));
+      toast.success('Comment posted!');
     } catch {
-      setToastMsg('Failed to post comment');
-      setTimeout(() => setToastMsg(''), 3000);
+      toast.error('Failed to post comment');
     }
     setPostingComment(null);
   };
 
   const handleToggleCommentLike = async (reviewId: number, commentId: number) => {
-    if (!user) { setToastMsg('Login to like this comment'); setTimeout(() => setToastMsg(''), 3000); return; }
+    if (!user) {
+      toast.error('Please log in to like this comment');
+      return;
+    }
     try {
       setStats(prev => {
         if (!prev) return prev;
@@ -442,10 +451,10 @@ export default function MoctaleMeter({ movieId, mediaType = 'movie' }: { movieId
         };
       });
       await api.delete(`/moctale/comments/${commentId}`);
+      toast.info('Comment deleted');
     } catch {
       loadStats();
-      setToastMsg('Failed to delete comment');
-      setTimeout(() => setToastMsg(''), 3000);
+      toast.error('Failed to delete comment');
     }
   };
 
@@ -481,7 +490,10 @@ export default function MoctaleMeter({ movieId, mediaType = 'movie' }: { movieId
 
   const handleSubmit = async () => {
     if (!selectedLabel) return;
-    if (!user) { setToastMsg('Login to rate this movie'); setTimeout(() => setToastMsg(''), 3000); return; }
+    if (!user) {
+      toast.error('Please log in to rate this title');
+      return;
+    }
     setSubmitting(true);
     try {
       await api.post(`/moctale/${movieId}`, {
@@ -489,13 +501,11 @@ export default function MoctaleMeter({ movieId, mediaType = 'movie' }: { movieId
         media_type: mediaType,
         review_text: reviewText.trim() || null,
       });
-      setToastMsg('Rating submitted! 🎉');
-      setTimeout(() => setToastMsg(''), 3000);
+      toast.success('Verdict submitted! 🎉');
       setReviewText('');
       await loadStats();
     } catch {
-      setToastMsg('Failed to submit. Try again.');
-      setTimeout(() => setToastMsg(''), 3000);
+      toast.error('Failed to submit verdict. Try again.');
     }
     setSubmitting(false);
   };
@@ -774,24 +784,6 @@ export default function MoctaleMeter({ movieId, mediaType = 'movie' }: { movieId
              })}
          </div>
       )}
-
-      {/* Toast Overlay */}
-      <AnimatePresence>
-        {toastMsg && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            style={{
-              position: 'fixed', bottom: '40px', right: '40px', zIndex: 1000,
-              background: 'white', color: 'black', padding: '16px 24px', borderRadius: '16px',
-              fontWeight: 700, fontSize: '14px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
-            }}
-          >
-            {toastMsg}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

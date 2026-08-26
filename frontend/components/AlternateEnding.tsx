@@ -42,7 +42,7 @@ export default function AlternateEnding({ movieId, mediaType = 'movie' }: { movi
 
   const types = [
     { id: 'dark', label: 'Dark', icon: '🌑' },
-    { id: 'happy', label: 'Happy', icon: '✨' },
+    { id: 'happy', label: 'Happy', icon: '☀️' },
     { id: 'twist', label: 'Twist', icon: '🌪️' }
   ];
 
@@ -126,7 +126,7 @@ export default function AlternateEnding({ movieId, mediaType = 'movie' }: { movi
               </>
             ) : (
               <>
-                <span style={{ opacity: 0.7 }}>✨</span> Generate Story
+                <span style={{ opacity: 0.7 }}>⚡</span> Generate Story
               </>
             )}
           </motion.button>

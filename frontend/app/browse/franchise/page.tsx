@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   Clapperboard,
-  Sparkles,
   ArrowRight,
   Zap,
   Sword,

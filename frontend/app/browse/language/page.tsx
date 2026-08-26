@@ -9,7 +9,6 @@ import {
   ArrowRight,
   TrendingUp,
   Award,
-  Sparkles
 } from 'lucide-react';
 import api from '@/lib/api';
 

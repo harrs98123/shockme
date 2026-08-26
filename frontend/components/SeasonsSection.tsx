@@ -11,7 +11,7 @@ import {
   Star, 
   Clock, 
   Calendar, 
-  Sparkles, 
+  Award, 
   Flame, 
   Popcorn, 
   FastForward, 
@@ -510,7 +510,7 @@ export default function SeasonsSection({ seasons, seriesId, seriesName }: Props)
                     transition: 'all 0.2s',
                   }}
                 >
-                  <Sparkles size={14} /> Must Watch (8.5+)
+                  <Award size={14} /> Must Watch (8.5+)
                 </button>
 
                 <button

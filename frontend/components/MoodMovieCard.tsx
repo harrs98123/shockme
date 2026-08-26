@@ -8,6 +8,7 @@ import { Media } from '@/lib/types';
 import { posterUrl } from '@/lib/api';
 import { GlowConfig } from '@/lib/finderData';
 import { getEnglishTitle } from '@/lib/utils';
+import toast from '@/lib/toast';
 import AddToCollectionButton from './AddToCollectionButton';
 
 interface MoodMovieCardProps {
@@ -30,14 +31,19 @@ export default function MoodMovieCard({
   onFavToggle,
   isWatchlisted = false,
   onWatchlistToggle,
+  isWatched = false,
+  onWatchedToggle,
   accentGlow,
 }: MoodMovieCardProps) {
+  const [imgError, setImgError] = useState(!movie.poster_path);
+  const [isHovered, setIsHovered] = useState(false);
   const [localFav, setLocalFav] = useState(isFav);
   const [localWatchlist, setLocalWatchlist] = useState(isWatchlisted);
-  const [isHovered, setIsHovered] = useState(false);
+  const [localWatched, setLocalWatched] = useState(isWatched);
 
   useEffect(() => { setLocalFav(isFav); }, [isFav]);
   useEffect(() => { setLocalWatchlist(isWatchlisted); }, [isWatchlisted]);
+  useEffect(() => { setLocalWatched(isWatched); }, [isWatched]);
 
   const title = getEnglishTitle(movie);
   const mediaType = movie.media_type || (movie.title ? 'movie' : 'tv');
@@ -55,7 +61,7 @@ export default function MoodMovieCard({
     e.stopPropagation();
     const token = localStorage.getItem('cinematch_token');
     if (!token) {
-      alert('Please log in to save favorites.');
+      toast.error('Please log in to save favorites.');
       return;
     }
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -68,6 +74,7 @@ export default function MoodMovieCard({
         if (res.ok) {
           setLocalFav(false);
           onFavToggle?.(movie);
+          toast.info(`Removed "${title}" from Favorites`);
         }
       } else {
         const res = await fetch(`${API_BASE}/favorites`, {
@@ -86,10 +93,12 @@ export default function MoodMovieCard({
         if (res.ok || res.status === 400) {
           setLocalFav(true);
           onFavToggle?.(movie);
+          toast.success(`Added "${title}" to Favorites ❤️`);
         }
       }
     } catch (err) {
       console.error('Failed to update favorite:', err);
+      toast.error('Failed to update favorite.');
     }
   };
 
@@ -98,7 +107,7 @@ export default function MoodMovieCard({
     e.stopPropagation();
     const token = localStorage.getItem('cinematch_token');
     if (!token) {
-      alert('Please log in to update your watchlist.');
+      toast.error('Please log in to update your watchlist.');
       return;
     }
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -111,6 +120,7 @@ export default function MoodMovieCard({
         if (res.ok) {
           setLocalWatchlist(false);
           onWatchlistToggle?.(movie);
+          toast.info(`Removed "${title}" from Watchlist`);
         }
       } else {
         const res = await fetch(`${API_BASE}/watchlist`, {
@@ -126,10 +136,12 @@ export default function MoodMovieCard({
         if (res.ok || res.status === 400) {
           setLocalWatchlist(true);
           onWatchlistToggle?.(movie);
+          toast.success(`Added "${title}" to Watchlist`);
         }
       }
     } catch (err) {
       console.error('Failed to update watchlist:', err);
+      toast.error('Failed to update watchlist.');
     }
   };
 

@@ -75,7 +75,7 @@ export default function ExplanationEngine({ movieId, mediaType = 'movie' }: Prop
                 gap: 8
               }}
             >
-              <span style={{ opacity: 0.7 }}>✨</span> Why This {mediaType === 'tv' ? 'Series' : 'Movie'}?
+              <span style={{ opacity: 0.7 }}>💡</span> Why This {mediaType === 'tv' ? 'Series' : 'Movie'}?
             </motion.button>
           )}
         </div>

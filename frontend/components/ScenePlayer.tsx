@@ -7,7 +7,6 @@ import {
   Film,
   Maximize2,
   X,
-  Sparkles,
   ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -187,7 +186,7 @@ export default function ScenePlayer({
 
             <div className="absolute top-3 left-3 flex items-center gap-2 z-10">
               <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white border border-white/20 flex items-center gap-1.5 shadow-md">
-                <Sparkles size={12} className="text-primary" />
+                <Play size={10} className="text-primary fill-primary" />
                 <span>Scene Clip</span>
               </div>
               {movieTitle && (

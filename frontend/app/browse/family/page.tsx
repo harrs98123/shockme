@@ -8,7 +8,6 @@ import {
   Smile,
   Heart,
   ArrowRight,
-  Sparkles
 } from 'lucide-react';
 import api from '@/lib/api';
 import MovieCard from '@/components/MovieCard';

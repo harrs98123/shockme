@@ -7,6 +7,7 @@ import { Heart, Star, Zap, Plus, Check, Info, Flame } from 'lucide-react';
 import { Media } from '@/lib/types';
 import { backdropUrl, posterUrl } from '@/lib/api';
 import { GlowConfig } from '@/lib/finderData';
+import toast from '@/lib/toast';
 import AddToCollectionButton from './AddToCollectionButton';
 
 interface MoodFeaturedCardProps {
@@ -40,7 +41,10 @@ export default function MoodFeaturedCard({
   const handleFavClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('cinematch_token');
-    if (!token) { alert('Please log in to save favorites.'); return; }
+    if (!token) {
+      toast.error('Please log in to save favorites.');
+      return;
+    }
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     try {
       if (localFav) {
@@ -48,7 +52,11 @@ export default function MoodFeaturedCard({
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) { setLocalFav(false); onFavToggle?.(movie); }
+        if (res.ok) {
+          setLocalFav(false);
+          onFavToggle?.(movie);
+          toast.info(`Removed "${title}" from Favorites`);
+        }
       } else {
         const res = await fetch(`${API_BASE}/favorites`, {
           method: 'POST',
@@ -63,17 +71,25 @@ export default function MoodFeaturedCard({
             vote_average: movie.vote_average,
           }),
         });
-        if (res.ok || res.status === 400) { setLocalFav(true); onFavToggle?.(movie); }
+        if (res.ok || res.status === 400) {
+          setLocalFav(true);
+          onFavToggle?.(movie);
+          toast.success(`Added "${title}" to Favorites ❤️`);
+        }
       }
     } catch (err) {
       console.error('Failed to update favorite:', err);
+      toast.error('Failed to update favorite.');
     }
   };
 
   const handleWatchlistClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('cinematch_token');
-    if (!token) { alert('Please log in to update your watchlist.'); return; }
+    if (!token) {
+      toast.error('Please log in to update your watchlist.');
+      return;
+    }
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     try {
       if (localWatchlist) {
@@ -81,7 +97,11 @@ export default function MoodFeaturedCard({
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) { setLocalWatchlist(false); onWatchlistToggle?.(movie); }
+        if (res.ok) {
+          setLocalWatchlist(false);
+          onWatchlistToggle?.(movie);
+          toast.info(`Removed "${title}" from Watchlist`);
+        }
       } else {
         const res = await fetch(`${API_BASE}/watchlist`, {
           method: 'POST',
@@ -93,10 +113,15 @@ export default function MoodFeaturedCard({
             poster_path: movie.poster_path,
           }),
         });
-        if (res.ok || res.status === 400) { setLocalWatchlist(true); onWatchlistToggle?.(movie); }
+        if (res.ok || res.status === 400) {
+          setLocalWatchlist(true);
+          onWatchlistToggle?.(movie);
+          toast.success(`Added "${title}" to Watchlist`);
+        }
       }
     } catch (err) {
       console.error('Failed to update watchlist:', err);
+      toast.error('Failed to update watchlist.');
     }
   };
 

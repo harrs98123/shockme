@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   Dices,
-  Sparkles,
+  Palette,
   Check,
   Camera,
   Upload,
@@ -22,6 +22,7 @@ import {
   DEFAULT_AVATAR_STYLE,
 } from '@/components/Avatar/dicebear';
 import type { DiceBearStyleName } from '@/components/Avatar/Avatar.types';
+import toast from '@/lib/toast';
 
 interface Props {
   isOpen: boolean;
@@ -94,7 +95,6 @@ export default function AvatarCustomizerModal({ isOpen, onClose, onAvatarUpdated
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [customPhotoUrl, setCustomPhotoUrl] = useState(user?.avatar_url || '');
   const [saving, setSaving] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Generate live DiceBear data URI
   const liveDicebearUri = useMemo(() => {
@@ -142,19 +142,15 @@ export default function AvatarCustomizerModal({ isOpen, onClose, onAvatarUpdated
         colors: ['#E50914', '#8B5CF6', '#F59E0B'],
       });
 
-      setToastMessage('Avatar updated!');
-      setTimeout(() => {
-        setToastMessage(null);
-        onClose();
-      }, 800);
+      toast.success('Avatar updated successfully!');
+      onClose();
     } catch (err: unknown) {
       console.error('Failed to update avatar:', err);
       const errorMessage =
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
           : 'Failed to save avatar.';
-      setToastMessage(errorMessage || 'Failed to save avatar.');
-      setTimeout(() => setToastMessage(null), 3000);
+      toast.error(errorMessage || 'Failed to save avatar.');
     } finally {
       setSaving(false);
     }
@@ -170,13 +166,11 @@ export default function AvatarCustomizerModal({ isOpen, onClose, onAvatarUpdated
       updateUser(res.data);
       if (onAvatarUpdated) onAvatarUpdated('');
       setCustomPhotoUrl('');
-      setToastMessage('Reset to default.');
-      setTimeout(() => {
-        setToastMessage(null);
-        onClose();
-      }, 800);
+      toast.info('Avatar reset to default.');
+      onClose();
     } catch (err) {
       console.error(err);
+      toast.error('Failed to reset avatar.');
     } finally {
       setSaving(false);
     }
@@ -335,7 +329,7 @@ export default function AvatarCustomizerModal({ isOpen, onClose, onAvatarUpdated
                     color: activeTab === 'dicebear' ? '#fff' : 'rgba(255,255,255,0.5)',
                   }}
                 >
-                  <Sparkles size={13} style={{ color: 'var(--primary, #E50914)' }} /> Studio
+                  <Palette size={13} style={{ color: 'var(--primary, #E50914)' }} /> Studio
                 </button>
                 <button
                   type="button"
@@ -666,32 +660,6 @@ export default function AvatarCustomizerModal({ isOpen, onClose, onAvatarUpdated
               </div>
             )}
           </div>
-
-          {/* Toast Message */}
-          <AnimatePresence>
-            {toastMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                style={{
-                  margin: '0 24px 12px',
-                  padding: '10px 16px',
-                  borderRadius: 12,
-                  background: 'rgba(16, 185, 129, 0.15)',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
-                  color: '#34d399',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <Check size={14} /> {toastMessage}
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Footer Actions */}
           <div

@@ -175,7 +175,7 @@ export default function GroupsPage() {
                 }}
                 className="relative group block"
               >
-                {/* ✨ The Hover Shadow Gradient Effect ✨ */}
+                {/* Hover Shadow Gradient Effect */}
                 <div className="absolute -inset-0.5 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-[34px] blur-xl opacity-0 group-hover:opacity-40 transition duration-500 z-0" />
 
                 {/* Card Container */}

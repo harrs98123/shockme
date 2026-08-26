@@ -9,6 +9,7 @@ import { Media, InterestInfo } from '@/lib/types';
 
 import { posterUrl } from '@/lib/api';
 import { getEnglishTitle } from '@/lib/utils';
+import toast from '@/lib/toast';
 import AddToCollectionButton from './AddToCollectionButton';
 import SarcasticPosterFallback from './SarcasticPosterFallback';
 
@@ -102,49 +103,80 @@ export default function MovieCard({
     e.preventDefault();
     e.stopPropagation();
     const token = localStorage.getItem('cinematch_token');
-    if (!token) { alert("Please log in to add to your watchlist."); return; }
+    if (!token) {
+      toast.error('Please log in to add to your watchlist.');
+      return;
+    }
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     try {
       if (localWatchlisted) {
         const res = await fetch(`${API_BASE}/watchlist/${movie.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-        if (res.ok) { setLocalWatchlisted(false); onWatchlistToggle?.(movie); }
+        if (res.ok) {
+          setLocalWatchlisted(false);
+          onWatchlistToggle?.(movie);
+          toast.info(`Removed "${title}" from Watchlist`);
+        }
       } else {
         const res = await fetch(`${API_BASE}/watchlist`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ movie_id: movie.id, media_type: mediaType, title, poster_path: movie.poster_path })
         });
-        if (res.ok || res.status === 400) { setLocalWatchlisted(true); onWatchlistToggle?.(movie); }
+        if (res.ok || res.status === 400) {
+          setLocalWatchlisted(true);
+          onWatchlistToggle?.(movie);
+          toast.success(`Added "${title}" to Watchlist`);
+        }
       }
-    } catch (err) { console.error('Failed to update watchlist:', err); }
+    } catch (err) {
+      console.error('Failed to update watchlist:', err);
+      toast.error('Failed to update watchlist.');
+    }
   };
 
   const handleFavoriteToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const token = localStorage.getItem('cinematch_token');
-    if (!token) { alert("Please log in to favorite this movie."); return; }
+    if (!token) {
+      toast.error('Please log in to favorite this title.');
+      return;
+    }
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     try {
       if (localFavorited) {
         const res = await fetch(`${API_BASE}/favorites/${movie.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-        if (res.ok) { setLocalFavorited(false); onFavToggle?.(movie); }
+        if (res.ok) {
+          setLocalFavorited(false);
+          onFavToggle?.(movie);
+          toast.info(`Removed "${title}" from Favorites`);
+        }
       } else {
         const res = await fetch(`${API_BASE}/favorites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ movie_id: movie.id, media_type: mediaType, title, poster_path: movie.poster_path, backdrop_path: movie.backdrop_path, release_year: releaseYear.toString(), vote_average: movie.vote_average })
         });
-        if (res.ok || res.status === 400) { setLocalFavorited(true); onFavToggle?.(movie); }
+        if (res.ok || res.status === 400) {
+          setLocalFavorited(true);
+          onFavToggle?.(movie);
+          toast.success(`Added "${title}" to Favorites ❤️`);
+        }
       }
-    } catch (err) { console.error('Failed to update favorites:', err); }
+    } catch (err) {
+      console.error('Failed to update favorites:', err);
+      toast.error('Failed to update favorites.');
+    }
   };
 
   const handleInterestToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const token = localStorage.getItem('cinematch_token');
-    if (!token) { alert("Please log in to express interest."); return; }
+    if (!token) {
+      toast.error('Please log in to express interest.');
+      return;
+    }
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     try {
       const res = await fetch(`${API_BASE}/interests/toggle`, {
@@ -156,8 +188,16 @@ export default function MovieCard({
         const data: InterestInfo = await res.json();
         setIsInterested(data.user_interested);
         setInterestCount(data.count);
+        if (data.user_interested) {
+          toast.success(`You're marked interested in "${title}" 🔔`);
+        } else {
+          toast.info(`Removed interest in "${title}"`);
+        }
       }
-    } catch (err) { console.error('Failed to toggle interest:', err); }
+    } catch (err) {
+      console.error('Failed to toggle interest:', err);
+      toast.error('Failed to toggle interest.');
+    }
   };
 
   const activeButton = isUpcoming ? isInterested : localFavorited;
@@ -217,10 +257,10 @@ export default function MovieCard({
               className={`mc-fav-btn${isUpcoming ? ' upcoming' : ''}`}
               style={{
                 backgroundColor: activeButton
-                  ? (isUpcoming ? 'var(--primary)' : '#ef4444')
-                  : 'rgba(0,0,0,0.4)',
-                border: activeButton ? 'none' : '1px solid rgba(255,255,255,0.2)',
-                color: activeButton ? (isUpcoming ? '#000' : '#fff') : '#fff',
+                  ? (isUpcoming ? 'var(--primary, #E50914)' : '#ef4444')
+                  : 'rgba(0,0,0,0.5)',
+                border: activeButton ? 'none' : '1px solid rgba(255,255,255,0.25)',
+                color: '#fff',
                 transform: isGridView && isHovered ? 'scale(1.1)' : 'scale(1)',
               }}
               aria-label={isUpcoming ? 'Toggle interest' : 'Toggle favourite'}

@@ -9,7 +9,6 @@ import {
   Award,
   Clock,
   PlayCircle,
-  Sparkles,
   Flag,
   ArrowRight
 } from 'lucide-react';

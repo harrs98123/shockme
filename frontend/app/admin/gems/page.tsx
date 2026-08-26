@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import api, { posterUrl } from '@/lib/api';
 import { GemOverride } from '@/lib/types';
+import toast from '@/lib/toast';
 
 export default function AdminGems() {
   const [gems, setGems] = useState<GemOverride[]>([]);
@@ -30,6 +31,7 @@ export default function AdminGems() {
       setGems(res.data);
     } catch (err) {
       console.error(err);
+      toast.error('Failed to fetch gems list');
     } finally {
       setLoading(false);
     }
@@ -39,10 +41,11 @@ export default function AdminGems() {
     if (!searchQuery.trim()) return;
     setSearching(true);
     try {
-      const res = await api.get(`/admin/tmdb/search?q=${searchQuery}`);
-      setSearchResults(res.data);
+      const res = await api.get(`/search/tmdb?q=${encodeURIComponent(searchQuery)}`);
+      setSearchResults(res.data?.results || []);
     } catch (err) {
       console.error(err);
+      toast.error('Search failed');
     } finally {
       setSearching(false);
     }
@@ -65,9 +68,10 @@ export default function AdminGems() {
       setGems([res.data, ...gems]);
       setSearchResults([]);
       setSearchQuery('');
+      toast.success(`Added "${movie.title}" to Curated Gems 💎`);
     } catch (err) {
       console.error(err);
-      alert('This movie is already in the gems list or there was an error.');
+      toast.error('This movie is already in the gems list or an error occurred.');
     }
   };
 
@@ -76,8 +80,10 @@ export default function AdminGems() {
     try {
       await api.delete(`/admin/gems/${id}`);
       setGems(gems.filter((g) => g.id !== id));
+      toast.info('Removed from curated gems');
     } catch (err) {
       console.error(err);
+      toast.error('Failed to remove gem');
     }
   };
 

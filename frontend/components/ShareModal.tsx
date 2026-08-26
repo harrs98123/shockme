@@ -10,7 +10,6 @@ import {
   ExternalLink,
   Code,
   QrCode,
-  Sparkles,
   Film,
   Send,
   MessageCircle,
@@ -534,7 +533,7 @@ export default function ShareModal({ isOpen, onClose, post }: ShareModalProps) {
                       e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
                     }}
                   >
-                    <Sparkles size={13} className="text-amber-400" />
+                    <ExternalLink size={13} className="text-amber-400" />
                     <span>More Apps (System Share Dialog)</span>
                   </button>
                 )}

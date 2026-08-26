@@ -41,7 +41,7 @@ import {
   Bell,
   Users,
   UserCheck,
-  Sparkles,
+  Compass,
   Camera,
 } from 'lucide-react';
 
@@ -141,7 +141,7 @@ export default function ProfilePage() {
 
   const tabs = [
     { id: 'favorites', label: 'Favorites', icon: Heart },
-    { id: 'suggestions', label: 'Suggested for You', icon: Sparkles },
+    { id: 'suggestions', label: 'Suggested for You', icon: Compass },
     { id: 'watchlist', label: 'Watchlist', icon: Clock },
     { id: 'watched', label: 'Watched', icon: Eye },
     { id: 'reviews', label: 'Reviews', icon: Star },
@@ -340,48 +340,68 @@ export default function ProfilePage() {
               </div>
 
               {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: 12, flexShrink: 0, alignSelf: 'flex-start', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 10, flexShrink: 0, alignSelf: 'flex-start', flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
                   onClick={() => setIsAvatarModalOpen(true)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '12px 20px', borderRadius: 16,
-                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-                    color: '#fff', fontSize: 14, fontWeight: 700,
-                    cursor: 'pointer', transition: 'all 0.2s',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '8px 16px', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 600,
+                    cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    letterSpacing: '-0.1px',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
+                    e.currentTarget.style.color = '#fff';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+                  }}
                 >
-                  <Sparkles size={16} style={{ color: 'var(--primary, #E50914)' }} /> Avatar Studio
+                  Avatar Studio
                 </button>
                 <button
                   onClick={() => setIsEditModalOpen(true)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '12px 22px', borderRadius: 16,
+                    display: 'inline-flex', alignItems: 'center', gap: 7,
+                    padding: '8px 18px', borderRadius: 12,
                     background: '#fff', color: '#000',
-                    border: 'none', fontSize: 14, fontWeight: 700,
+                    border: 'none', fontSize: 13, fontWeight: 600,
                     cursor: 'pointer', transition: 'transform 0.2s, opacity 0.2s',
+                    letterSpacing: '-0.1px',
                   }}
                   onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
                   onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                 >
-                  <Edit size={16} /> Edit Profile
+                  <Edit size={14} /> Edit Profile
                 </button>
                 <button
                   onClick={logout}
+                  aria-label="Log out"
+                  title="Log out"
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '12px 20px', borderRadius: 16,
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                    color: 'rgba(255,255,255,0.6)', fontSize: 14, fontWeight: 600,
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '8px 12px', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 500,
                     cursor: 'pointer', transition: 'all 0.2s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(239,68,68,0.1)';
+                    e.currentTarget.style.color = '#ef4444';
+                    e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                  }}
                 >
-                  <LogOut size={16} />
+                  <LogOut size={14} />
                 </button>
               </div>
             </div>

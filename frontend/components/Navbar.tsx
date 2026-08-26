@@ -30,7 +30,6 @@ import {
   Coffee,
   LayoutGrid,
   Bookmark,
-  Sparkles,
 } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import AvatarCustomizerModal from '@/components/AvatarCustomizerModal';
@@ -930,7 +929,7 @@ export default function Navbar() {
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 24px 16px' }}>
                 <span style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>
-                  {mobileBrowseOpen ? '🎭 Browse By' : '✨ Explore'}
+                  {mobileBrowseOpen ? '🎭 Browse By' : '🧭 Explore'}
                 </span>
                 <button
                   onClick={() => {

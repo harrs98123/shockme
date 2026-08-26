@@ -45,7 +45,7 @@ export default function GemsPage() {
   const rarityConfig = {
     legendary: { label: 'Legendary', color: '#f59e0b', bg: 'rgba(245,158,11,0.18)', border: 'rgba(245,158,11,0.4)', icon: '👑', glow: '0 0 20px rgba(245,158,11,0.35)' },
     rare: { label: 'Rare', color: '#a78bfa', bg: 'rgba(139,92,246,0.18)', border: 'rgba(139,92,246,0.4)', icon: '💎', glow: '0 0 20px rgba(139,92,246,0.35)' },
-    common: { label: 'Common', color: '#60a5fa', bg: 'rgba(59,130,246,0.18)', border: 'rgba(59,130,246,0.4)', icon: '✨', glow: '0 0 20px rgba(59,130,246,0.35)' },
+    common: { label: 'Common', color: '#60a5fa', bg: 'rgba(59,130,246,0.18)', border: 'rgba(59,130,246,0.4)', icon: '🎬', glow: '0 0 20px rgba(59,130,246,0.35)' },
   };
 
   return (
@@ -533,7 +533,7 @@ export default function GemsPage() {
                     {/* Rarity & Admin badges (top left) */}
                     <div className="gem-rarity-badge">
                       {gem.is_admin_curated && (
-                        <div className="admin-chip">✨ CineMatch</div>
+                        <div className="admin-chip">💎 CineMatch</div>
                       )}
                       <div
                         className="rarity-chip"

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Media } from '@/lib/types';
 import { backdropUrl, posterUrl, releaseYear } from '@/lib/api';
 import { getEnglishTitle } from '@/lib/utils';
+import toast from '@/lib/toast';
 import FavoriteButton from './FavoriteButton';
 import WatchlistButton from './WatchlistButton';
 import WatchedButton from './WatchedButton';
@@ -174,7 +175,7 @@ export default function MovieDetailHero({ movie }: Props) {
   const handleInterestToggle = async () => {
     const token = localStorage.getItem('cinematch_token');
     if (!token) {
-      alert("Please log in to express interest.");
+      toast.error('Please log in to express interest.');
       return;
     }
 
@@ -199,9 +200,15 @@ export default function MovieDetailHero({ movie }: Props) {
         const data: InterestInfo = await res.json();
         setIsInterested(data.user_interested);
         setInterestCount(data.count);
+        if (data.user_interested) {
+          toast.success(`You're interested in "${title}" 🔔`);
+        } else {
+          toast.info(`Removed interest in "${title}"`);
+        }
       }
     } catch (err) {
       console.error('Failed to toggle interest:', err);
+      toast.error('Failed to toggle interest.');
     }
   };
 
@@ -237,10 +244,11 @@ export default function MovieDetailHero({ movie }: Props) {
           setTurnstileToken(null);
           // Auto-open player after success
           setIsPlayerOpen(true);
+          toast.success('Telemetry synchronized successfully!');
         }
       } catch (err: any) {
         const detail = err.response?.data?.detail || "System rejected diagnostic request.";
-        alert(`SYNC ERROR: ${detail}\nCheck system logs for telemetry density requirements.`);
+        toast.error(`Sync Error: ${detail}`);
       }
       (e.target as HTMLInputElement).value = '';
     }

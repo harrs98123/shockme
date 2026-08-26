@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Media } from '@/lib/types';
+import toast from '@/lib/toast';
 
 interface CollectionOut {
   id: number;
@@ -30,11 +31,11 @@ function mediaPayload(movie: Media) {
   return {
     movie_id: movie.id,
     media_type: mediaType,
-    title: title,
-    poster_path: movie.poster_path ?? null,
-    backdrop_path: movie.backdrop_path ?? null,
-    release_year: dateStr?.slice(0, 4) ?? null,
-    vote_average: movie.vote_average ?? null,
+    title,
+    poster_path: movie.poster_path,
+    backdrop_path: movie.backdrop_path,
+    release_year: dateStr ? new Date(dateStr).getFullYear().toString() : '',
+    vote_average: movie.vote_average || 0,
   };
 }
 
@@ -46,18 +47,12 @@ export default function AddToCollectionButton({ movie, showRankButton = false, c
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
-  const [toast, setToast] = useState('');
   const [rankAdded, setRankAdded] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
-  };
 
   useEffect(() => {
     if (!isOpen || !user) return;
@@ -70,10 +65,15 @@ export default function AddToCollectionButton({ movie, showRankButton = false, c
   const addToCollection = async (colId: number, colName: string) => {
     try {
       const res = await api.post(`/collections/${colId}/add`, mediaPayload(movie));
-      if (res.data.status === 'already_added') showToast(`Already in "${colName}"`);
-      else showToast(`Added to "${colName}" ✓`);
+      if (res.data.status === 'already_added') {
+        toast.info(`Already in "${colName}"`);
+      } else {
+        toast.success(`Added to "${colName}"`);
+      }
       setIsOpen(false);
-    } catch { showToast('Failed to add'); }
+    } catch {
+      toast.error('Failed to add to collection');
+    }
   };
 
   const createAndAdd = async () => {
@@ -82,22 +82,33 @@ export default function AddToCollectionButton({ movie, showRankButton = false, c
     try {
       const col = await api.post('/collections', { name: newName.trim(), is_public: true });
       await api.post(`/collections/${col.data.id}/add`, mediaPayload(movie));
-      showToast(`Added to "${newName.trim()}" ✓`);
+      toast.success(`Created collection and added to "${newName.trim()}"`);
       setNewName('');
       setIsOpen(false);
-    } catch { showToast('Failed to create collection'); }
+    } catch {
+      toast.error('Failed to create collection');
+    }
     setCreating(false);
   };
 
   const addToRank = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) { showToast('Login to use Rank Collection'); return; }
+    if (!user) {
+      toast.error('Please log in to use Rank Collection');
+      return;
+    }
     try {
       const res = await api.post('/collections/rank-pool/add', mediaPayload(movie));
-      if (res.data.status === 'already_added') showToast('Already in Rank Collection');
-      else { showToast('Added to Rank Collection 🏆'); setRankAdded(true); }
-    } catch { showToast('Failed to add'); }
+      if (res.data.status === 'already_added') {
+        toast.info('Already in Rank Collection');
+      } else {
+        toast.success('Added to Rank Collection 🏆');
+        setRankAdded(true);
+      }
+    } catch {
+      toast.error('Failed to add to Rank Collection');
+    }
   };
 
   const toggleModal = (e: React.MouseEvent) => {
@@ -331,30 +342,6 @@ export default function AddToCollectionButton({ movie, showRankButton = false, c
               </div>
             </div>
           )}
-        </AnimatePresence>,
-        document.body
-      )}
-
-      {/* Floating Toast Portal */}
-      {mounted && toast && createPortal(
-        <AnimatePresence>
-          <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 100, scale: 0.8 }}
-            style={{
-              position: 'fixed', bottom: 48, left: '50%', x: '-50%', zIndex: 100000,
-              background: '#111', border: '1px solid var(--primary)',
-              borderRadius: 20, padding: '16px 32px',
-              color: 'white', fontSize: 15, fontWeight: 800,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.8), 0 0 20px rgba(139,92,246,0.3)',
-              display: 'flex', alignItems: 'center', gap: 12,
-              whiteSpace: 'nowrap'
-            }}
-          >
-            <span style={{ fontSize: 22 }}>✨</span>
-            {toast}
-          </motion.div>
         </AnimatePresence>,
         document.body
       )}

@@ -60,7 +60,7 @@ export default function RecommendationsSection() {
   return (
     <div style={{ background: 'linear-gradient(to bottom, transparent, rgba(229,9,20,0.05), transparent)' }}>
       <MovieRow 
-        title="✨ Recommended for You" 
+        title="Recommended for You" 
         subtitle={subtitle}
         movies={data.results} 
       />

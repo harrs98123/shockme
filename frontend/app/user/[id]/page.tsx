@@ -19,7 +19,6 @@ import {
   Calendar,
   Layers,
   ArrowLeft,
-  Sparkles,
   MessageSquare,
   ThumbsUp,
   UserPlus,
