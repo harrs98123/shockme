@@ -83,7 +83,7 @@ function ToastCard({ item }: { item: ToastItem }) {
   const duration = item.duration ?? 3500;
   const isInfinite = duration <= 0 || item.type === 'loading';
 
-  const config = TYPE_CONFIG[item.type] || TYPE_CONFIG.default;
+  const config = (item.type && TYPE_CONFIG[item.type]) || TYPE_CONFIG.default;
 
   const hasDescription = Boolean(item.description);
 

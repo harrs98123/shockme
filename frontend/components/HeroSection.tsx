@@ -100,7 +100,7 @@ export default function HeroSection({ movies }: Props) {
     }
   }, [movie?.id]);
 
-  // Fetch details for current movie
+  // Fetch details for current movie (including official title font logos & multi-signal recommendation engine)
   useEffect(() => {
     if (!movie?.id || fetchedRef.current.has(movie.id)) return;
 
@@ -110,13 +110,94 @@ export default function HeroSection({ movies }: Props) {
         const res = await fetch(`${API_BASE}/movies/${movie.id}?media_type=${movie.media_type || 'movie'}`);
         if (!res.ok) return;
         const data = await res.json();
+
+        // 1. Extract official title logo PNG
+        const englishLogo =
+          data.images?.logos?.find((l: any) => l.iso_639_1 === 'en' && l.file_path?.endsWith('.png')) ||
+          data.images?.logos?.find((l: any) => l.iso_639_1 === 'en') ||
+          data.images?.logos?.find((l: any) => !l.iso_639_1 && l.file_path?.endsWith('.png')) ||
+          data.images?.logos?.[0];
+
+        // 2. Pick an alternate aesthetic / artistic official poster variant from TMDB images if available
+        const alternatePosters = (data.images?.posters || []).filter(
+          (p: any) => p.file_path && p.file_path !== movie.poster_path
+        );
+        const altPoster = alternatePosters[0]?.file_path || alternatePosters[1]?.file_path || movie.poster_path;
+
+        // 3. Multi-Signal Accurate Recommendation Engine
+        const currentGenreIds = new Set<number>(
+          (data.genres || movie.genres || []).map((g: any) => (typeof g === 'object' ? g.id : g))
+        );
+
+        const recs: any[] = data.recommendations?.results || [];
+        const sims: any[] = data.similar?.results || [];
+
+        const candidateMap = new Map<number, any>();
+
+        // High-confidence collaborative recommendations
+        for (const item of recs) {
+          if (!item.id || item.id === movie.id) continue;
+          if (!item.backdrop_path && !item.poster_path) continue;
+          candidateMap.set(item.id, {
+            ...item,
+            _isRec: true,
+            _vote: item.vote_average || 0,
+            _pop: item.popularity || 0,
+          });
+        }
+
+        // Thematic similarity recommendations
+        for (const item of sims) {
+          if (!item.id || item.id === movie.id) continue;
+          if (!item.backdrop_path && !item.poster_path) continue;
+          if (candidateMap.has(item.id)) {
+            const existing = candidateMap.get(item.id);
+            existing._isBoth = true;
+          } else {
+            candidateMap.set(item.id, {
+              ...item,
+              _isSim: true,
+              _vote: item.vote_average || 0,
+              _pop: item.popularity || 0,
+            });
+          }
+        }
+
+        // Score & rank candidates with accuracy formula
+        const rankedCandidates = Array.from(candidateMap.values())
+          .map((item) => {
+            const itemGenres: number[] = item.genre_ids || [];
+            let sharedGenres = 0;
+            for (const gid of itemGenres) {
+              if (currentGenreIds.has(gid)) sharedGenres++;
+            }
+
+            const genreScore = currentGenreIds.size > 0 ? (sharedGenres / Math.max(1, currentGenreIds.size)) * 40 : 20;
+            const qualityScore = Math.min(30, Math.max(0, ((item._vote || 6.0) - 4.5) * 6));
+            const sourceBonus = item._isBoth ? 25 : item._isRec ? 20 : 10;
+            const popBonus = Math.min(10, Math.log10(Math.max(10, item._pop || 10)) * 3);
+
+            const totalScore = genreScore + qualityScore + sourceBonus + popBonus;
+            const matchPercent = Math.min(99, Math.max(78, Math.round(75 + (totalScore / 105) * 24)));
+
+            return {
+              ...item,
+              _accuracyScore: totalScore,
+              matchPercent,
+            };
+          })
+          .sort((a, b) => b._accuracyScore - a._accuracyScore)
+          .slice(0, 12);
+
         setMovieDetails(prev => ({
           ...prev,
           [movie.id]: {
             runtime: data.runtime,
             genres: data.genres,
-            similar: data.similar,
+            similar: { results: rankedCandidates },
             certification: data.certification,
+            logoPath: englishLogo?.file_path,
+            sidePosterPath: altPoster,
           }
         }));
       } catch { /* ignore */ }
@@ -435,14 +516,14 @@ export default function HeroSection({ movies }: Props) {
 }
 
 /* ─── Suggested Movie Card ─────────────────────────────────────────── */
-function SuggestedCard({ movie }: { movie: Movie; index: number }) {
+function SuggestedCard({ movie }: { movie: any; index: number }) {
   const [isHovered, setIsHovered] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMouseEnter = () => {
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(true);
-    }, 100);
+    }, 80);
   };
 
   const handleMouseLeave = () => {
@@ -456,37 +537,53 @@ function SuggestedCard({ movie }: { movie: Movie; index: number }) {
     };
   }, []);
 
+  const matchPercent = movie.matchPercent || 94;
+
   return (
     <Link
       href={`/movie/${movie.id}`}
-      className="min-w-[145px] max-w-[145px] sm:min-w-[210px] sm:max-w-[210px] shrink-0 rounded-lg overflow-hidden relative no-underline snap-start transition-transform duration-300 ease-out z-1 hover:z-5 hover:scale-105"
+      className="min-w-[155px] max-w-[155px] sm:min-w-[225px] sm:max-w-[225px] shrink-0 rounded-xl overflow-hidden relative no-underline snap-start transition-all duration-300 ease-out z-1 hover:z-5 hover:scale-[1.04] border border-white/10 hover:border-white/30 group shadow-lg"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="relative w-full aspect-video bg-[#1a1a1a] rounded-lg overflow-hidden">
+      <div className="relative w-full aspect-video bg-[#151515] rounded-xl overflow-hidden">
         <Image
           src={movie.backdrop_path ? backdropUrl(movie.backdrop_path, 'w780') : posterUrl(movie.poster_path, 'w500')}
           alt={movie.title || movie.name || ''}
           fill
-          sizes="(max-width: 640px) 145px, 210px"
-          className="object-cover rounded-lg"
+          sizes="(max-width: 640px) 155px, 225px"
+          className="object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
         />
 
-        <div className={`absolute inset-0 transition-all duration-300 rounded-lg ${isHovered
-            ? 'bg-gradient-to-t from-black/90 via-black/30 to-transparent'
-            : 'bg-gradient-to-t from-black/70 via-transparent to-transparent'
-          }`} />
+        <div
+          className={`absolute inset-0 transition-all duration-300 rounded-xl ${
+            isHovered
+              ? 'bg-gradient-to-t from-black/95 via-black/40 to-transparent'
+              : 'bg-gradient-to-t from-black/80 via-black/20 to-transparent'
+          }`}
+        />
 
-        <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-2.5">
-          <p className="text-white text-[11px] sm:text-xs font-semibold m-0 leading-tight truncate drop-shadow">
+        {/* Top Badges: Rating */}
+        {movie.vote_average > 0 && (
+          <div className="absolute top-2 right-2 pointer-events-none">
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-400 bg-black/70 border border-white/15 px-1.5 py-0.5 rounded backdrop-blur-md shadow-sm">
+              ⭐ {movie.vote_average.toFixed(1)}
+            </span>
+          </div>
+        )}
+
+        {/* Bottom Title */}
+        <div className="absolute bottom-0 left-0 right-0 p-2.5 sm:p-3">
+          <p className="text-white text-[11px] sm:text-xs font-bold m-0 leading-tight truncate drop-shadow-md group-hover:text-white">
             {movie.title || movie.name}
           </p>
         </div>
 
+        {/* Hover Center Play Action */}
         {isHovered && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="#000">
-              <polygon points="7 3 21 12 7 21" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 text-black flex items-center justify-center shadow-xl scale-100 transition-transform">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#000" className="ml-0.5">
+              <polygon points="5 3 19 12 5 21" />
             </svg>
           </div>
         )}

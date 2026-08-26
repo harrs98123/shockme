@@ -59,7 +59,8 @@ export function releaseYear(date: string | undefined | null): string {
 // ─── Admin Services ─────────────────────────────────────────────────────────
 
 export const adminApi = {
-  tmdbSearch: (query: string) => api.get(`/admin/tmdb/search?q=${query}`).then(res => res.data),
+  tmdbSearch: (query: string) => api.get(`/admin/tmdb/search?q=${encodeURIComponent(query)}`).then(res => res.data),
+  searchMovies: (query: string) => api.get(`/admin/tmdb/search?q=${encodeURIComponent(query)}`).then(res => res.data),
   getMustWatch: () => api.get('/admin/must-watch').then(res => res.data),
   addMustWatch: (data: any) => api.post('/admin/must-watch', payloadToMustWatch(data)).then(res => res.data),
   removeMustWatch: (movieId: number) => api.delete(`/admin/must-watch/${movieId}`).then(res => res.data),

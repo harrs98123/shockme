@@ -652,7 +652,7 @@ async def get_details(movie_id: int, media_type: str = "movie"):
     data = await tmdb_get(
         path,
         {
-            "append_to_response": "credits,videos,similar,images,watch/providers,keywords,release_dates,content_ratings",
+            "append_to_response": "credits,videos,similar,recommendations,images,watch/providers,keywords,release_dates,content_ratings",
             "include_image_language": "en,null",
             "language": "en-US"
         },

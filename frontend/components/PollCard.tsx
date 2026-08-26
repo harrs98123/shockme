@@ -119,7 +119,7 @@ export default function PollCard({
         const updated = res.data.payload as PollPayload;
         if (updated.votes) setLocalVotes(updated.votes);
         if (updated.user_vote !== undefined) setSelectedOption(updated.user_vote);
-        onVoteSuccess?.(postId, updated);
+        onVoteSuccess?.(updated);
       }
       toast.success('Vote recorded! 🗳️');
     } catch (err: any) {

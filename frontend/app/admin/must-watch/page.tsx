@@ -40,16 +40,19 @@ export default function AdminMustWatch() {
     }
   };
 
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    if (!query.trim()) {
+  const handleSearch = async (query?: string | React.MouseEvent) => {
+    const q = typeof query === 'string' ? query : searchQuery;
+    if (typeof query === 'string') {
+      setSearchQuery(q);
+    }
+    if (!q || !q.trim()) {
       setSearchResults([]);
       return;
     }
 
     setSearching(true);
     try {
-      const data = await adminApi.searchMovies(query);
+      const data = await adminApi.searchMovies(q);
       setSearchResults(data);
     } catch (err) {
       console.error(err);
@@ -124,7 +127,7 @@ export default function AdminMustWatch() {
               placeholder="Enter movie title..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               style={{
                 width: '100%', padding: '20px 24px', paddingRight: '140px', borderRadius: 20,
                 background: 'transparent', border: '1px solid rgba(255,255,255,0.12)',

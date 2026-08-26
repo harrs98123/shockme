@@ -55,6 +55,11 @@ function TierListContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   // Search state
+  const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<any[]>([]);
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -207,9 +212,9 @@ function TierListContent() {
       try {
         await api.delete(`/collections/rank-pool/remove/${movie.movie_id}`);
         setUnranked(prev => prev.filter(m => m.movie_id !== movie.movie_id));
-        showToast('Removed from pool');
+        toast.info('Removed from pool');
       } catch {
-        showToast('Failed to remove movie');
+        toast.error('Failed to remove movie');
       }
     } else {
       // Just move it back to unranked

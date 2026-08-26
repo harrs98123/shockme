@@ -72,6 +72,7 @@ const nextConfig: NextConfig = {
   // Optimized image handling
   images: {
     unoptimized: true,
+    qualities: [75, 100],
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 7, // 7 days
     remotePatterns: [
