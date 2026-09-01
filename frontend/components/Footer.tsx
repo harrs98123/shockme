@@ -24,6 +24,8 @@ import {
   Eye,
   SlidersHorizontal,
   Tag,
+  Download,
+  Smartphone,
 } from 'lucide-react';
 
 const GithubIcon = ({ className = "h-4 w-4" }: { className?: string }) => (
@@ -66,6 +68,12 @@ const StackedBarsIcon = ({ size = 16, className = "" }: { size?: number; classNa
   </svg>
 );
 
+const AndroidIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-1.0003 0-.551.4482-.9993.9993-.9993.551 0 .9993.4483.9993.9993 0 .5517-.4483 1.0003-.9993 1.0003m-11.046 0c-.5511 0-.9993-.4486-.9993-1.0003 0-.551.4482-.9993.9993-.9993.5511 0 .9993.4483.9993.9993 0 .5517-.4482 1.0003-.9993 1.0003m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.125 12 8.125c-1.8533 0-3.5902.2866-5.1368.8247L4.8409 5.4467a.416.416 0 00-.5676-.1521.416.416 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3438 14.6589 0 18.7917h24c-.3438-4.1328-2.6889-7.605-6.1185-9.4703" />
+  </svg>
+);
+
 export default function Footer() {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
@@ -90,6 +98,7 @@ export default function Footer() {
         { label: 'Movie Finder', href: '/finder', icon: SlidersHorizontal },
         { label: 'Mood Matcher', href: '/mood', icon: Coffee },
         { label: 'Swipe Cinema', href: '/swipe', badge: 'Tinder Mode', icon: Shuffle },
+        { label: 'Android App', href: '/plotmint.apk', badge: 'APK v1.0', icon: Smartphone, download: 'plotmint.apk' },
       ],
     },
     {
@@ -240,6 +249,24 @@ export default function Footer() {
               <span className="text-neutral-400">TMDB API v3 Synced</span>
             </div>
 
+            {/* Download Android APK Button in Footer Brand Column */}
+            <div className="pt-2">
+              <a
+                href="/plotmint.apk"
+                download="plotmint.apk"
+                className="group relative inline-flex items-center gap-3 overflow-hidden rounded-2xl border border-emerald-500/35 bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-teal-500/15 px-4 py-2.5 text-xs font-extrabold text-white backdrop-blur-xl transition-all duration-300 hover:border-emerald-400 hover:bg-emerald-500/25 hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] active:scale-95 cursor-pointer"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 group-hover:bg-emerald-400 group-hover:text-black transition-colors">
+                  <AndroidIcon size={14} />
+                </span>
+                <span className="flex flex-col text-left">
+                  <span className="text-white group-hover:text-emerald-200 transition-colors">Get Plotmint for Android</span>
+                  <span className="text-[10px] font-normal text-emerald-400/80">Direct APK Download • 98 MB</span>
+                </span>
+                <Download className="h-4 w-4 text-emerald-400 ml-1 transition-transform group-hover:translate-y-0.5" />
+              </a>
+            </div>
+
             {/* Social Icons - Solid Glass Buttons */}
             <div className="flex items-center gap-2.5 pt-2">
               {[
@@ -270,24 +297,44 @@ export default function Footer() {
                 <span>{column.title}</span>
               </h4>
               <ul className="space-y-2.5 text-sm">
-                {column.links.map((link) => (
+                {column.links.map((link: any) => (
                   <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="group flex items-center justify-between py-1 text-neutral-400 transition-colors hover:text-white"
-                    >
-                      <span className="flex items-center gap-2">
-                        {link.icon && (
-                          <link.icon className="h-3.5 w-3.5 text-neutral-500 transition-transform group-hover:scale-110 group-hover:text-red-400" />
-                        )}
-                        <span>{link.label}</span>
-                      </span>
-                      {link.badge && (
-                        <span className="rounded-full bg-white/[0.06] border border-white/[0.08] px-2 py-0.5 text-[10px] font-bold text-neutral-300 group-hover:border-red-500/30 group-hover:text-red-400 transition-colors">
-                          {link.badge}
+                    {link.download ? (
+                      <a
+                        href={link.href}
+                        download={link.download}
+                        className="group flex items-center justify-between py-1 text-emerald-400 transition-colors hover:text-emerald-300 font-medium"
+                      >
+                        <span className="flex items-center gap-2">
+                          {link.icon && (
+                            <link.icon className="h-3.5 w-3.5 text-emerald-400 transition-transform group-hover:scale-110" />
+                          )}
+                          <span>{link.label}</span>
                         </span>
-                      )}
-                    </Link>
+                        {link.badge && (
+                          <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                            {link.badge}
+                          </span>
+                        )}
+                      </a>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        className="group flex items-center justify-between py-1 text-neutral-400 transition-colors hover:text-white"
+                      >
+                        <span className="flex items-center gap-2">
+                          {link.icon && (
+                            <link.icon className="h-3.5 w-3.5 text-neutral-500 transition-transform group-hover:scale-110 group-hover:text-red-400" />
+                          )}
+                          <span>{link.label}</span>
+                        </span>
+                        {link.badge && (
+                          <span className="rounded-full bg-white/[0.06] border border-white/[0.08] px-2 py-0.5 text-[10px] font-bold text-neutral-300 group-hover:border-red-500/30 group-hover:text-red-400 transition-colors">
+                            {link.badge}
+                          </span>
+                        )}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

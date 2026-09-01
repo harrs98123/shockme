@@ -30,6 +30,8 @@ import {
   Coffee,
   LayoutGrid,
   Bookmark,
+  Download,
+  Smartphone,
 } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import AvatarCustomizerModal from '@/components/AvatarCustomizerModal';
@@ -54,6 +56,12 @@ const StackedBarsIcon = ({ size = 24, className = "" }) => (
       <path d="M3 16V18L15 23V21Z" fill="currentColor" fillOpacity="0.6" />
       <path d="M15 21V23L19 21V19Z" fill="currentColor" fillOpacity="0.8" />
     </g>
+  </svg>
+);
+
+const AndroidIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-1.0003 0-.551.4482-.9993.9993-.9993.551 0 .9993.4483.9993.9993 0 .5517-.4483 1.0003-.9993 1.0003m-11.046 0c-.5511 0-.9993-.4486-.9993-1.0003 0-.551.4482-.9993.9993-.9993.5511 0 .9993.4483.9993.9993 0 .5517-.4482 1.0003-.9993 1.0003m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.125 12 8.125c-1.8533 0-3.5902.2866-5.1368.8247L4.8409 5.4467a.416.416 0 00-.5676-.1521.416.416 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3438 14.6589 0 18.7917h24c-.3438-4.1328-2.6889-7.605-6.1185-9.4703" />
   </svg>
 );
 
@@ -758,6 +766,23 @@ export default function Navbar() {
                       <DropdownItem icon={<ListChecks size={16} />} label="Movie Finder" href="/finder" onClick={() => setMenuOpen(false)} />
                       <DropdownItem icon={<Wand2 size={16} />} label="Movie Moods" href="/mood" onClick={() => setMenuOpen(false)} />
                       
+                      <a
+                        href="/plotmint.apk"
+                        download="plotmint.apk"
+                        onClick={() => setMenuOpen(false)}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '12px 16px', color: '#4ade80',
+                          background: 'transparent', textDecoration: 'none', fontSize: 14, fontWeight: 600,
+                          borderRadius: 16, transition: 'all 0.2s', marginBottom: 2,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.1)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <Smartphone size={16} />
+                        Download Android App
+                      </a>
+                      
                       <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 8px' }} />
                       
                       <button 
@@ -783,6 +808,38 @@ export default function Navbar() {
                 <Link href="/register" className="btn-primary" style={{ padding: '8px 18px', fontSize: 14 }}>Sign Up</Link>
               </div>
             )}
+
+            {/* Ultra Aesthetic Desktop Download APK Button */}
+            <motion.a
+              href="/plotmint.apk"
+              download="plotmint.apk"
+              whileHover={{ scale: 1.05, y: -1 }}
+              whileTap={{ scale: 0.96 }}
+              title="Download Plotmint Android App (v1.0 • 98MB APK)"
+              className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-full p-[1px] shadow-[0_0_20px_rgba(16,185,129,0.22)] transition-all duration-300 hover:shadow-[0_0_28px_rgba(52,211,153,0.45)]"
+              style={{ marginLeft: 6, textDecoration: 'none' }}
+            >
+              {/* Spinning gradient border */}
+              <span className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#052e16_0%,#10b981_50%,#052e16_100%)] opacity-80 group-hover:opacity-100 transition-opacity" />
+
+              {/* Inner button surface */}
+              <span className="relative flex items-center gap-2 rounded-full bg-[#080e0a]/95 px-3.5 py-1.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-[#0c1610]">
+                {/* Glowing Android Icon Pip */}
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 group-hover:bg-emerald-400 group-hover:text-black transition-all">
+                  <AndroidIcon size={12} />
+                </span>
+
+                <span className="text-[13px] font-extrabold tracking-tight text-white group-hover:text-emerald-200 transition-colors">
+                  Get App
+                </span>
+
+                {/* Pulsing micro badge */}
+                <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[10px] font-mono font-bold text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>APK</span>
+                </span>
+              </span>
+            </motion.a>
           </nav>
         </div>
       </header>
@@ -801,42 +858,61 @@ export default function Navbar() {
           <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
             <PlotmintLogo size="mobile" />
           </Link>
-          {user ? (
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              aria-label={`${user.name}'s mobile menu`}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                border: '2px solid rgba(255,255,255,0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                overflow: 'hidden',
-                padding: 0,
-                background: '#151515',
-              }}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Mobile Download APK Pill */}
+            <motion.a
+              href="/plotmint.apk"
+              download="plotmint.apk"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              aria-label="Download Android App APK"
+              className="relative inline-flex items-center gap-1.5 overflow-hidden rounded-full p-[1px] shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+              style={{ textDecoration: 'none' }}
             >
-              <Avatar
-                src={user.avatar_url}
-                seed={user.id || user.username || user.name}
-                name={user.name}
-                size={36}
-                decorative
-              />
-            </button>
-          ) : (
-            <Link href="/login" style={{
-              padding: '7px 16px', borderRadius: 99,
-              background: 'var(--primary, #e11d48)',
-              color: 'white', fontWeight: 700, fontSize: 13,
-              textDecoration: 'none',
-            }}>
-              Sign In
-            </Link>
-          )}
+              <span className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#052e16_0%,#10b981_50%,#052e16_100%)] opacity-90" />
+              <span className="relative flex items-center gap-1.5 rounded-full bg-[#080e0a]/95 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md">
+                <AndroidIcon size={12} className="text-emerald-400" />
+                <span>APK</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+              </span>
+            </motion.a>
+            {user ? (
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label={`${user.name}'s mobile menu`}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  border: '2px solid rgba(255,255,255,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  overflow: 'hidden',
+                  padding: 0,
+                  background: '#151515',
+                }}
+              >
+                <Avatar
+                  src={user.avatar_url}
+                  seed={user.id || user.username || user.name}
+                  name={user.name}
+                  size={36}
+                  decorative
+                />
+              </button>
+            ) : (
+              <Link href="/login" style={{
+                padding: '7px 16px', borderRadius: 99,
+                background: 'var(--primary, #e11d48)',
+                color: 'white', fontWeight: 700, fontSize: 13,
+                textDecoration: 'none',
+              }}>
+                Sign In
+              </Link>
+            )}
+          </div>
         </div>
       </header>
 
@@ -1042,9 +1118,37 @@ export default function Navbar() {
                         </div>
                       </div>
 
+                      {/* Download APK Mobile Card */}
+                      <motion.a
+                        href="/plotmint.apk"
+                        download="plotmint.apk"
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '16px 20px', marginBottom: 14,
+                          background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,185,129,0.08))',
+                          border: '1px solid rgba(34,197,94,0.3)',
+                          borderRadius: 18, textDecoration: 'none', color: 'white',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(34,197,94,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Smartphone size={18} strokeWidth={2.2} style={{ color: '#4ade80' }} />
+                          </div>
+                          <div style={{ textAlign: 'left' }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#4ade80', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              Download Android App
+                              <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 6, background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.3)' }}>v1.0</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 }}>Direct APK Download (98 MB)</div>
+                          </div>
+                        </div>
+                        <Download size={18} style={{ color: '#4ade80' }} />
+                      </motion.a>
+
                       {/* Browse Button */}
                       <motion.button
-                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}
                         onClick={() => setMobileBrowseOpen(true)}
                         style={{
                           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',

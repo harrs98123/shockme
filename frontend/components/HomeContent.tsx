@@ -6,6 +6,7 @@ import FeaturedCollections from '@/components/FeaturedCollections';
 import MovieRow from '@/components/MovieRow';
 import TrendingRankedRow from '@/components/TrendingRankedRow';
 import HomeAnimeDecor from '@/components/HomeAnimeDecor';
+import BrowseCategoriesShowcase from '@/components/BrowseCategoriesShowcase';
 import { Movie } from '@/lib/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -89,6 +90,15 @@ export default function HomeContent({ trending, trendingIndian, popular, topRate
         />
 
         <FeaturedCollections />
+
+        <BrowseCategoriesShowcase
+          favIds={lists.favIds}
+          watchlistIds={lists.watchlistIds}
+          watchedIds={lists.watchedIds}
+          onFavToggle={(m) => handleToggle(m.id, 'favIds')}
+          onWatchlistToggle={(m) => handleToggle(m.id, 'watchlistIds')}
+          onWatchedToggle={(m) => handleToggle(m.id, 'watchedIds')}
+        />
 
         <TrendingRankedRow
           title="Trending in India"
