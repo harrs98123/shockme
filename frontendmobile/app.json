@@ -11,6 +11,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.plotmint.myapp",
       "adaptiveIcon": {
         "backgroundColor": "#0F0F0F",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -39,6 +40,12 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "backgroundColor": "#0F0F0F"
+    "backgroundColor": "#0F0F0F",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2a702d11-10c6-4031-a873-4f2a54f79b53"
+      }
+    }
   }
 }
