@@ -41,12 +41,12 @@ export default api;
 // ─── TMDB image helpers ────────────────────────────────────────────────────
 export const TMDB_IMG = 'https://image.tmdb.org/t/p';
 
-export function posterUrl(path: string | null, size = 'w500'): string {
+export function posterUrl(path: string | null | undefined, size = 'w500'): string {
   if (!path) return '/no-poster.png';
   return `${TMDB_IMG}/${size}${path}`;
 }
 
-export function backdropUrl(path: string | null, size = 'w1280'): string {
+export function backdropUrl(path: string | null | undefined, size = 'w1280'): string {
   if (!path) return '/no-backdrop.jpg';
   return `${TMDB_IMG}/${size}${path}`;
 }

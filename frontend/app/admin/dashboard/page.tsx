@@ -38,14 +38,14 @@ import {
   Filter,
 } from 'lucide-react';
 import api, { posterUrl, releaseYear } from '@/lib/api';
-import { AdminStats, User, SystemHealth, FranchiseOut, AdminSocialPost } from '@/lib/types';
+import { AdminStats, User, SystemHealth, Franchise, AdminSocialPost } from '@/lib/types';
 import toast from '@/lib/toast';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [health, setHealth] = useState<SystemHealth | null>(null);
-  const [franchises, setFranchises] = useState<FranchiseOut[]>([]);
+  const [franchises, setFranchises] = useState<Franchise[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'feed' | 'activity' | 'curator' | 'health'>('overview');

@@ -424,6 +424,8 @@ export interface Franchise {
   created_at: string;
 }
 
+export type FranchiseOut = Franchise;
+
 export interface FranchiseEntry {
   id: number;
   franchise_id: number;
