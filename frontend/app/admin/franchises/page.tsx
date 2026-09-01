@@ -8,22 +8,20 @@ import {
   Trash2,
   X,
   Clapperboard,
-  Palette,
-  LayoutGrid,
-  ChevronRight,
-  Info,
   Edit2,
-  ExternalLink,
   Star,
-  Calendar,
   Layers,
   Settings2,
   Tv,
   Film,
   Globe,
+  Sparkles,
+  RefreshCw,
+  ChevronRight,
 } from 'lucide-react';
-import api, { posterUrl } from '@/lib/api';
-import { Franchise, Movie, FranchiseEntry } from '@/lib/types';
+import api, { posterUrl, releaseYear } from '@/lib/api';
+import { Franchise, FranchiseEntry } from '@/lib/types';
+import toast from '@/lib/toast';
 
 export default function AdminFranchises() {
   const [franchises, setFranchises] = useState<Franchise[]>([]);
@@ -61,15 +59,16 @@ export default function AdminFranchises() {
   }, []);
 
   const fetchFranchises = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/admin/franchises');
       setFranchises(res.data);
-      // Select first one by default if none selected
       if (res.data.length > 0 && !selectedFranchise) {
         setSelectedFranchise(res.data[0]);
       }
     } catch (err) {
       console.error('Failed to fetch franchises:', err);
+      toast.error('Failed to load franchises');
     } finally {
       setLoading(false);
     }
@@ -109,20 +108,23 @@ export default function AdminFranchises() {
         const updated = res.data;
         setFranchises(franchises.map(f => f.id === updated.id ? updated : f));
         setSelectedFranchise(updated);
+        toast.success('Franchise updated');
       } else {
         const res = await api.post('/admin/franchises', payload);
         const newFranchise = res.data;
         setFranchises([newFranchise, ...franchises]);
         setSelectedFranchise(newFranchise);
+        toast.success('New universe created');
       }
       setShowCreateModal(false);
     } catch (err) {
       console.error('Failed to save franchise:', err);
+      toast.error('Failed to save franchise');
     }
   };
 
   const deleteFranchise = async (id: number) => {
-    if (!confirm('Delete this franchise? All movie links will be lost.')) return;
+    if (!confirm('Delete this franchise? All linked timeline data will be removed.')) return;
     try {
       await api.delete(`/admin/franchises/${id}`);
       const remaining = franchises.filter(f => f.id !== id);
@@ -130,8 +132,10 @@ export default function AdminFranchises() {
       if (selectedFranchise?.id === id) {
         setSelectedFranchise(remaining.length > 0 ? remaining[0] : null);
       }
+      toast.info('Franchise deleted');
     } catch (err) {
       console.error('Failed to delete franchise:', err);
+      toast.error('Failed to delete franchise');
     }
   };
 
@@ -144,7 +148,7 @@ export default function AdminFranchises() {
       setFranchiseMovies([]);
       setEntries([]);
     }
-  }, [selectedFranchise?.id]); // Only re-fetch if franchise ID changes
+  }, [selectedFranchise?.id]);
 
   const fetchFranchiseMovies = async () => {
     if (!selectedFranchise) return;
@@ -170,14 +174,16 @@ export default function AdminFranchises() {
 
   const entryForMovie = (movieId: number) => entries.find(e => e.movie_id === movieId);
 
-  const handleSearch = async () => {
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!searchQuery.trim()) return;
     setSearching(true);
     try {
-      const res = await api.get(`/admin/tmdb/search?q=${searchQuery}&media_type=${searchMediaType}`);
-      setSearchResults(res.data);
+      const res = await api.get(`/admin/tmdb/search?q=${encodeURIComponent(searchQuery)}&media_type=${searchMediaType}`);
+      setSearchResults(res.data || []);
     } catch (err) {
       console.error(err);
+      toast.error('Search failed');
     } finally {
       setSearching(false);
     }
@@ -196,8 +202,10 @@ export default function AdminFranchises() {
       setFranchiseMovies([...franchiseMovies, movie]);
       setSearchResults(searchResults.filter(m => m.id !== movie.id));
       fetchEntries();
+      toast.success(`Added "${movie.title || movie.name}" to ${selectedFranchise.name}`);
     } catch (err) {
       console.error(err);
+      toast.error('Failed to add movie to franchise');
     }
   };
 
@@ -213,8 +221,10 @@ export default function AdminFranchises() {
       setFranchises(franchises.map(f => f.id === updatedFranchise.id ? updatedFranchise : f));
       setFranchiseMovies(franchiseMovies.filter(m => m.id !== movieId));
       setEntries(entries.filter(e => e.movie_id !== movieId));
+      toast.info('Removed title from franchise');
     } catch (err) {
       console.error(err);
+      toast.error('Failed to remove movie');
     }
   };
 
@@ -257,8 +267,10 @@ export default function AdminFranchises() {
       setEntries(entries.map(e => e.id === res.data.id ? res.data : e));
       setShowEntryModal(false);
       setEditingEntry(null);
+      toast.success('Timeline details saved');
     } catch (err) {
       console.error('Failed to update timeline entry:', err);
+      toast.error('Failed to save timeline');
     }
   };
 
@@ -271,406 +283,405 @@ export default function AdminFranchises() {
     }));
   };
 
-  if (loading) return (
-    <div style={{ padding: 48, color: 'rgba(255,255,255,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-      <div className="spinner" />
-      <span>Initializing cinematic data...</span>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#08080c] flex items-center justify-center p-8 text-zinc-500 font-mono text-xs">
+        Loading Universes & Sagas...
+      </div>
+    );
+  }
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 0px)', overflow: 'hidden', background: '#080810' }}>
+    <div className="min-h-screen bg-[#08080c] text-zinc-100 font-[Inter] p-6 lg:p-10 max-w-[1600px] mx-auto space-y-6">
       
-      {/* Sidebar: Franchise List */}
-      <aside style={{ 
-        width: 320, 
-        borderRight: '1px solid rgba(255,255,255,0.06)',
-        display: 'flex',
-        flexDirection: 'column',
-        background: 'rgba(255,255,255,0.01)'
-      }}>
-        <div style={{ padding: '32px 24px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: 'white', letterSpacing: '-0.02em' }}>Universes</h2>
-          <button 
-            onClick={handleOpenCreate}
-            style={{ 
-              width: 32, height: 32, borderRadius: 8, background: '#8B5CF6', color: 'white', 
-              border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
-            }}
-          >
-            <Plus size={18} />
-          </button>
+      {/* Header */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.05]">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <Layers size={14} className="text-purple-400" />
+            <span className="text-[11px] font-mono tracking-widest text-zinc-400 uppercase font-semibold">Universe Architect</span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Franchises & Sagas</h1>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            Structure cinematic universes, chronological orders, sub-timelines and multiversal sagas.
+          </p>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 12px 24px' }}>
-          {franchises.length === 0 ? (
-            <div style={{ padding: 24, textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>
-              No universes created yet.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {franchises.map(f => (
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleOpenCreate}
+            className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-600/20 cursor-pointer"
+          >
+            <Plus size={14} />
+            <span>New Universe</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Main Multi-panel Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* Left Column: Universes List */}
+        <div className="lg:col-span-4 space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider">
+              Universes ({franchises.length})
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            {franchises.map((f) => {
+              const active = selectedFranchise?.id === f.id;
+              return (
                 <button
                   key={f.id}
                   onClick={() => setSelectedFranchise(f)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '12px 16px',
-                    borderRadius: 12,
-                    background: selectedFranchise?.id === f.id ? 'rgba(255,255,255,0.05)' : 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.2s',
-                    position: 'relative'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (selectedFranchise?.id !== f.id) e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (selectedFranchise?.id !== f.id) e.currentTarget.style.background = 'transparent';
-                  }}
+                  className={`w-full p-3.5 rounded-2xl text-left transition-all flex items-center gap-3.5 border cursor-pointer ${
+                    active
+                      ? 'bg-zinc-900/90 border-purple-500/40 shadow-sm shadow-purple-500/5'
+                      : 'bg-zinc-950/40 border-white/[0.06] hover:bg-zinc-900/40 text-zinc-400 hover:text-white'
+                  }`}
                 >
-                  {selectedFranchise?.id === f.id && (
-                    <motion.div 
-                      layoutId="sidebar-active"
-                      style={{ position: 'absolute', left: 0, width: 3, height: 20, background: f.color, borderRadius: '0 4px 4px 0' }} 
-                    />
-                  )}
-                  <div style={{ 
-                    width: 36, height: 36, borderRadius: 10, background: `${f.color}15`, 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-                    border: `1px solid ${f.color}33`, flexShrink: 0
-                  }}>
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 border"
+                    style={{
+                      backgroundColor: `${f.color}15`,
+                      borderColor: `${f.color}35`,
+                    }}
+                  >
                     {f.icon_emoji}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: selectedFranchise?.id === f.id ? 700 : 600, color: selectedFranchise?.id === f.id ? 'white' : 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {f.name}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
-                      {f.movie_ids.length} films
+
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-white truncate">{f.name}</div>
+                    <div className="text-[10px] text-zinc-500 font-mono mt-0.5 flex items-center gap-2">
+                      <span>{f.movie_ids.length} titles</span>
+                      <span>•</span>
+                      <span className="truncate">{f.description || 'No description'}</span>
                     </div>
                   </div>
-                  {selectedFranchise?.id === f.id && (
-                    <ChevronRight size={14} color="rgba(255,255,255,0.2)" />
+
+                  {active && (
+                    <ChevronRight size={14} className="text-purple-400 flex-shrink-0" />
                   )}
                 </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </aside>
+              );
+            })}
 
-      {/* Main Workspace */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto' }}>
-        <AnimatePresence mode="wait">
-          {selectedFranchise ? (
-            <motion.div
-              key={selectedFranchise.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', padding: '48px 64px' }}
-            >
-              {/* Franchise Header Card */}
-              <div style={{ 
-                position: 'relative', 
-                padding: 40, 
-                borderRadius: 32, 
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                marginBottom: 48,
-                overflow: 'hidden'
-              }}>
-                {/* Visual Glow */}
-                <div style={{ 
-                  position: 'absolute', top: -100, right: -100, width: 300, height: 300, 
-                  background: selectedFranchise.color, filter: 'blur(100px)', opacity: 0.08, pointerEvents: 'none' 
-                }} />
-                
-                <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
-                  <div style={{ 
-                    width: 72, height: 72, borderRadius: 20, background: `${selectedFranchise.color}15`, 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36,
-                    border: `1px solid ${selectedFranchise.color}44`
-                  }}>
-                    {selectedFranchise.icon_emoji}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
-                      <h1 style={{ fontSize: 32, fontWeight: 900, color: 'white', margin: 0 }}>{selectedFranchise.name}</h1>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={handleOpenEdit} style={{ padding: 8, borderRadius: 8, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', border: 'none', cursor: 'pointer' }}>
-                          <Edit2 size={14} />
-                        </button>
-                        <button onClick={() => deleteFranchise(selectedFranchise.id)} style={{ padding: 8, borderRadius: 8, background: 'rgba(248,113,113,0.1)', color: '#F87171', border: 'none', cursor: 'pointer' }}>
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                    <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, maxWidth: 600, margin: 0 }}>
-                      {selectedFranchise.description || "The universe awaits. Start by adding movies to this collection."}
-                    </p>
-                  </div>
-                </div>
+            {franchises.length === 0 && (
+              <div className="p-8 text-center rounded-2xl bg-zinc-950/20 border border-white/[0.04] text-xs text-zinc-500 font-mono">
+                No universes created yet.
               </div>
+            )}
+          </div>
+        </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: 48 }}>
-                {/* Search & Add Movies */}
-                <div>
-                  <h3 style={{ fontSize: 13, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Search size={14} /> Expand Timeline
-                  </h3>
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                    <button
-                      onClick={() => setSearchMediaType('movie')}
+        {/* Right Column: Selected Franchise Editor & Timeline */}
+        <div className="lg:col-span-8 space-y-6">
+          {selectedFranchise ? (
+            <>
+              {/* Franchise Banner Info Card */}
+              <div className="p-5 rounded-2xl bg-zinc-950/40 border border-white/[0.06] relative overflow-hidden space-y-4">
+                <div
+                  className="absolute -top-24 -right-24 w-60 h-60 rounded-full blur-3xl opacity-10 pointer-events-none"
+                  style={{ background: selectedFranchise.color }}
+                />
+
+                <div className="flex items-start justify-between gap-4 relative z-10">
+                  <div className="flex items-center gap-3.5">
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 border"
                       style={{
-                        flex: 1, padding: '10px', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        background: searchMediaType === 'movie' ? selectedFranchise.color : 'rgba(255,255,255,0.04)',
-                        color: searchMediaType === 'movie' ? 'white' : 'rgba(255,255,255,0.5)',
-                        border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                        backgroundColor: `${selectedFranchise.color}20`,
+                        borderColor: `${selectedFranchise.color}50`,
                       }}
                     >
-                      <Film size={13} /> Movie
+                      {selectedFranchise.icon_emoji}
+                    </div>
+
+                    <div>
+                      <h2 className="text-base font-bold text-white tracking-tight">{selectedFranchise.name}</h2>
+                      <p className="text-xs text-zinc-400 mt-0.5 max-w-xl">
+                        {selectedFranchise.description || 'Timeline and watch order manager.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={handleOpenEdit}
+                      className="p-2 rounded-xl bg-zinc-900 border border-white/[0.08] hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all cursor-pointer"
+                      title="Edit Franchise"
+                    >
+                      <Edit2 size={13} />
+                    </button>
+                    <button
+                      onClick={() => deleteFranchise(selectedFranchise.id)}
+                      className="p-2 rounded-xl bg-zinc-900 border border-white/[0.08] hover:bg-rose-500/20 text-zinc-300 hover:text-rose-400 transition-all cursor-pointer"
+                      title="Delete Franchise"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Add to Timeline search bar */}
+                <div className="pt-2 border-t border-white/[0.04]">
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <button
+                      onClick={() => setSearchMediaType('movie')}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                        searchMediaType === 'movie'
+                          ? 'bg-zinc-800 text-white border border-white/10'
+                          : 'text-zinc-500 hover:text-zinc-300'
+                      }`}
+                    >
+                      <Film size={12} /> Movies
                     </button>
                     <button
                       onClick={() => setSearchMediaType('tv')}
-                      style={{
-                        flex: 1, padding: '10px', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        background: searchMediaType === 'tv' ? selectedFranchise.color : 'rgba(255,255,255,0.04)',
-                        color: searchMediaType === 'tv' ? 'white' : 'rgba(255,255,255,0.5)',
-                        border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', fontSize: 12, fontWeight: 700,
-                      }}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                        searchMediaType === 'tv'
+                          ? 'bg-zinc-800 text-white border border-white/10'
+                          : 'text-zinc-500 hover:text-zinc-300'
+                      }`}
                     >
-                      <Tv size={13} /> TV Show
-                    </button>
-                  </div>
-                  <div style={{ position: 'relative', marginBottom: 24 }}>
-                    <input 
-                      type="text" 
-                      placeholder="Search for movies to add..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                      style={{ 
-                        width: '100%', padding: '16px 52px 16px 16px', borderRadius: 16, 
-                        background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                        color: 'white', fontSize: 14, outline: 'none'
-                      }}
-                    />
-                    <button 
-                      onClick={handleSearch}
-                      style={{ 
-                        position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', 
-                        width: 40, height: 40, borderRadius: 12, background: selectedFranchise.color, color: 'white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer'
-                      }}
-                    >
-                      {searching ? <div className="spinner !w-5 !h-5 !border-2" /> : <Search size={18} />}
+                      <Tv size={12} /> TV Shows
                     </button>
                   </div>
 
-                  <AnimatePresence>
-                    {searchResults.length > 0 && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        style={{ 
-                          display: 'flex', flexDirection: 'column', gap: 12,
-                          padding: 16, borderRadius: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)'
-                        }}
-                      >
-                        {searchResults.map(m => (
-                          <div 
-                            key={m.id} 
-                            onClick={() => addMovie(m)}
-                            style={{ 
-                              display: 'flex', alignItems: 'center', gap: 14, padding: 10, borderRadius: 14, 
-                              cursor: 'pointer', transition: 'background 0.2s', position: 'relative'
-                            }}
-                            className="search-result-item"
-                          >
-                            <img src={posterUrl(m.poster_path)} style={{ width: 40, height: 60, borderRadius: 8, objectFit: 'cover' }} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title}</div>
-                              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{m.release_date?.split('-')[0]}</div>
-                            </div>
-                            <div className="add-icon" style={{ padding: 8, borderRadius: 10, background: 'rgba(255,255,255,0.05)' }}>
-                              <Plus size={14} color={selectedFranchise.color} />
-                            </div>
-                          </div>
-                        ))}
-                        <button 
-                          onClick={() => setSearchResults([])}
-                          style={{ padding: '8px', color: 'rgba(255,255,255,0.2)', fontSize: 11, background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 700 }}
-                        >
-                          Cancel Search
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Collection View */}
-                <div>
-                  <h3 style={{ fontSize: 13, fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Layers size={14} /> Current Collection ({franchiseMovies.length})
-                  </h3>
-                  
-                  {franchiseMovies.length === 0 ? (
-                    <div style={{ padding: 48, borderRadius: 24, border: '1px dashed rgba(255,255,255,0.06)', textAlign: 'center' }}>
-                       <Clapperboard size={32} color="rgba(255,255,255,0.1)" style={{ margin: '0 auto 16px' }} />
-                       <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.2)' }}>This universe is empty.</div>
+                  <form onSubmit={handleSearch} className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                      <input
+                        type="text"
+                        placeholder={`Search ${searchMediaType === 'movie' ? 'movie' : 'series'} to add to timeline...`}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 rounded-xl bg-zinc-900/80 border border-white/[0.08] text-white placeholder-zinc-500 text-xs focus:outline-none focus:border-purple-500/50 transition-all"
+                      />
                     </div>
-                  ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 20 }}>
-                      {franchiseMovies.map(m => (
-                        <motion.div 
+                    <button
+                      type="submit"
+                      disabled={searching || !searchQuery.trim()}
+                      className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 disabled:opacity-50 transition-all cursor-pointer"
+                    >
+                      {searching ? <RefreshCw size={13} className="animate-spin" /> : <Plus size={13} />}
+                      <span>Add</span>
+                    </button>
+                  </form>
+
+                  {/* Search Results preview */}
+                  {searchResults.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/[0.04]">
+                      {searchResults.map((m) => (
+                        <div
                           key={m.id}
-                          layout
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          style={{ position: 'relative' }}
-                          className="group"
+                          className="p-2.5 rounded-xl bg-zinc-900 border border-white/[0.06] flex items-center justify-between gap-3 hover:border-purple-500/30 transition-all"
                         >
-                          <div style={{ 
-                            position: 'relative', aspectRatio: '2/3', borderRadius: 16, overflow: 'hidden', 
-                            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)'
-                          }}>
-                            <img src={posterUrl(m.poster_path)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{
-                              position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)',
-                              display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 12
-                            }}>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: 'white', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={8} /> {m.vote_average?.toFixed(1)}</span>
-                                <span>{m.release_date?.split('-')[0]}</span>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <img
+                              src={posterUrl(m.poster_path, 'w92')}
+                              alt={m.title}
+                              className="w-8 h-11 rounded-md object-cover bg-white/5 flex-shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold text-white truncate">{m.title || m.name}</div>
+                              <div className="text-[10px] text-zinc-500 font-mono">
+                                {releaseYear(m.release_date || m.first_air_date)}
                               </div>
-                              {entryForMovie(m.id)?.watch_order != null && (
-                                <div style={{ marginTop: 6 }}>
-                                  <span style={{ fontSize: 9, fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: `${selectedFranchise.color}33`, color: 'white' }}>
-                                    Watch #{entryForMovie(m.id)?.watch_order}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 6 }}>
-                              <button
-                                onClick={() => openEntryEdit(m.id)}
-                                title="Edit timeline metadata"
-                                style={{
-                                  width: 28, height: 28, borderRadius: 8,
-                                  background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', color: 'rgba(255,255,255,0.8)',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer',
-                                  opacity: 0.8
-                                }}
-                              >
-                                <Settings2 size={13} />
-                              </button>
-                              <button
-                                onClick={() => removeMovie(m.id)}
-                                style={{
-                                  width: 28, height: 28, borderRadius: 8,
-                                  background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', color: '#F87171',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer',
-                                  opacity: 0.8
-                                }}
-                              >
-                                <X size={14} />
-                              </button>
                             </div>
                           </div>
-                        </motion.div>
+
+                          <button
+                            onClick={() => addMovie(m)}
+                            className="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 text-[11px] font-bold transition-all cursor-pointer flex-shrink-0"
+                          >
+                            + Include
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
-            </motion.div>
-          ) : (
-            <motion.div 
-              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 24, opacity: 0.3 }}
-            >
-              <div style={{ width: 80, height: 80, borderRadius: 32, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Layers size={40} />
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 600 }}>Select a universe to begin</div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
 
-      {/* Create/Edit Modal */}
+              {/* Timeline Titles Grid */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider">
+                    Universe Titles & Chronology ({franchiseMovies.length})
+                  </h3>
+                </div>
+
+                {franchiseMovies.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
+                    {franchiseMovies.map((m) => {
+                      const entry = entryForMovie(m.id);
+                      return (
+                        <motion.div
+                          key={m.id}
+                          layout
+                          className="group relative rounded-2xl bg-zinc-950/40 border border-white/[0.06] hover:border-purple-500/30 overflow-hidden transition-all flex flex-col justify-between"
+                        >
+                          {/* Poster Frame */}
+                          <div className="relative aspect-[2/3] w-full bg-zinc-900 overflow-hidden">
+                            <img
+                              src={posterUrl(m.poster_path, 'w342')}
+                              alt={m.title || 'Movie'}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30" />
+
+                            {/* Watch Order Pill */}
+                            {entry?.watch_order != null && (
+                              <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-purple-600/80 backdrop-blur-md border border-purple-400/30 text-[9px] font-mono text-white font-bold">
+                                #{entry.watch_order} Watch
+                              </div>
+                            )}
+
+                            {/* Actions Overlay */}
+                            <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => openEntryEdit(m.id)}
+                                className="p-1.5 rounded-lg bg-black/70 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-white/10 cursor-pointer transition-all"
+                                title="Timeline metadata"
+                              >
+                                <Settings2 size={12} />
+                              </button>
+                              <button
+                                onClick={() => removeMovie(m.id)}
+                                className="p-1.5 rounded-lg bg-black/70 hover:bg-rose-500/80 text-zinc-400 hover:text-white border border-white/10 cursor-pointer transition-all"
+                                title="Remove from universe"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Info Footer */}
+                          <div className="p-3">
+                            <div className="text-xs font-bold text-white truncate" title={m.title || ''}>
+                              {m.title || m.name}
+                            </div>
+                            <div className="text-[10px] text-zinc-500 font-mono mt-1 flex items-center justify-between">
+                              <span>{releaseYear(m.release_date || m.first_air_date)}</span>
+                              {entry?.phase ? (
+                                <span className="text-[9px] font-semibold text-purple-300 px-1 rounded bg-purple-500/10 border border-purple-500/20">
+                                  {entry.phase}
+                                </span>
+                              ) : (
+                                <span className="text-[9px] text-zinc-600">Canon</span>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-16 text-center rounded-2xl bg-zinc-950/20 border border-white/[0.04] text-xs text-zinc-500 font-mono">
+                    No titles linked to this universe yet. Search above to include films.
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="py-24 text-center rounded-2xl bg-zinc-950/20 border border-white/[0.04] text-xs text-zinc-500 font-mono">
+              Select or create a universe from the left panel.
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* Universe Create/Edit Modal */}
       <AnimatePresence>
         {showCreateModal && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCreateModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCreateModal(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              style={{
-                width: 500, background: '#12121A', padding: 40, borderRadius: 32, position: 'relative',
-                border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 64px rgba(0,0,0,0.6)'
-              }}
+              className="w-full max-w-md bg-zinc-950 border border-white/[0.08] p-6 rounded-2xl relative z-10 space-y-4 shadow-2xl"
             >
-              <div style={{ marginBottom: 32 }}>
-                <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', marginBottom: 8 }}>
-                  {isEditing ? 'Pulse Edit' : 'Birth a Universe'}
-                </h2>
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
-                  Define the core identity of this cinematic collection.
-                </p>
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+                <h3 className="text-sm font-bold text-white">
+                  {isEditing ? 'Edit Universe' : 'Create New Universe'}
+                </h3>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-zinc-500 hover:text-white p-1"
+                >
+                  <X size={16} />
+                </button>
               </div>
 
-              <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <form onSubmit={handleFormSubmit} className="space-y-3.5">
                 <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Identity Name</label>
+                  <label className="block text-[11px] font-mono text-zinc-400 mb-1">Franchise Name</label>
                   <input
-                    type="text" required value={formName} onChange={(e) => setFormName(e.target.value)}
-                    placeholder="e.g. Marvel Cinematic Universe"
-                    style={{ width: '100%', padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 15 }}
+                    type="text"
+                    required
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="e.g. Dune Universe, Marvel Cinematic Universe"
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-white text-xs focus:outline-none focus:border-purple-500/50"
                   />
                 </div>
+
                 <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Summary</label>
+                  <label className="block text-[11px] font-mono text-zinc-400 mb-1">Description</label>
                   <textarea
-                    rows={3} value={formDesc} onChange={(e) => setFormDesc(e.target.value)}
-                    placeholder="Briefly describe the legend..."
-                    style={{ width: '100%', padding: '16px 20px', borderRadius: 16, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', resize: 'none', fontSize: 14 }}
+                    rows={3}
+                    value={formDesc}
+                    onChange={(e) => setFormDesc(e.target.value)}
+                    placeholder="Brief universe synopsis..."
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-white text-xs focus:outline-none focus:border-purple-500/50 resize-none"
                   />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Aura Color</label>
-                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                      <div style={{ width: 48, height: 48, borderRadius: 14, background: formColor, border: '2px solid rgba(255,255,255,0.2)', boxShadow: `0 0 20px ${formColor}44` }} />
-                      <input
-                        type="color" value={formColor} onChange={(e) => setFormColor(e.target.value)}
-                        style={{ flex: 1, height: 48, padding: 0, borderRadius: 14, border: 'none', background: 'transparent', cursor: 'pointer' }}
-                      />
-                    </div>
+                    <label className="block text-[11px] font-mono text-zinc-400 mb-1">Color Theme</label>
+                    <input
+                      type="color"
+                      value={formColor}
+                      onChange={(e) => setFormColor(e.target.value)}
+                      className="w-full h-9 rounded-xl bg-zinc-900 border border-white/[0.08] cursor-pointer"
+                    />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sigil (Emoji)</label>
+                    <label className="block text-[11px] font-mono text-zinc-400 mb-1">Emoji Icon</label>
                     <input
-                      type="text" value={formEmoji} onChange={(e) => setFormEmoji(e.target.value)}
-                      style={{ width: '100%', padding: '12px', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', textAlign: 'center', fontSize: 24 }}
+                      type="text"
+                      value={formEmoji}
+                      onChange={(e) => setFormEmoji(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-white text-xs text-center font-emoji focus:outline-none"
                     />
                   </div>
                 </div>
 
-                <div style={{ marginTop: 16, display: 'flex', gap: 16 }}>
-                  <button type="button" onClick={() => setShowCreateModal(false)} style={{ flex: 1, padding: '18px', borderRadius: 20, background: 'rgba(255,255,255,0.04)', color: 'white', fontWeight: 700, border: 'none', cursor: 'pointer' }}>Hold On</button>
-                  <button type="submit" style={{ flex: 1, padding: '18px', borderRadius: 20, background: '#8B5CF6', color: 'white', fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(139, 92, 246, 0.4)' }}>
-                    {isEditing ? 'Confirm Pulse' : 'Emerge'}
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="flex-1 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold"
+                  >
+                    {isEditing ? 'Save Changes' : 'Create Universe'}
                   </button>
                 </div>
               </form>
@@ -679,102 +690,114 @@ export default function AdminFranchises() {
         )}
       </AnimatePresence>
 
-      {/* Edit Timeline Entry Modal */}
+      {/* Edit Timeline Entry Metadata Modal */}
       <AnimatePresence>
         {showEntryModal && editingEntry && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEntryModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowEntryModal(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              style={{
-                width: 560, maxHeight: '85vh', overflowY: 'auto', background: '#12121A', padding: 40, borderRadius: 32, position: 'relative',
-                border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 64px rgba(0,0,0,0.6)'
-              }}
+              className="w-full max-w-lg bg-zinc-950 border border-white/[0.08] p-6 rounded-2xl relative z-10 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
-              <div style={{ marginBottom: 28 }}>
-                <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', marginBottom: 6 }}>
-                  Timeline: {editingEntry.title}
-                </h2>
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
-                  Where this fits in the universe's watch order.
-                </p>
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+                <div>
+                  <h3 className="text-sm font-bold text-white">Timeline Metadata</h3>
+                  <p className="text-[11px] text-zinc-400 font-mono mt-0.5">{editingEntry.title}</p>
+                </div>
+                <button
+                  onClick={() => setShowEntryModal(false)}
+                  className="text-zinc-500 hover:text-white p-1"
+                >
+                  <X size={16} />
+                </button>
               </div>
 
-              <form onSubmit={handleEntrySubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <form onSubmit={handleEntrySubmit} className="space-y-3.5">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Phase</label>
-                    <input type="text" value={entryForm.phase} onChange={(e) => setEntryForm({ ...entryForm, phase: e.target.value })} placeholder="e.g. Phase 1"
-                      style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 13 }} />
+                    <label className="block text-[11px] font-mono text-zinc-400 mb-1">Phase</label>
+                    <input
+                      type="text"
+                      value={entryForm.phase}
+                      onChange={(e) => setEntryForm({ ...entryForm, phase: e.target.value })}
+                      placeholder="e.g. Phase 1"
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-white text-xs"
+                    />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Saga</label>
-                    <input type="text" value={entryForm.saga} onChange={(e) => setEntryForm({ ...entryForm, saga: e.target.value })} placeholder="e.g. Infinity Saga"
-                      style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 13 }} />
+                    <label className="block text-[11px] font-mono text-zinc-400 mb-1">Saga</label>
+                    <input
+                      type="text"
+                      value={entryForm.saga}
+                      onChange={(e) => setEntryForm({ ...entryForm, saga: e.target.value })}
+                      placeholder="e.g. Infinity Saga"
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-white text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-mono text-zinc-400 mb-1">Watch #</label>
+                    <input
+                      type="number"
+                      value={entryForm.watch_order}
+                      onChange={(e) => setEntryForm({ ...entryForm, watch_order: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-white text-xs font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-mono text-zinc-400 mb-1">Timeline #</label>
+                    <input
+                      type="number"
+                      value={entryForm.timeline_order}
+                      onChange={(e) => setEntryForm({ ...entryForm, timeline_order: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-white text-xs font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-mono text-zinc-400 mb-1">Release #</label>
+                    <input
+                      type="number"
+                      value={entryForm.release_order}
+                      onChange={(e) => setEntryForm({ ...entryForm, release_order: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-white text-xs font-mono"
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Sub-timeline</label>
-                  <input type="text" value={entryForm.sub_timeline} onChange={(e) => setEntryForm({ ...entryForm, sub_timeline: e.target.value })} placeholder="e.g. Original Timeline"
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 13 }} />
+                  <label className="block text-[11px] font-mono text-zinc-400 mb-1">Notes / Connections</label>
+                  <textarea
+                    rows={3}
+                    value={entryForm.notes}
+                    onChange={(e) => setEntryForm({ ...entryForm, notes: e.target.value })}
+                    placeholder="Post-credits scenes, lore connections, prequel context..."
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-white text-xs resize-none"
+                  />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Timeline #</label>
-                    <input type="number" value={entryForm.timeline_order} onChange={(e) => setEntryForm({ ...entryForm, timeline_order: e.target.value })}
-                      style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 13 }} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Release #</label>
-                    <input type="number" value={entryForm.release_order} onChange={(e) => setEntryForm({ ...entryForm, release_order: e.target.value })}
-                      style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 13 }} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Watch #</label>
-                    <input type="number" value={entryForm.watch_order} onChange={(e) => setEntryForm({ ...entryForm, watch_order: e.target.value })}
-                      style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', fontSize: 13 }} />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 24 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={entryForm.canon} onChange={(e) => setEntryForm({ ...entryForm, canon: e.target.checked })} />
-                    Canon
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={entryForm.multiverse} onChange={(e) => setEntryForm({ ...entryForm, multiverse: e.target.checked })} />
-                    <Globe size={13} /> Multiverse
-                  </label>
-                </div>
-
-                {entries.filter(en => en.id !== editingEntry.id).length > 0 && (
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Requires watching first</label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 160, overflowY: 'auto', padding: 12, borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      {entries.filter(en => en.id !== editingEntry.id).map(en => (
-                        <label key={en.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={entryForm.requires_movie_ids.includes(en.movie_id)} onChange={() => toggleRequires(en.movie_id)} />
-                          {en.title}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Notes</label>
-                  <textarea rows={3} value={entryForm.notes} onChange={(e) => setEntryForm({ ...entryForm, notes: e.target.value })} placeholder="Post-credit connections, what it introduces, TV tie-ins..."
-                    style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', resize: 'none', fontSize: 13 }} />
-                </div>
-
-                <div style={{ marginTop: 8, display: 'flex', gap: 16 }}>
-                  <button type="button" onClick={() => setShowEntryModal(false)} style={{ flex: 1, padding: '16px', borderRadius: 18, background: 'rgba(255,255,255,0.04)', color: 'white', fontWeight: 700, border: 'none', cursor: 'pointer' }}>Cancel</button>
-                  <button type="submit" style={{ flex: 1, padding: '16px', borderRadius: 18, background: selectedFranchise?.color || '#8B5CF6', color: 'white', fontWeight: 800, border: 'none', cursor: 'pointer' }}>
-                    Save Timeline
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowEntryModal(false)}
+                    className="flex-1 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold"
+                  >
+                    Save Timeline Info
                   </button>
                 </div>
               </form>
@@ -782,6 +805,8 @@ export default function AdminFranchises() {
           </div>
         )}
       </AnimatePresence>
+
     </div>
   );
 }
+

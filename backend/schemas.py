@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, field_validator
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 import re
 
@@ -494,12 +494,102 @@ class LeaderboardEntry(BaseModel):
 
 # ─── Admin ───────────────────────────────────────────────────────────────────────
 
+class RecentReviewOut(BaseModel):
+    id: int
+    user_name: str
+    user_avatar: Optional[str] = None
+    movie_id: int
+    media_type: str = "movie"
+    title: Optional[str] = None
+    poster_path: Optional[str] = None
+    label: str
+    review_text: Optional[str] = None
+    created_at: datetime
+
+
+class RecentCommentOut(BaseModel):
+    id: int
+    user_name: str
+    user_avatar: Optional[str] = None
+    movie_id: int
+    media_type: str = "movie"
+    content: str
+    contains_spoiler: bool = False
+    created_at: datetime
+
+
+class SystemHealthOut(BaseModel):
+    status: str
+    api_latency_ms: float
+    db_status: str
+    db_latency_ms: float
+    tmdb_status: str
+    tmdb_latency_ms: float
+    redis_status: str
+    server_time: str
+    uptime_info: Optional[str] = None
+
+
+class QuickCurateRequest(BaseModel):
+    movie_id: int
+    media_type: str = "movie"
+    target: str  # "gem", "must_watch", "franchise"
+    franchise_id: Optional[int] = None
+    title: Optional[str] = None
+    poster_path: Optional[str] = None
+    backdrop_path: Optional[str] = None
+    release_date: Optional[str] = None
+    vote_average: Optional[float] = None
+    overview: Optional[str] = None
+
+
+class AdminSocialPostOut(BaseModel):
+    id: int
+    user_id: int
+    user_name: str
+    user_avatar: Optional[str] = None
+    post_type: str
+    movie_id: Optional[int] = None
+    content: Optional[str] = None
+    payload: Optional[Any] = None
+    is_spoiler: bool = False
+    created_at: datetime
+    reactions_count: int = 0
+    comments_count: int = 0
+
+
 class AdminStats(BaseModel):
     total_users: int
+    admin_users: int = 0
+    new_users_today: int = 0
+    new_users_week: int = 0
+    locked_users: int = 0
+
     total_franchises: int
+    total_universe_entries: int = 0
     total_gems: int
     total_must_watch: int = 0
+    total_collections: int = 0
+
+    total_ratings: int = 0
+    avg_rating: float = 0.0
+    total_favorites: int = 0
+    total_watchlist: int = 0
+    total_watched: int = 0
+    total_moctale_reviews: int = 0
+    total_comments: int = 0
+    total_debates: int = 0
+    total_battles: int = 0
+    total_social_posts: int = 0
+    total_watch_parties: int = 0
+    total_groups: int = 0
+
+    moctale_breakdown: Dict[str, int] = {}
     recent_users: List["UserOut"] = []
+    recent_reviews: List[RecentReviewOut] = []
+    recent_comments: List[RecentCommentOut] = []
+    recent_posts: List[AdminSocialPostOut] = []
+
 
 
 class FranchiseCreate(BaseModel):

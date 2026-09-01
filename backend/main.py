@@ -103,16 +103,24 @@ if IS_PRODUCTION:
         # Set this env var in Render dashboard: ALLOWED_HOSTS=shockme-1.onrender.com,shockme.vercel.app
         print("[Warning] ALLOWED_HOSTS not set — TrustedHostMiddleware disabled. Set it in Render env vars.")
 
-# 3. CORS — explicit origins, methods, and headers only
+# 3. CORS — explicit origins in prod, permissive regex in dev
 CORS_ORIGINS = [
     "http://localhost:3000",
+    "http://localhost:3001",
     "http://localhost:3002",
+    "http://localhost:8081",
+    "http://localhost:8082",
+    "http://localhost:19006",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+    "http://127.0.0.1:3002",
+    "http://127.0.0.1:8081",
+    "http://127.0.0.1:8082",
+    "http://127.0.0.1:19006",
 ]
 if IS_PRODUCTION:
     prod_origins = os.getenv("CORS_ORIGINS", "").split(",")
     CORS_ORIGINS = [o.strip() for o in prod_origins if o.strip()]
-    # Fallback: if CORS_ORIGINS env var isn't set on Render, use known domains
     if not CORS_ORIGINS:
         CORS_ORIGINS = [
             "https://shockme.vercel.app",
@@ -123,6 +131,7 @@ if IS_PRODUCTION:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
+    allow_origin_regex=None if IS_PRODUCTION else r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=[
@@ -227,8 +236,12 @@ def seed_admin():
     from database import SessionLocal
     from auth.utils import hash_password
 
-    admin_email = os.getenv("ADMIN_EMAIL", "admin@cinematch.dev")
-    admin_password = os.getenv("ADMIN_PASSWORD", "CineAdmin#2026")
+    admin_email = os.getenv("ADMIN_EMAIL")
+    admin_password = os.getenv("ADMIN_PASSWORD")
+
+    if not admin_email or not admin_password:
+        print("[Admin] WARNING: ADMIN_EMAIL or ADMIN_PASSWORD not set in .env — skipping admin seed.")
+        return
 
     db = SessionLocal()
     try:
@@ -249,6 +262,7 @@ def seed_admin():
             print("[Admin] Existing account promoted to admin")
     finally:
         db.close()
+
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────

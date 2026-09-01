@@ -8,7 +8,8 @@ export default function NavbarWrapper({ children }: { children: React.ReactNode 
   const pathname = usePathname();
   const isAuthPage = pathname === '/login' || pathname === '/register';
   const isWatchPage = pathname?.startsWith('/watch');
-  const hideChrome = isAuthPage || isWatchPage;
+  const isAdminPage = pathname?.startsWith('/admin');
+  const hideChrome = isAuthPage || isWatchPage || isAdminPage;
 
   return (
     <>

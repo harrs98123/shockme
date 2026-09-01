@@ -7,11 +7,12 @@ import {
   Plus,
   Search,
   Trash2,
-  Clapperboard,
-  ChevronRight,
-  ShieldCheck,
+  Sparkles,
+  RefreshCw,
+  Film,
+  CheckCircle2,
 } from 'lucide-react';
-import { adminApi, posterUrl } from '@/lib/api';
+import api, { posterUrl, releaseYear } from '@/lib/api';
 import { MustWatch } from '@/lib/types';
 import toast from '@/lib/toast';
 
@@ -23,15 +24,20 @@ export default function AdminMustWatch() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  const [addingId, setAddingId] = useState<number | null>(null);
+
+  // Local filter
+  const [filterQuery, setFilterQuery] = useState('');
 
   useEffect(() => {
     loadMustWatch();
   }, []);
 
   const loadMustWatch = async () => {
+    setLoading(true);
     try {
-      const data = await adminApi.getMustWatch();
-      setMovies(data);
+      const res = await api.get('/admin/must-watch');
+      setMovies(res.data);
     } catch (err) {
       console.error(err);
       toast.error('Failed to load Must Watch list');
@@ -40,45 +46,53 @@ export default function AdminMustWatch() {
     }
   };
 
-  const handleSearch = async (query?: string | React.MouseEvent) => {
-    const q = typeof query === 'string' ? query : searchQuery;
-    if (typeof query === 'string') {
-      setSearchQuery(q);
-    }
-    if (!q || !q.trim()) {
-      setSearchResults([]);
-      return;
-    }
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!searchQuery.trim()) return;
 
     setSearching(true);
     try {
-      const data = await adminApi.searchMovies(q);
-      setSearchResults(data);
+      const res = await api.get(`/admin/tmdb/search?q=${encodeURIComponent(searchQuery)}&media_type=movie`);
+      setSearchResults(res.data || []);
     } catch (err) {
       console.error(err);
+      toast.error('TMDB Search failed');
     } finally {
       setSearching(false);
     }
   };
 
   const addMovie = async (movie: any) => {
+    setAddingId(movie.id);
     try {
-      const res = await adminApi.addMustWatch(movie);
-      setMovies([res, ...movies]);
+      const res = await api.post('/admin/must-watch', {
+        movie_id: movie.id,
+        media_type: 'movie',
+        title: movie.title || movie.name,
+        poster_path: movie.poster_path,
+        backdrop_path: movie.backdrop_path,
+        release_date: movie.release_date,
+        vote_average: movie.vote_average,
+        vote_count: movie.vote_count,
+        overview: movie.overview,
+      });
+      setMovies([res.data, ...movies]);
       setSearchResults([]);
       setSearchQuery('');
-      toast.success(`Added "${movie.title || movie.name}" to Must Watch`);
-    } catch (err) {
+      toast.success(`"${movie.title || movie.name}" added to Must Watch`);
+    } catch (err: any) {
       console.error(err);
-      toast.error('This title is already in the list or an error occurred.');
+      toast.error(err.response?.data?.detail || 'This title is already in the list or failed to add.');
+    } finally {
+      setAddingId(null);
     }
   };
 
   const removeMovie = async (movieId: number) => {
-    if (!confirm('Remove this movie from Must Watch?')) return;
+    if (!confirm('Remove this title from Must Watch collection?')) return;
     try {
-      await adminApi.removeMustWatch(movieId);
-      setMovies(movies.filter(m => m.movie_id !== movieId));
+      await api.delete(`/admin/must-watch/${movieId}`);
+      setMovies((prev) => prev.filter((m) => m.movie_id !== movieId));
       toast.info('Removed from Must Watch');
     } catch (err) {
       console.error(err);
@@ -86,187 +100,189 @@ export default function AdminMustWatch() {
     }
   };
 
-  if (loading) return <div style={{ padding: 60, color: 'rgba(255,255,255,0.3)', fontSize: 13, fontWeight: 500, letterSpacing: '0.05em' }}>INITIALIZING DASHBOARD...</div>;
+  const filteredMovies = movies.filter((m) =>
+    (m.title || '').toLowerCase().includes(filterQuery.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#08080c] flex items-center justify-center p-8 text-zinc-500 font-mono text-xs">
+        Loading Must Watch roster...
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: '80px 60px', maxWidth: 1400, margin: '0 auto' }}>
+    <div className="min-h-screen bg-[#08080c] text-zinc-100 font-[Inter] p-6 lg:p-10 max-w-[1600px] mx-auto space-y-6">
+      
       {/* Header */}
-      <header style={{ marginBottom: 64 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
-          <div style={{
-            width: 48, height: 48, borderRadius: 14, background: 'rgba(229, 9, 20, 0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(229, 9, 20, 0.2)'
-          }}>
-            <Star size={24} color="#E50914" fill="#E50914" />
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.05]">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <Star size={14} className="text-amber-400" />
+            <span className="text-[11px] font-mono tracking-widest text-zinc-400 uppercase font-semibold">Master Roster</span>
           </div>
-          <div>
-            <h1 style={{ fontSize: 32, fontWeight: 900, color: 'white', letterSpacing: '-0.02em' }}>Must Watch Curation</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', marginTop: 4 }}>
-              <ShieldCheck size={12} /> AUTHENTICATED ADMIN SESSION
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Must Watch Curation</h1>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            Essential cinema recommendations featured prominently across customer discovery reels.
+          </p>
         </div>
-        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, maxWidth: 700, lineHeight: 1.7, fontWeight: 400 }}>
-          Directly influence the platform's discovery engine. Select masterpieces that define the CineMatch standard.
-        </p>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono text-zinc-400 px-3 py-1.5 rounded-xl bg-zinc-900 border border-white/[0.06]">
+            Total Curated: <strong className="text-white">{movies.length}</strong>
+          </span>
+        </div>
       </header>
 
-      {/* Search & Add Section */}
-      <section style={{ marginBottom: 80 }}>
-        <div style={{
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 28,
-          padding: 40,
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: 'rgba(255,255,255,0.6)', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            <Search size={16} color="#E50914" /> Search Global Library
-          </div>
-          <div style={{ position: 'relative' }}>
+      {/* TMDB Fast Search & Add Card */}
+      <div className="p-5 rounded-2xl bg-zinc-950/40 border border-white/[0.06] space-y-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <Sparkles size={15} className="text-amber-400" />
+            Quick Add via TMDB
+          </h3>
+          <span className="text-[11px] font-mono text-zinc-500">Live Global Catalog</span>
+        </div>
+
+        <form onSubmit={handleSearch} className="flex gap-2.5 max-w-xl">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               type="text"
-              placeholder="Enter movie title..."
+              placeholder="Search movie title to feature (e.g. Dune, Parasite, Spirited Away)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              style={{
-                width: '100%', padding: '20px 24px', paddingRight: '140px', borderRadius: 20,
-                background: 'transparent', border: '1px solid rgba(255,255,255,0.12)',
-                color: 'white', fontSize: 16, outline: 'none', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-              className="focus:border-red-600/50 focus:ring-1 focus:ring-red-600/20"
+              className="w-full pl-9 pr-4 py-2 rounded-xl bg-zinc-900/80 border border-white/[0.08] text-white placeholder-zinc-500 text-xs focus:outline-none focus:border-amber-500/50 transition-all"
             />
-            <button
-              onClick={handleSearch}
-              disabled={searching}
-              style={{
-                position: 'absolute', right: 10, top: 10, bottom: 10,
-                padding: '0 32px', background: '#E50914', color: 'white', fontWeight: 800,
-                borderRadius: 14, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.05em'
-              }}
-            >
-              {searching ? '...' : 'Search'}
-            </button>
           </div>
+          <button
+            type="submit"
+            disabled={searching || !searchQuery.trim()}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center gap-1.5 disabled:opacity-50 transition-all cursor-pointer shadow-md shadow-amber-500/10"
+          >
+            {searching ? <RefreshCw size={13} className="animate-spin" /> : <Plus size={13} />}
+            <span>{searching ? 'Searching...' : 'Search'}</span>
+          </button>
+        </form>
 
-          <AnimatePresence>
-            {searchResults.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                style={{
-                  marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 20
-                }}
-              >
-                {searchResults.map(m => (
-                  <div key={m.id} style={{
-                    display: 'flex', gap: 20, padding: 20, borderRadius: 20,
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    alignItems: 'center',
-                    transition: 'all 0.3s'
-                  }}>
-                    <img src={posterUrl(m.poster_path)} style={{ width: 56, height: 84, borderRadius: 12, objectFit: 'cover' }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: 'white', marginBottom: 4 }}>{m.title}</div>
-                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{m.release_date?.split('-')[0]} • ⭐ {m.vote_average?.toFixed(1)}</div>
+        {/* Search Results Drawer */}
+        {searchResults.length > 0 && (
+          <div className="pt-2 border-t border-white/[0.04]">
+            <div className="text-[11px] font-mono text-zinc-400 mb-3">
+              Found {searchResults.length} matches on TMDB:
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {searchResults.map((m) => (
+                <div
+                  key={m.id}
+                  className="p-3 rounded-xl bg-zinc-900/70 border border-white/[0.06] flex gap-3 items-start hover:border-amber-500/30 transition-all"
+                >
+                  <img
+                    src={posterUrl(m.poster_path, 'w185')}
+                    alt={m.title}
+                    className="w-12 h-16 rounded-lg object-cover flex-shrink-0 bg-white/5 border border-white/10"
+                  />
+                  <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+                    <div>
+                      <div className="text-xs font-bold text-white truncate">{m.title}</div>
+                      <div className="text-[10px] text-zinc-500 mt-0.5">
+                        {releaseYear(m.release_date)} • <span className="text-amber-400 font-mono">★ {m.vote_average?.toFixed(1) || '0.0'}</span>
+                      </div>
                     </div>
+
                     <button
                       onClick={() => addMovie(m)}
-                      style={{
-                        width: 42, height: 42, borderRadius: 12, background: 'rgba(229,9,20,0.1)', color: '#E50914',
-                        border: '1px solid rgba(229,9,20,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                      }}
+                      disabled={addingId === m.id}
+                      className="mt-2 w-full py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 hover:bg-amber-500/25 text-amber-300 text-[10px] font-bold transition-all cursor-pointer"
                     >
-                      <Plus size={20} />
+                      {addingId === m.id ? 'Adding...' : '+ Feature Title'}
                     </button>
                   </div>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </section>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
-      {/* Featured List */}
-      <section>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: 12 }}>
-            Currently Featured <span style={{ background: 'rgba(255,255,255,0.08)', padding: '4px 12px', borderRadius: 20, fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>{movies.length}</span>
-          </h2>
+      {/* Existing Curated Grid */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h3 className="text-sm font-bold text-white">Curated Collection</h3>
+
+          {/* Filter search in list */}
+          <div className="relative w-full sm:w-64">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Filter current list..."
+              value={filterQuery}
+              onChange={(e) => setFilterQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-zinc-900/60 border border-white/[0.06] text-white placeholder-zinc-500 text-xs focus:outline-none focus:border-white/20 transition-all"
+            />
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 32 }}>
-          <AnimatePresence>
-            {movies.map((m, idx) => (
+        {filteredMovies.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+            {filteredMovies.map((movie) => (
               <motion.div
-                key={m.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                key={movie.id}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ delay: idx * 0.05, duration: 0.4 }}
-                style={{
-                  borderRadius: 28, overflow: 'hidden',
-                  border: '1px solid rgba(255,255,255,0.08)', position: 'relative'
-                }}
+                className="group relative rounded-2xl bg-zinc-950/40 border border-white/[0.06] hover:border-amber-500/30 overflow-hidden transition-all flex flex-col justify-between"
               >
-                <div style={{ position: 'relative', height: 200 }}>
-                  <img src={posterUrl(m.backdrop_path || m.poster_path)} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #080810 0%, transparent 70%)' }} />
-                  <div style={{ position: 'absolute', bottom: 24, left: 24, right: 24 }}>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: 'white', marginBottom: 8, letterSpacing: '-0.02em' }}>{m.title}</div>
-                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 10, fontWeight: 600 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#E50914' }}>
-                        <Star size={14} fill="currentColor" /> {m.vote_average?.toFixed(1)}
-                      </div>
-                      <span style={{ opacity: 0.3 }}>•</span>
-                      <span>{m.release_date?.split('-')[0]}</span>
-                    </div>
+                {/* Poster Box */}
+                <div className="relative aspect-[2/3] w-full bg-zinc-900 overflow-hidden">
+                  <img
+                    src={posterUrl(movie.poster_path, 'w342')}
+                    alt={movie.title || 'Movie'}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 opacity-80 group-hover:opacity-90 transition-opacity" />
+
+                  {/* Top Badge */}
+                  <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-mono text-amber-400">
+                    <Star size={9} fill="currentColor" />
+                    <span>{movie.vote_average?.toFixed(1) || '0.0'}</span>
                   </div>
+
+                  {/* Remove Overlay Button */}
                   <button
-                    onClick={() => removeMovie(m.movie_id)}
-                    style={{
-                      position: 'absolute', top: 20, right: 20, width: 38, height: 38, borderRadius: 12,
-                      background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)',
-                      color: 'rgba(255,255,255,0.5)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#E50914';
-                      e.currentTarget.style.color = 'white';
-                      e.currentTarget.style.borderColor = 'transparent';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(0,0,0,0.6)';
-                      e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
-                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                    }}
+                    onClick={() => removeMovie(movie.movie_id)}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/70 hover:bg-rose-500/80 text-zinc-400 hover:text-white border border-white/10 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                    title="Remove from Must Watch"
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={12} />
                   </button>
+                </div>
+
+                {/* Info Box */}
+                <div className="p-3">
+                  <div className="text-xs font-bold text-white truncate" title={movie.title || ''}>
+                    {movie.title}
+                  </div>
+                  <div className="text-[10px] text-zinc-500 font-mono mt-0.5 flex items-center justify-between">
+                    <span>{releaseYear(movie.release_date)}</span>
+                    <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                      Must Watch
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             ))}
-          </AnimatePresence>
-          
-          {movies.length === 0 && (
-            <div style={{
-              gridColumn: '1 / -1', padding: '100px 0', textAlign: 'center', color: 'rgba(255,255,255,0.25)',
-              borderRadius: 32, border: '1px dashed rgba(255,255,255,0.1)'
-            }}>
-              <Clapperboard size={54} style={{ margin: '0 auto 24px', opacity: 0.15 }} />
-              <p style={{ fontWeight: 800, fontSize: 18, color: 'rgba(255,255,255,0.4)', letterSpacing: '-0.02em' }}>No Curated Selections</p>
-              <p style={{ fontSize: 14, marginTop: 10, maxWidth: 300, margin: '10px auto 0', lineHeight: 1.6 }}>Start adding cinematic masterpieces using the search tool above.</p>
-            </div>
-          )}
-        </div>
-      </section>
+          </div>
+        ) : (
+          <div className="py-16 text-center rounded-2xl bg-zinc-950/20 border border-white/[0.04] text-xs text-zinc-500 font-mono">
+            {filterQuery ? 'No movies matching your filter.' : 'No Must Watch titles curated yet. Search above to add.'}
+          </div>
+        )}
+      </div>
 
-      {/* Footer Branding */}
-      <footer style={{ marginTop: 100, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 40, paddingBottom: 40, opacity: 0.4 }}>
-         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.5)' }}>
-            🎬 CINEMATCH ARCHIVE SYSTEM
-         </div>
-      </footer>
     </div>
   );
 }
+

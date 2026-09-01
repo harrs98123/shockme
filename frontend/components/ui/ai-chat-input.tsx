@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useState, useEffect, useRef } from "react";
-import { Lightbulb, Mic, Globe, Paperclip, Send, Loader2 } from "lucide-react";
+import { Lightbulb, Mic, Globe, Paperclip, Send, Loader2, Sparkles } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
  
 const PLACEHOLDERS = [
@@ -20,9 +20,11 @@ interface AIChatInputProps {
   onChange: (val: string) => void;
   onSearch: (think?: boolean, deepSearch?: boolean) => void;
   loading?: boolean;
+  suggestions?: string[];
+  onSuggestionClick?: (suggestion: string) => void;
 }
  
-const AIChatInput = ({ value, onChange, onSearch, loading }: AIChatInputProps) => {
+const AIChatInput = ({ value, onChange, onSearch, loading, suggestions = [], onSuggestionClick }: AIChatInputProps) => {
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [showPlaceholder, setShowPlaceholder] = useState(true);
   const [isActive, setIsActive] = useState(false);
@@ -68,6 +70,9 @@ const AIChatInput = ({ value, onChange, onSearch, loading }: AIChatInputProps) =
     onSearch(thinkActive, deepSearchActive);
   };
  
+  const hasSuggestions = suggestions.length > 0;
+  const chipRowHeight = hasSuggestions && (isActive || value) ? 52 : 0;
+
   const containerVariants = {
     collapsed: {
       height: 68,
@@ -75,7 +80,7 @@ const AIChatInput = ({ value, onChange, onSearch, loading }: AIChatInputProps) =
       transition: { type: "spring" as const, stiffness: 120, damping: 18 },
     },
     expanded: {
-      height: 128,
+      height: 128 + chipRowHeight,
       boxShadow: "0 8px 40px 0 rgba(79, 70, 229, 0.15)",
       transition: { type: "spring" as const, stiffness: 120, damping: 18 },
     },
@@ -279,6 +284,47 @@ const AIChatInput = ({ value, onChange, onSearch, loading }: AIChatInputProps) =
               </motion.button>
             </div>
           </motion.div>
+
+          {/* ── LIVE SUGGESTION CHIPS ── */}
+          <AnimatePresence>
+            {suggestions.length > 0 && (isActive || value) && (
+              <motion.div
+                key="suggestion-chips"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: 0.22 }}
+                className="px-4 pb-4 pt-1"
+              >
+                <div className="flex flex-wrap gap-2">
+                  {suggestions.map((s, i) => (
+                    <motion.button
+                      key={s}
+                      type="button"
+                      initial={{ opacity: 0, scale: 0.85, y: 6 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.85, y: 4 }}
+                      transition={{ duration: 0.18, delay: i * 0.04 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSuggestionClick?.(s);
+                      }}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold
+                        bg-gradient-to-r from-purple-500/15 via-indigo-500/10 to-purple-500/15
+                        border border-purple-500/30 text-purple-200
+                        hover:border-purple-400/60 hover:bg-purple-500/25 hover:text-white
+                        hover:shadow-[0_0_14px_rgba(168,85,247,0.3)]
+                        transition-all duration-200 active:scale-95
+                        backdrop-blur-sm"
+                    >
+                      <Sparkles className="w-3 h-3 text-purple-400 flex-shrink-0" />
+                      {s}
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </form>
       </motion.div>
     </div>

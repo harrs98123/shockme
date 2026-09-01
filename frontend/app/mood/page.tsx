@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Brain,
@@ -73,6 +73,73 @@ const SUGGESTED_MOODS = [
   },
 ];
 
+// ─── MOOD SUGGESTION BANK ──────────────────────────────────────────────────
+// Each entry: label = chip text, aliases = keywords to fuzzy-match on
+const MOOD_SUGGESTION_BANK: { label: string; aliases: string[] }[] = [
+  { label: 'mind-bending sci-fi',            aliases: ['mind', 'sci', 'science', 'space', 'future', 'dimension', 'time', 'loop', 'quantum'] },
+  { label: 'adrenaline-pumping action',       aliases: ['action', 'fight', 'adrenaline', 'battle', 'war', 'explosion', 'combat', 'धमाका'] },
+  { label: 'twisted psychological thriller',  aliases: ['thriller', 'psychological', 'twisted', 'suspense', 'dark', 'secret', 'twist', 'mind'] },
+  { label: 'heartwarming romance',            aliases: ['romance', 'romantic', 'love', 'heartwarming', 'relationship', 'couple', 'pyaar', 'ishq', 'प्यार', 'محبت'] },
+  { label: 'cozy feel-good comfort',          aliases: ['cozy', 'feel', 'good', 'comfort', 'warm', 'happy', 'family', 'खुशी'] },
+  { label: 'gothic supernatural mystery',     aliases: ['gothic', 'supernatural', 'mystery', 'ghost', 'haunted', 'eerie', 'bhoot', 'darawna', 'भूत', 'डरावना'] },
+  { label: 'rainy day melancholy',            aliases: ['rainy', 'rain', 'melancholy', 'sad', 'lonely', 'blue', 'udaas', 'barish', 'उदास', 'बारिश'] },
+  { label: 'cyberpunk neon thrill',           aliases: ['cyber', 'cyberpunk', 'neon', 'thrill', 'tech', 'hacker', 'future'] },
+  { label: 'laugh-out-loud comedy',           aliases: ['comedy', 'laugh', 'funny', 'humor', 'hilarious', 'comic', 'mazedaar', 'hansi', 'मज़ेदार'] },
+  { label: 'epic fantasy adventure',          aliases: ['fantasy', 'epic', 'adventure', 'dragon', 'magic', 'quest', 'wizard', 'jadoo', 'जादू'] },
+  { label: 'spine-chilling horror',           aliases: ['horror', 'scary', 'spine', 'chilling', 'fear', 'creepy', 'monster', 'dar', 'darawna', 'डर', 'भयानक'] },
+  { label: 'gritty crime drama',              aliases: ['crime', 'gritty', 'drama', 'gangster', 'heist', 'mafia', 'detective', 'apradh', 'jasoos', 'अपराध'] },
+  { label: 'inspiring underdog story',        aliases: ['inspiring', 'underdog', 'motivate', 'sports', 'win', 'dream', 'hope', 'prerana', 'sangharsh', 'प्रेरणा'] },
+  { label: 'slow-burn emotional drama',       aliases: ['slow', 'burn', 'emotional', 'drama', 'deep', 'feel', 'moving', 'jazbaati', 'भावुक'] },
+  { label: 'late-night binge series',         aliases: ['binge', 'series', 'late', 'night', 'watch', 'episode', 'season', 'raat', 'सीरीज'] },
+  { label: 'documentary eye-opener',          aliases: ['documentary', 'real', 'true', 'eye', 'opener', 'fact', 'history', 'वृत्तचित्र'] },
+  { label: 'nostalgic 90s classics',          aliases: ['nostalgic', 'nostalgia', '90s', 'classic', 'retro', 'old', 'vintage', '90', 'puraana', 'क्लासिक'] },
+  { label: 'anime-style emotional depth',     aliases: ['anime', 'animated', 'manga', 'japan', 'emotional', 'depth', 'एनिमे'] },
+  { label: 'heist & con masterplan',          aliases: ['heist', 'con', 'plan', 'steal', 'trick', 'clever', 'smart', 'chori', 'chalak', 'चोरी'] },
+  { label: 'philosophical thought-provoking', aliases: ['philosophical', 'philosophy', 'thought', 'provoking', 'deep', 'meaning', 'existential'] },
+  { label: 'road trip wanderlust',            aliases: ['road', 'trip', 'journey', 'travel', 'wander', 'adventure', 'freedom', 'safar', 'यात्रा'] },
+  { label: 'spy thriller espionage',          aliases: ['spy', 'espionage', 'agent', 'secret', 'mission', 'stealth', 'jasoos', 'जासूसी'] },
+  { label: 'feel-good Bollywood drama',       aliases: ['bollywood', 'hindi', 'indian', 'desi', 'masala', 'bolly', 'filmy', 'बॉलीवुड', 'हिंदी'] },
+  { label: 'survival against all odds',       aliases: ['survival', 'survive', 'odds', 'stranded', 'wild', 'alone', 'bachav', 'बचाव'] },
+  { label: 'dark academia aesthetics',        aliases: ['dark', 'academia', 'school', 'student', 'mystery', 'gothic', 'library', 'college'] },
+  { label: 'superhero universe epic',         aliases: ['superhero', 'hero', 'universe', 'marvel', 'dc', 'power', 'villain', 'shakti', 'सुपरहीरो'] },
+  { label: 'biographical true story',         aliases: ['biopic', 'biography', 'true', 'story', 'real', 'based', 'jivani', 'सच्ची'] },
+  { label: 'dystopian future world',          aliases: ['dystopia', 'dystopian', 'future', 'apocalypse', 'collapse', 'society', 'विनाश'] },
+  { label: 'musical feel-good energy',        aliases: ['musical', 'music', 'song', 'dance', 'energy', 'singer', 'geet', 'naach', 'संगीत', 'گانا'] },
+  { label: 'quiet contemplative cinema',      aliases: ['quiet', 'contemplative', 'slow', 'peaceful', 'art', 'indie', 'shaant', 'शांत'] },
+  { label: 'tense political drama',           aliases: ['political', 'politics', 'government', 'power', 'election', 'rajneeti', 'राजनीति'] },
+  { label: 'whodunit detective puzzle',       aliases: ['whodunit', 'detective', 'puzzle', 'clue', 'solve', 'murder', 'mystery', 'crime'] },
+];
+
+// Fuzzy scorer — higher score = better match
+function scoreMood(query: string, aliases: string[]): number {
+  const q = query.toLowerCase().trim();
+  if (!q) return 0;
+  const words = q.split(/\s+/);
+  let score = 0;
+  for (const alias of aliases) {
+    const a = alias.toLowerCase();
+    for (const word of words) {
+      if (!word) continue;
+      if (a === word)               score += 10; // exact alias word
+      else if (a.startsWith(word))  score += 6;  // alias starts with typed word
+      else if (a.includes(word))    score += 3;  // alias contains typed word
+      else if (word.includes(a))    score += 2;  // typed word contains alias
+    }
+  }
+  return score;
+}
+
+function getSuggestions(query: string, limit = 5): string[] {
+  if (!query.trim()) return [];
+  return MOOD_SUGGESTION_BANK
+    .map(entry => ({ label: entry.label, score: scoreMood(query, entry.aliases) }))
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(x => x.label);
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
 export default function MoodPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#05010a] flex items-center justify-center"><div className="spinner" /></div>}>
@@ -99,6 +166,14 @@ function MoodContent() {
   const [favIds, setFavIds] = useState<number[]>([]);
   const [watchlistIds, setWatchlistIds] = useState<number[]>([]);
   const [watchedIds, setWatchedIds] = useState<number[]>([]);
+
+  // Live suggestions derived from current typed mood text
+  const suggestions = useMemo(() => getSuggestions(mood), [mood]);
+
+  const handleSuggestionClick = useCallback((suggestion: string) => {
+    if (!isSearching) handleSearch(undefined, undefined, suggestion);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSearching]);
 
   useEffect(() => {
     if (user) {
@@ -225,6 +300,8 @@ function MoodContent() {
               onChange={setMood}
               onSearch={() => handleSearch()}
               loading={isSearching}
+              suggestions={suggestions}
+              onSuggestionClick={handleSuggestionClick}
             />
           </div>
 

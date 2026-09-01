@@ -4,7 +4,7 @@ from sqlalchemy import func
 from database import get_db
 import models
 import schemas
-from auth.utils import get_current_user
+from auth.utils import get_current_user, get_current_user_optional
 from typing import Optional
 
 router = APIRouter(prefix="/ratings", tags=["ratings"])
@@ -65,7 +65,7 @@ def get_movie_rating(
     movie_id: int,
     media_type: str = Query("movie"),
     db: Session = Depends(get_db),
-    current_user: Optional[models.User] = Depends(get_current_user)
+    current_user: Optional[models.User] = Depends(get_current_user_optional)
 ):
     stats = db.query(
         func.avg(models.Rating.rating).label("average"),

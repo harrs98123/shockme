@@ -460,12 +460,85 @@ export interface FranchiseInfo {
   requires: FranchiseEntry[];
 }
 
+export interface RecentReviewItem {
+  id: number;
+  user_name: string;
+  user_avatar?: string | null;
+  movie_id: number;
+  media_type: string;
+  title?: string | null;
+  poster_path?: string | null;
+  label: string;
+  review_text?: string | null;
+  created_at: string;
+}
+
+export interface RecentCommentItem {
+  id: number;
+  user_name: string;
+  user_avatar?: string | null;
+  movie_id: number;
+  media_type: string;
+  content: string;
+  contains_spoiler: boolean;
+  created_at: string;
+}
+
+export interface SystemHealth {
+  status: string;
+  api_latency_ms: number;
+  db_status: string;
+  db_latency_ms: number;
+  tmdb_status: string;
+  tmdb_latency_ms: number;
+  redis_status: string;
+  server_time: string;
+  uptime_info?: string;
+}
+
+export interface AdminSocialPost {
+  id: number;
+  user_id: number;
+  user_name: string;
+  user_avatar?: string | null;
+  post_type: string;
+  movie_id?: number | null;
+  content?: string | null;
+  payload?: any;
+  is_spoiler: boolean;
+  created_at: string;
+  reactions_count: number;
+  comments_count: number;
+}
+
 export interface AdminStats {
   total_users: number;
+  admin_users: number;
+  new_users_today: number;
+  new_users_week: number;
+  locked_users: number;
   total_franchises: number;
+  total_universe_entries: number;
   total_gems: number;
   total_must_watch: number;
+  total_collections: number;
+  total_ratings: number;
+  avg_rating: number;
+  total_favorites: number;
+  total_watchlist: number;
+  total_watched: number;
+  total_moctale_reviews: number;
+  total_comments: number;
+  total_debates: number;
+  total_battles: number;
+  total_social_posts: number;
+  total_watch_parties: number;
+  total_groups: number;
+  moctale_breakdown: Record<string, number>;
   recent_users: User[];
+  recent_reviews: RecentReviewItem[];
+  recent_comments: RecentCommentItem[];
+  recent_posts: AdminSocialPost[];
 }
 
 export interface GemOverride {

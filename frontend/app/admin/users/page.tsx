@@ -6,11 +6,12 @@ import {
   Users,
   Search,
   Trash2,
-  MoreVertical,
   ChevronLeft,
   ChevronRight,
   Shield,
   Clock,
+  UserCheck,
+  Lock,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { User } from '@/lib/types';
@@ -44,10 +45,10 @@ export default function AdminUsers() {
     try {
       await api.delete(`/admin/users/${userId}`);
       setUsers(users.filter(u => u.id !== userId));
-      toast.success('User deleted successfully');
+      toast.success('User removed');
     } catch (err) {
       console.error('Failed to delete user:', err);
-      toast.error('Could not delete user. See console for details.');
+      toast.error('Could not delete user');
     }
   };
 
@@ -57,193 +58,126 @@ export default function AdminUsers() {
   );
 
   if (loading && page === 1) {
-    return <div style={{ padding: 48, color: 'var(--text-dim)' }}>Loading users...</div>;
+    return (
+      <div className="min-h-screen bg-[#08080c] flex items-center justify-center p-8 text-zinc-500 font-mono text-xs">
+        Loading user directory...
+      </div>
+    );
   }
 
   return (
-    <div style={{ padding: '40px 48px' }}>
-      <header style={{ marginBottom: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div className="min-h-screen bg-[#08080c] text-zinc-100 font-[Inter] p-6 lg:p-10 max-w-[1600px] mx-auto space-y-6">
+      
+      {/* Header */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.05]">
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: 'white', marginBottom: 8 }}>
-            Users Management
-          </h1>
-          <p style={{ color: 'var(--text-dim)', fontSize: 15 }}>
-            Total users found: {users.length * page} +
+          <div className="flex items-center gap-2 mb-1.5">
+            <Users size={14} className="text-blue-400" />
+            <span className="text-[11px] font-mono tracking-widest text-zinc-400 uppercase font-semibold">Directory</span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">User Directory</h1>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            Manage authenticated members, security access & administrative credentials.
           </p>
         </div>
 
         {/* Search Bar */}
-        <div style={{ position: 'relative', width: 320 }}>
-          <Search size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
+        <div className="relative w-full sm:w-80">
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
             type="text"
             placeholder="Search by name or email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px 16px 12px 44px',
-              borderRadius: 14,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              color: 'white',
-              fontSize: 14,
-              outline: 'none',
-              transition: 'all 0.2s',
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#8B5CF6'}
-            onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.06)'}
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-zinc-900/80 border border-white/[0.08] text-white placeholder-zinc-500 text-xs focus:outline-none focus:border-purple-500/60 transition-all"
           />
         </div>
       </header>
 
       {/* Users Table */}
-      <div style={{
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.05)',
-        borderRadius: 20,
-        overflow: 'hidden'
-      }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <th style={{ padding: '20px 24px', fontSize: 13, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 0.5 }}>User</th>
-              <th style={{ padding: '20px 24px', fontSize: 13, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Role</th>
-              <th style={{ padding: '20px 24px', fontSize: 13, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Joined On</th>
-              <th style={{ padding: '20px 24px', fontSize: 13, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map((u, idx) => (
-              <motion.tr
-                key={u.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: idx * 0.05 }}
-                style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.01)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <td style={{ padding: '16px 24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{
-                      width: 40, height: 40, borderRadius: 12,
-                      background: 'rgba(255,255,255,0.05)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 16, fontWeight: 700, color: '#8B5CF6'
-                    }}>
-                      {u.name.charAt(0)}
+      <div className="rounded-2xl bg-zinc-950/40 border border-white/[0.06] overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-white/[0.05] bg-white/[0.01]">
+                <th className="px-5 py-3 text-[11px] font-mono font-semibold text-zinc-400 uppercase tracking-wider">User</th>
+                <th className="px-5 py-3 text-[11px] font-mono font-semibold text-zinc-400 uppercase tracking-wider">Role</th>
+                <th className="px-5 py-3 text-[11px] font-mono font-semibold text-zinc-400 uppercase tracking-wider">Joined</th>
+                <th className="px-5 py-3 text-[11px] font-mono font-semibold text-zinc-400 uppercase tracking-wider text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.03]">
+              {filteredUsers.map((u, idx) => (
+                <motion.tr
+                  key={u.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: idx * 0.03 }}
+                  className="hover:bg-white/[0.015] transition-colors"
+                >
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-xs">
+                        {u.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">{u.name}</div>
+                        <div className="text-[11px] text-zinc-500">{u.email}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>{u.name}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>{u.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td style={{ padding: '16px 24px' }}>
-                  {u.is_admin ? (
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                      padding: '4px 10px', borderRadius: 8,
-                      background: 'rgba(139,92,246,0.1)', color: '#8B5CF6',
-                      fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase'
-                    }}>
-                      <Shield size={12} /> Admin
-                    </span>
-                  ) : (
-                    <span style={{
-                      padding: '4px 10px', borderRadius: 8,
-                      background: 'rgba(255,255,255,0.05)', color: 'var(--text-dim)',
-                      fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase'
-                    }}>
-                      User
-                    </span>
-                  )}
-                </td>
-                <td style={{ padding: '16px 24px' }}>
-                  <div style={{ fontSize: 14, color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Clock size={14} />
+                  </td>
+                  <td className="px-5 py-3.5">
+                    {u.is_admin ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 text-[10px] font-bold uppercase font-mono">
+                        <Shield size={10} /> Admin
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 text-[10px] font-mono uppercase">
+                        Member
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3.5 text-xs text-zinc-400 font-mono">
                     {new Date(u.created_at).toLocaleDateString()}
-                  </div>
-                </td>
-                <td style={{ padding: '16px 24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  </td>
+                  <td className="px-5 py-3.5 text-right">
                     <button
                       onClick={() => deleteUser(u.id)}
                       disabled={u.is_admin}
-                      style={{
-                        padding: 8, borderRadius: 10,
-                        background: 'transparent', border: '1px solid rgba(255,255,255,0.05)',
-                        color: u.is_admin ? 'rgba(255,255,255,0.1)' : 'rgba(248,113,113,0.5)',
-                        cursor: u.is_admin ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!u.is_admin) {
-                          e.currentTarget.style.borderColor = 'rgba(248,113,113,0.3)';
-                          e.currentTarget.style.background = 'rgba(248,113,113,0.05)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!u.is_admin) {
-                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
-                          e.currentTarget.style.background = 'transparent';
-                        }
-                      }}
+                      className="p-1.5 rounded-lg border border-transparent hover:border-rose-500/20 hover:bg-rose-500/10 text-zinc-500 hover:text-rose-400 transition-all disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
+                      title={u.is_admin ? 'Admin accounts protected' : 'Delete user'}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
-                    <button style={{
-                      padding: 8, borderRadius: 10,
-                      background: 'transparent', border: 'none',
-                      color: 'rgba(255,255,255,0.2)', cursor: 'pointer'
-                    }}>
-                      <MoreVertical size={16} />
-                    </button>
-                  </div>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* Pagination Footer */}
-        <div style={{
-          padding: '20px 24px',
-          background: 'rgba(255,255,255,0.01)',
-          borderTop: '1px solid rgba(255,255,255,0.05)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-        }}>
-          <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>
-            Page {page}
-          </span>
-          <div style={{ display: 'flex', gap: 8 }}>
+        <div className="px-5 py-3 border-t border-white/[0.04] bg-white/[0.01] flex items-center justify-between text-xs text-zinc-500 font-mono">
+          <span>Page {page}</span>
+          <div className="flex gap-1.5">
             <button
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page === 1}
-              style={{
-                width: 32, height: 32, borderRadius: 8,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                color: page === 1 ? 'rgba(255,255,255,0.1)' : 'white', cursor: page === 1 ? 'not-allowed' : 'pointer'
-              }}
+              className="p-1 rounded-lg bg-zinc-900 border border-white/[0.06] text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={14} />
             </button>
             <button
               onClick={() => setPage(page + 1)}
-              style={{
-                width: 32, height: 32, borderRadius: 8,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                color: 'white', cursor: 'pointer'
-              }}
+              className="p-1 rounded-lg bg-zinc-900 border border-white/[0.06] text-zinc-400 hover:text-white cursor-pointer"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={14} />
             </button>
           </div>
         </div>
       </div>
+
     </div>
   );
 }
+

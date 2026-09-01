@@ -434,6 +434,10 @@ async def get_upcoming_movies(
         params["with_origin_country"] = "KR"
         params["with_original_language"] = "ko"
         params["language"] = "ko-KR"
+    elif region == "anime":
+        params["with_genres"] = "16"
+        params["with_original_language"] = "ja"
+        params["language"] = "en-US"
     elif region == "other":
         # Exclude US, IN, KR — show everything else
         params["without_origin_country"] = "US|IN|KR"
@@ -443,7 +447,7 @@ async def get_upcoming_movies(
         params["language"] = "en-US"
 
     # Remove release type filter to get more results for non-US regions
-    if region in ("bollywood", "tollywood", "korean", "other", "all"):
+    if region in ("bollywood", "tollywood", "korean", "anime", "other", "all"):
         params.pop("with_release_type", None)
 
     data = await tmdb_get("/discover/movie", params)
@@ -646,13 +650,65 @@ async def get_universe_map(person_id: int):
 
 
 
+@router.get("/{movie_id}/imdb-rating")
+async def get_imdb_rating(movie_id: int, imdb_id: Optional[str] = None, title: Optional[str] = None):
+    """
+    Fetch real live IMDb rating from internet using OMDb.
+    """
+    if not imdb_id:
+        try:
+            tmdb_data = await tmdb_get(f"/movie/{movie_id}", {"append_to_response": "external_ids"})
+            if isinstance(tmdb_data, dict):
+                imdb_id = tmdb_data.get("imdb_id") or tmdb_data.get("external_ids", {}).get("imdb_id")
+                if not title:
+                    title = tmdb_data.get("title")
+        except Exception:
+            pass
+
+    if imdb_id:
+        keys = ["trilogy", "b707662c", "e077d704"]
+        for key in keys:
+            try:
+                async with httpx.AsyncClient(timeout=4.0) as client:
+                    resp = await client.get(f"http://www.omdbapi.com/?i={imdb_id}&apikey={key}")
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        if data.get("imdbRating") and data.get("imdbRating") != "N/A":
+                            return {
+                                "imdb_id": imdb_id,
+                                "rating": float(data["imdbRating"]),
+                                "votes": data.get("imdbVotes", "N/A"),
+                                "source": "imdb"
+                            }
+            except Exception:
+                continue
+
+    if title:
+        try:
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                resp = await client.get(f"http://www.omdbapi.com/?t={title}&apikey=trilogy")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data.get("imdbRating") and data.get("imdbRating") != "N/A":
+                        return {
+                            "imdb_id": data.get("imdbID"),
+                            "rating": float(data["imdbRating"]),
+                            "votes": data.get("imdbVotes", "N/A"),
+                            "source": "imdb"
+                        }
+        except Exception:
+            pass
+
+    return {"rating": None, "votes": None, "source": "unavailable"}
+
+
 @router.get("/{movie_id}")
 async def get_details(movie_id: int, media_type: str = "movie"):
     path = f"/movie/{movie_id}" if media_type == "movie" else f"/tv/{movie_id}"
     data = await tmdb_get(
         path,
         {
-            "append_to_response": "credits,videos,similar,recommendations,images,watch/providers,keywords,release_dates,content_ratings",
+            "append_to_response": "credits,videos,similar,recommendations,images,watch/providers,keywords,release_dates,content_ratings,external_ids",
             "include_image_language": "en,null",
             "language": "en-US"
         },

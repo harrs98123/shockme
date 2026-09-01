@@ -7,9 +7,10 @@ import {
   Plus,
   Search,
   Trash2,
-  Star,
+  Sparkles,
+  RefreshCw,
 } from 'lucide-react';
-import api, { posterUrl } from '@/lib/api';
+import api, { posterUrl, releaseYear } from '@/lib/api';
 import { GemOverride } from '@/lib/types';
 import toast from '@/lib/toast';
 
@@ -17,15 +18,26 @@ export default function AdminGems() {
   const [gems, setGems] = useState<GemOverride[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Search & Add state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  const [addingId, setAddingId] = useState<number | null>(null);
+
+  // New Gem Form Config
+  const [customScore, setCustomScore] = useState<number>(9.5);
+  const [customRarity, setCustomRarity] = useState<string>('legendary');
+
+  // Filter state
+  const [filterQuery, setFilterQuery] = useState('');
+  const [selectedRarityFilter, setSelectedRarityFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchGems();
   }, []);
 
   const fetchGems = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/admin/gems');
       setGems(res.data);
@@ -37,12 +49,13 @@ export default function AdminGems() {
     }
   };
 
-  const handleSearch = async () => {
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!searchQuery.trim()) return;
     setSearching(true);
     try {
-      const res = await api.get(`/search/tmdb?q=${encodeURIComponent(searchQuery)}`);
-      setSearchResults(res.data?.results || []);
+      const res = await api.get(`/admin/tmdb/search?q=${encodeURIComponent(searchQuery)}&media_type=movie`);
+      setSearchResults(res.data || []);
     } catch (err) {
       console.error(err);
       toast.error('Search failed');
@@ -52,26 +65,30 @@ export default function AdminGems() {
   };
 
   const addGem = async (movie: any) => {
+    setAddingId(movie.id);
     try {
       const res = await api.post('/admin/gems', {
         movie_id: movie.id,
-        title: movie.title,
+        media_type: 'movie',
+        title: movie.title || movie.name,
         poster_path: movie.poster_path,
         backdrop_path: movie.backdrop_path,
         vote_average: movie.vote_average,
         vote_count: movie.vote_count,
         release_date: movie.release_date,
         overview: movie.overview,
-        gem_score: 9.5,
-        rarity: 'legendary',
+        gem_score: customScore,
+        rarity: customRarity,
       });
       setGems([res.data, ...gems]);
       setSearchResults([]);
       setSearchQuery('');
-      toast.success(`Added "${movie.title}" to Curated Gems 💎`);
-    } catch (err) {
+      toast.success(`Added "${movie.title || movie.name}" to Hidden Gems`);
+    } catch (err: any) {
       console.error(err);
-      toast.error('This movie is already in the gems list or an error occurred.');
+      toast.error(err.response?.data?.detail || 'This movie is already in the gems vault.');
+    } finally {
+      setAddingId(null);
     }
   };
 
@@ -87,451 +104,253 @@ export default function AdminGems() {
     }
   };
 
-  const rarityColor = (rarity: string) => {
+  const getRarityBadge = (rarity: string) => {
     switch (rarity?.toLowerCase()) {
-      case 'legendary': return { text: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.25)' };
-      case 'rare': return { text: '#818cf8', bg: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.25)' };
-      default: return { text: '#34d399', bg: 'rgba(52,211,153,0.12)', border: 'rgba(52,211,153,0.25)' };
+      case 'legendary':
+        return 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+      case 'rare':
+        return 'bg-purple-500/15 text-purple-300 border-purple-500/30';
+      case 'cult':
+        return 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+      default:
+        return 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
     }
   };
 
+  const filteredGems = gems.filter((g) => {
+    const matchesSearch = (g.title || '').toLowerCase().includes(filterQuery.toLowerCase());
+    const matchesRarity = selectedRarityFilter === 'all' || (g.rarity || '').toLowerCase() === selectedRarityFilter;
+    return matchesSearch && matchesRarity;
+  });
+
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'radial-gradient(ellipse at 20% 0%, #1a0a2e 0%, #0a0a0f 50%, #000 100%)',
-        }}
-      >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            border: '2px solid rgba(255,255,255,0.08)',
-            borderTop: '2px solid rgba(255,255,255,0.7)',
-          }}
-        />
+      <div className="min-h-screen bg-[#08080c] flex items-center justify-center p-8 text-zinc-500 font-mono text-xs">
+        Loading Hidden Gems Vault...
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'radial-gradient(ellipse at 20% 0%, #1a0a2e 0%, #0a0a0f 50%, #000000 100%)',
-        fontFamily: "'DM Sans', 'Inter', sans-serif",
-        color: '#f3f4f6',
-      }}
-    >
-      {/* Noise texture */}
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          pointerEvents: 'none',
-          zIndex: 0,
-          opacity: 0.03,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-        }}
-      />
-
-      <div style={{ position: 'relative', zIndex: 1, padding: '48px 48px 80px', maxWidth: 1280, margin: '0 auto' }}>
-
-        {/* ── Header ── */}
-        <motion.header
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          style={{ marginBottom: 56 }}
-        >
-          {/* Glow */}
-          <div style={{
-            position: 'absolute',
-            top: 0, left: 0,
-            width: 400, height: 200,
-            background: 'radial-gradient(ellipse, rgba(139,92,246,0.18) 0%, transparent 70%)',
-            pointerEvents: 'none',
-            filter: 'blur(40px)',
-          }} />
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: 14,
-              background: 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(59,130,246,0.2))',
-              border: '1px solid rgba(139,92,246,0.35)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 20px rgba(139,92,246,0.25)',
-            }}>
-              <Gem size={20} color="#a78bfa" />
-            </div>
-            <div>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center',
-                padding: '2px 10px', borderRadius: 999,
-                background: 'rgba(139,92,246,0.12)',
-                border: '1px solid rgba(139,92,246,0.25)',
-                fontSize: 10, fontWeight: 700, letterSpacing: '0.18em',
-                textTransform: 'uppercase', color: '#a78bfa', marginBottom: 4,
-              }}>
-                Admin Panel
-              </div>
-            </div>
+    <div className="min-h-screen bg-[#08080c] text-zinc-100 font-[Inter] p-6 lg:p-10 max-w-[1600px] mx-auto space-y-6">
+      
+      {/* Header */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.05]">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <Gem size={14} className="text-emerald-400" />
+            <span className="text-[11px] font-mono tracking-widest text-zinc-400 uppercase font-semibold">Vault Curator</span>
           </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Hidden Gems Vault</h1>
+        </div>
 
-          <h1 style={{
-            fontSize: 40,
-            fontWeight: 900,
-            letterSpacing: '-0.04em',
-            lineHeight: 1,
-            marginBottom: 12,
-            background: 'linear-gradient(135deg, #ffffff 30%, rgba(255,255,255,0.45) 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}>
-            Hidden Gems Curation
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 15, maxWidth: 520, lineHeight: 1.6, fontWeight: 300 }}>
-            Manually feature underrated masterpieces. These movies will appear at the top of the "Hidden Gems" page for all users.
-          </p>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono text-zinc-400 px-3 py-1.5 rounded-xl bg-zinc-900 border border-white/[0.06]">
+            Total Gems: <strong className="text-white">{gems.length}</strong>
+          </span>
+        </div>
+      </header>
 
-          {gems.length > 0 && (
-            <div style={{
-              marginTop: 20, display: 'inline-flex', alignItems: 'center', gap: 8,
-              fontSize: 13, color: 'rgba(255,255,255,0.35)',
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
-              {gems.length} gem{gems.length !== 1 ? 's' : ''} currently featured
-            </div>
-          )}
-        </motion.header>
+      {/* TMDB Fast Search & Preset Options Card */}
+      <div className="p-5 rounded-2xl bg-zinc-950/40 border border-white/[0.06] space-y-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <Sparkles size={15} className="text-emerald-400" />
+            Curate New Hidden Gem
+          </h3>
+          <span className="text-[11px] font-mono text-zinc-500">Fast TMDB Ingestion</span>
+        </div>
 
-        {/* ── Search Section ── */}
-        <motion.section
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          style={{ marginBottom: 56 }}
-        >
-          <div style={{
-            background: 'rgba(255,255,255,0.025)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: 24,
-            padding: 32,
-            backdropFilter: 'blur(10px)',
-          }}>
-            <div style={{
-              fontSize: 13, fontWeight: 700, color: 'white',
-              marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8,
-              textTransform: 'uppercase', letterSpacing: '0.1em',
-            }}>
-              <Search size={15} color="#34d399" />
-              Find a Movie to Feature
-            </div>
-
-            <div style={{ position: 'relative' }}>
+        <div className="flex flex-col md:flex-row gap-3">
+          <form onSubmit={handleSearch} className="flex gap-2.5 flex-1">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input
                 type="text"
-                placeholder="Search by title (e.g. 'Oldboy', 'The Wailing')..."
+                placeholder="Search indie or rare movie title..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                style={{
-                  width: '100%',
-                  padding: '15px 120px 15px 20px',
-                  borderRadius: 14,
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.09)',
-                  color: 'white',
-                  fontSize: 14,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  transition: 'border-color 0.2s',
-                }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(139,92,246,0.4)')}
-                onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)')}
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-zinc-900/80 border border-white/[0.08] text-white placeholder-zinc-500 text-xs focus:outline-none focus:border-emerald-500/50 transition-all"
               />
-              <button
-                onClick={handleSearch}
-                disabled={searching}
-                style={{
-                  position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                  padding: '9px 20px',
-                  background: searching ? 'rgba(52,211,153,0.5)' : 'linear-gradient(135deg, #34d399, #10b981)',
-                  color: '#000',
-                  fontWeight: 800,
-                  fontSize: 13,
-                  borderRadius: 10,
-                  border: 'none',
-                  cursor: searching ? 'not-allowed' : 'pointer',
-                  transition: 'opacity 0.2s',
-                  letterSpacing: '0.02em',
-                }}
-              >
-                {searching ? '...' : 'Search'}
-              </button>
             </div>
-
-            <AnimatePresence>
-              {searchResults.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  style={{
-                    marginTop: 24,
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                    gap: 12,
-                  }}
-                >
-                  {searchResults.map((m, idx) => (
-                    <motion.div
-                      key={m.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.04, duration: 0.35 }}
-                      style={{
-                        display: 'flex', gap: 14, padding: 14,
-                        borderRadius: 16,
-                        background: 'rgba(255,255,255,0.04)',
-                        border: '1px solid rgba(255,255,255,0.07)',
-                        alignItems: 'center',
-                        transition: 'border-color 0.2s, background 0.2s',
-                      }}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(52,211,153,0.25)';
-                        (e.currentTarget as HTMLDivElement).style.background = 'rgba(52,211,153,0.05)';
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.07)';
-                        (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.04)';
-                      }}
-                    >
-                      <div style={{
-                        width: 40, height: 60, borderRadius: 8, overflow: 'hidden',
-                        flexShrink: 0,
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        background: 'rgba(255,255,255,0.05)',
-                      }}>
-                        <img
-                          src={posterUrl(m.poster_path)}
-                          alt={m.title}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          fontSize: 13, fontWeight: 700, color: 'white',
-                          marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                        }}>
-                          {m.title}
-                        </div>
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span>{m.release_date?.split('-')[0]}</span>
-                          <span>•</span>
-                          <Star size={10} fill="#f59e0b" color="#f59e0b" />
-                          <span>{m.vote_average?.toFixed(1)}</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => addGem(m)}
-                        style={{
-                          padding: 8, borderRadius: 10, flexShrink: 0,
-                          background: 'rgba(52,211,153,0.1)',
-                          color: '#34d399',
-                          border: '1px solid rgba(52,211,153,0.2)',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(52,211,153,0.2)';
-                          (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(52,211,153,0.4)';
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(52,211,153,0.1)';
-                          (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(52,211,153,0.2)';
-                        }}
-                      >
-                        <Plus size={16} />
-                      </button>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </motion.section>
-
-        {/* ── Featured Gems Grid ── */}
-        <section>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-            <h2 style={{
-              fontSize: 18, fontWeight: 800, color: 'white',
-              letterSpacing: '-0.02em',
-            }}>
-              Currently Featured
-              <span style={{
-                marginLeft: 10, fontSize: 13, fontWeight: 600,
-                color: 'rgba(255,255,255,0.3)', letterSpacing: 0,
-              }}>
-                ({gems.length})
-              </span>
-            </h2>
-          </div>
-
-          {gems.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              style={{
-                padding: '80px 0', textAlign: 'center',
-                background: 'rgba(255,255,255,0.01)',
-                borderRadius: 24,
-                border: '1px dashed rgba(255,255,255,0.07)',
-              }}
+            <button
+              type="submit"
+              disabled={searching || !searchQuery.trim()}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 disabled:opacity-50 transition-all cursor-pointer shadow-md shadow-emerald-600/10"
             >
-              <Gem size={44} style={{ margin: '0 auto 16px', color: 'rgba(255,255,255,0.12)' }} />
-              <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 15 }}>
-                No curated gems yet. Use the search bar above to feature some movies.
-              </p>
-            </motion.div>
-          ) : (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-              gap: 20,
-            }}>
-              {gems.map((g, idx) => {
-                const rarity = rarityColor(g.rarity);
-                return (
-                  <motion.div
-                    key={g.id}
-                    initial={{ opacity: 0, y: 30, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: idx * 0.06, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ borderRadius: 20, overflow: 'hidden', position: 'relative', cursor: 'default' }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-6px)';
-                      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 24px 60px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.1)';
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-                      (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)';
-                    }}
-                    // @ts-ignore
-                    style={{
-                      borderRadius: 20, overflow: 'hidden', position: 'relative', cursor: 'default',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
-                      transition: 'transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s cubic-bezier(0.16,1,0.3,1)',
-                      background: 'rgba(255,255,255,0.02)',
-                    }}
-                  >
-                    {/* Backdrop */}
-                    <div style={{ position: 'relative', aspectRatio: '16/9' }}>
-                      <img
-                        src={posterUrl(g.backdrop_path || g.poster_path)}
-                        alt={g.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55, display: 'block' }}
-                      />
-                      <div style={{
-                        position: 'absolute', inset: 0,
-                        background: 'linear-gradient(to top, rgba(8,8,14,1) 0%, rgba(8,8,14,0.5) 50%, transparent 100%)',
-                      }} />
+              {searching ? <RefreshCw size={13} className="animate-spin" /> : <Plus size={13} />}
+              <span>{searching ? 'Searching...' : 'Search'}</span>
+            </button>
+          </form>
 
-                      {/* Rarity badge */}
-                      <div style={{
-                        position: 'absolute', top: 12, left: 12,
-                        padding: '4px 10px', borderRadius: 999,
-                        background: rarity.bg, border: `1px solid ${rarity.border}`,
-                        fontSize: 10, fontWeight: 800, letterSpacing: '0.15em',
-                        textTransform: 'uppercase', color: rarity.text,
-                      }}>
-                        {g.rarity}
-                      </div>
+          {/* Rarity & Score Presets */}
+          <div className="flex items-center gap-2">
+            <select
+              value={customRarity}
+              onChange={(e) => setCustomRarity(e.target.value)}
+              className="bg-zinc-900 border border-white/[0.08] rounded-xl px-3 py-2 text-white text-xs font-semibold outline-none cursor-pointer"
+            >
+              <option value="legendary">⭐ Legendary</option>
+              <option value="rare">🔮 Rare Gem</option>
+              <option value="cult">🔥 Cult Classic</option>
+              <option value="underrated">✨ Underrated</option>
+            </select>
 
-                      {/* Remove button */}
-                      <button
-                        onClick={() => removeGem(g.id)}
-                        style={{
-                          position: 'absolute', top: 10, right: 10,
-                          padding: 7, borderRadius: 10,
-                          background: 'rgba(0,0,0,0.55)',
-                          border: '1px solid rgba(255,255,255,0.09)',
-                          color: 'rgba(248,113,113,0.7)',
-                          cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          transition: 'all 0.2s',
-                          backdropFilter: 'blur(6px)',
-                        }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(248,113,113,0.85)';
-                          (e.currentTarget as HTMLButtonElement).style.color = '#fff';
-                          (e.currentTarget as HTMLButtonElement).style.borderColor = 'transparent';
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,0,0,0.55)';
-                          (e.currentTarget as HTMLButtonElement).style.color = 'rgba(248,113,113,0.7)';
-                          (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.09)';
-                        }}
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-
-                    {/* Card body */}
-                    <div style={{ padding: '14px 16px 18px' }}>
-                      <div style={{
-                        fontSize: 15, fontWeight: 800, color: 'white',
-                        marginBottom: 8, letterSpacing: '-0.02em', lineHeight: 1.3,
-                      }}>
-                        {g.title}
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Star size={12} fill="#f59e0b" color="#f59e0b" />
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>
-                            {g.vote_average?.toFixed(1)}
-                          </span>
-                          {g.release_date && (
-                            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', marginLeft: 4 }}>
-                              · {g.release_date.split('-')[0]}
-                            </span>
-                          )}
-                        </div>
-
-                        {g.gem_score && (
-                          <div style={{
-                            display: 'flex', alignItems: 'center', gap: 5,
-                            padding: '3px 10px', borderRadius: 999,
-                            background: 'rgba(139,92,246,0.12)',
-                            border: '1px solid rgba(139,92,246,0.22)',
-                          }}>
-                            <Gem size={10} color="#a78bfa" />
-                            <span style={{ fontSize: 12, fontWeight: 700, color: '#a78bfa' }}>
-                              {g.gem_score.toFixed(1)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
+            <div className="flex items-center gap-1 bg-zinc-900 px-3 py-2 rounded-xl border border-white/[0.08] text-xs">
+              <span className="text-zinc-500 font-mono">Score:</span>
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                max="10"
+                value={customScore}
+                onChange={(e) => setCustomScore(parseFloat(e.target.value) || 9.0)}
+                className="w-12 bg-transparent text-emerald-400 font-bold font-mono outline-none text-center"
+              />
             </div>
-          )}
-        </section>
+          </div>
+        </div>
+
+        {/* Search Results Drawer */}
+        {searchResults.length > 0 && (
+          <div className="pt-3 border-t border-white/[0.04]">
+            <div className="text-[11px] font-mono text-zinc-400 mb-3">
+              Search Results ({searchResults.length}):
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {searchResults.map((m) => (
+                <div
+                  key={m.id}
+                  className="p-3 rounded-xl bg-zinc-900/70 border border-white/[0.06] flex gap-3 items-start hover:border-emerald-500/30 transition-all"
+                >
+                  <img
+                    src={posterUrl(m.poster_path, 'w185')}
+                    alt={m.title}
+                    className="w-12 h-16 rounded-lg object-cover flex-shrink-0 bg-white/5 border border-white/10"
+                  />
+                  <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+                    <div>
+                      <div className="text-xs font-bold text-white truncate">{m.title}</div>
+                      <div className="text-[10px] text-zinc-500 mt-0.5">
+                        {releaseYear(m.release_date)} • <span className="text-emerald-400 font-mono">★ {m.vote_average?.toFixed(1) || '0.0'}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => addGem(m)}
+                      disabled={addingId === m.id}
+                      className="mt-2 w-full py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-300 text-[10px] font-bold transition-all cursor-pointer"
+                    >
+                      {addingId === m.id ? 'Adding...' : `+ Add as ${customRarity}`}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Curated Gems Grid */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-white">Vault Collection</h3>
+            <span className="text-[10px] font-mono text-zinc-500">({filteredGems.length} titles)</span>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Rarity filter pills */}
+            <div className="flex items-center gap-1 bg-zinc-900/60 p-1 rounded-xl border border-white/[0.06]">
+              {['all', 'legendary', 'rare', 'cult', 'underrated'].map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setSelectedRarityFilter(r)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold capitalize transition-all cursor-pointer ${
+                    selectedRarityFilter === r
+                      ? 'bg-zinc-800 text-white shadow-sm'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+
+            {/* Title filter */}
+            <div className="relative w-full sm:w-56">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+              <input
+                type="text"
+                placeholder="Filter vault..."
+                value={filterQuery}
+                onChange={(e) => setFilterQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-zinc-900/60 border border-white/[0.06] text-white placeholder-zinc-500 text-xs focus:outline-none focus:border-white/20 transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
+        {filteredGems.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+            {filteredGems.map((gem) => (
+              <motion.div
+                key={gem.id}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="group relative rounded-2xl bg-zinc-950/40 border border-white/[0.06] hover:border-emerald-500/30 overflow-hidden transition-all flex flex-col justify-between"
+              >
+                {/* Poster Box */}
+                <div className="relative aspect-[2/3] w-full bg-zinc-900 overflow-hidden">
+                  <img
+                    src={posterUrl(gem.poster_path, 'w342')}
+                    alt={gem.title || 'Movie'}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 opacity-80 group-hover:opacity-90 transition-opacity" />
+
+                  {/* Gem Score Badge */}
+                  <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md border border-emerald-500/30 text-[10px] font-mono text-emerald-300 font-bold">
+                    <Gem size={10} className="text-emerald-400" />
+                    <span>{gem.gem_score ? gem.gem_score.toFixed(1) : '9.5'}</span>
+                  </div>
+
+                  {/* Remove Button */}
+                  <button
+                    onClick={() => removeGem(gem.id)}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/70 hover:bg-rose-500/80 text-zinc-400 hover:text-white border border-white/10 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                    title="Remove from Gems Vault"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+
+                {/* Info Box */}
+                <div className="p-3">
+                  <div className="text-xs font-bold text-white truncate" title={gem.title || ''}>
+                    {gem.title}
+                  </div>
+                  <div className="text-[10px] text-zinc-500 font-mono mt-1 flex items-center justify-between">
+                    <span>{releaseYear(gem.release_date)}</span>
+                    <span className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded border ${getRarityBadge(gem.rarity || 'rare')}`}>
+                      {gem.rarity || 'rare'}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-16 text-center rounded-2xl bg-zinc-950/20 border border-white/[0.04] text-xs text-zinc-500 font-mono">
+            {filterQuery || selectedRarityFilter !== 'all'
+              ? 'No gems matching current filter.'
+              : 'No hidden gems in vault yet. Search above to add.'}
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }

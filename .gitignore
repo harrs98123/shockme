@@ -1,21 +1,67 @@
-node_modules
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment variables & secrets
 .env
-backend/.env
-backend/cinematch.db
-frontend/.env
-*.env
 .env.*
-frontend/public/pfs7jtyuzcrorjwmlpm8
+*.env
+*.env.local
+backend/.env
+frontend/.env
+frontend/.env.local
+frontendmobile/.env
+frontendmobile/.env.local
+
+# Databases & local state
+backend/cinematch.db
+backend/*.db
+backend/*.sqlite*
+backend/*.sqlite3
 
 # Python
 __pycache__/
-*.pyc
-*.pyo
+*/__pycache__/
+*.py[cod]
+*$py.class
 .venv/
+venv/
+*.egg-info/
+.pytest_cache/
 
-# Next.js
+# Web Frontend (Next.js)
 frontend/.next/
+frontend/out/
 frontend/build_output.txt
+frontend/public/pfs7jtyuzcrorjwmlpm8
 
-# OS
+# Mobile Frontend (Expo & React Native)
+frontendmobile/.expo/
+frontendmobile/dist/
+frontendmobile/web-build/
+frontendmobile/expo-env.d.ts
+frontendmobile/.kotlin/
+frontendmobile/.metro-health-check*
+frontendmobile/*.tsbuildinfo
+frontendmobile/android/
+frontendmobile/ios/
+frontendmobile/*.jks
+frontendmobile/*.p8
+frontendmobile/*.p12
+frontendmobile/*.key
+frontendmobile/*.mobileprovision
+
+# Logs & Media artifacts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+*.mp4
+*.mov
+
+# OS & IDE
 .DS_Store
+Thumbs.db
+*.pem
+.idea/
+.vscode/

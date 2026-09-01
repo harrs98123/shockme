@@ -5,7 +5,7 @@ from typing import Optional, List
 from datetime import datetime
 
 from database import get_db
-from auth.router import get_current_user
+from auth.utils import get_current_user, get_current_user_optional
 import models
 import schemas
 
@@ -159,7 +159,7 @@ def get_stats(
     movie_id: int,
     media_type: str = "movie",
     db: Session = Depends(get_db),
-    current_user: Optional[models.User] = Depends(get_current_user),
+    current_user: Optional[models.User] = Depends(get_current_user_optional),
 ):
     all_ratings = (
         db.query(models.MoctaleRating)
