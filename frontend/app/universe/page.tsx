@@ -70,6 +70,7 @@ function calculatePositions(
 export default function UniversePage() {
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<PersonResult[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
   const [searching, setSearching] = useState(false);
   const [data, setData] = useState<UniverseData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -80,11 +81,24 @@ export default function UniversePage() {
   const [filmSort, setFilmSort] = useState<'popularity' | 'date' | 'rating'>('popularity');
   const [showAllFilms, setShowAllFilms] = useState(false);
 
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const skipSearchRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dims, setDims] = useState({ width: 900, height: 620 });
   const [nodePos, setNodePos] = useState<Map<number, { x: number; y: number }>>(new Map());
   const [orbitRadii, setOrbitRadii] = useState({ r1: 0, r2: 0 });
+
+  // ─── Click outside listener to close search dropdown ─────────────
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // ─── Resize listener dynamically measuring container ───────────────
   const updateDimensions = useCallback(() => {
@@ -121,14 +135,25 @@ export default function UniversePage() {
 
   // ─── Search ─────────────────────────────────────────────────
   const searchPeople = async (q: string) => {
+    if (skipSearchRef.current) {
+      skipSearchRef.current = false;
+      return;
+    }
     if (!q.trim()) {
       setSearchResults([]);
+      setShowDropdown(false);
       return;
     }
     setSearching(true);
     try {
       const res = await fetch(`${API_BASE}/movies/universe/search/${encodeURIComponent(q)}`);
-      if (res.ok) setSearchResults(await res.json());
+      if (res.ok) {
+        const results = await res.json();
+        setSearchResults(results);
+        if (results.length > 0) {
+          setShowDropdown(true);
+        }
+      }
     } catch {
       /* silent */
     } finally {
@@ -143,10 +168,12 @@ export default function UniversePage() {
 
   // ─── Load person ────────────────────────────────────────────
   const loadPerson = async (person: PersonResult) => {
-    setLoading(true);
-    setError(null);
+    skipSearchRef.current = true;
+    setShowDropdown(false);
     setSearchResults([]);
     setQuery(person.name);
+    setLoading(true);
+    setError(null);
     setSelectedConnection(null);
     setShowAllFilms(false);
     setFilmFilter('all');
@@ -293,16 +320,27 @@ export default function UniversePage() {
         </p>
 
         {/* Search Input */}
-        <div className="max-w-lg mx-auto relative z-40">
+        <div ref={searchContainerRef} className="max-w-lg mx-auto relative z-40">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
             <input
               className="w-full bg-[#141419] border border-white/10 focus:border-[#00E599]/60 rounded-2xl py-3.5 pl-11 pr-11 text-sm text-white placeholder:text-neutral-500 shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-all outline-none"
               placeholder="Search any actor, actress, or director..."
               value={query}
+              onFocus={() => {
+                if (query.trim() && searchResults.length > 0) {
+                  setShowDropdown(true);
+                }
+              }}
               onChange={(e) => {
-                setQuery(e.target.value);
-                if (!e.target.value.trim()) setSearchResults([]);
+                const val = e.target.value;
+                setQuery(val);
+                if (!val.trim()) {
+                  setSearchResults([]);
+                  setShowDropdown(false);
+                } else {
+                  setShowDropdown(true);
+                }
               }}
             />
             {searching && (
@@ -313,7 +351,7 @@ export default function UniversePage() {
           </div>
 
           {/* Search Results Dropdown */}
-          {searchResults.length > 0 && (
+          {showDropdown && searchResults.length > 0 && (
             <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-[#121217] border border-white/10 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.7)] max-h-80 overflow-y-auto text-left z-50">
               {searchResults.map((p, idx) => (
                 <button
