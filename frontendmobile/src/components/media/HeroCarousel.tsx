@@ -18,7 +18,6 @@ import {
   Check,
   Star,
   User as UserIcon,
-  Sparkles,
   Info,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -158,7 +157,6 @@ function HeroSlide({ movie, watchlistIds, onWatchlistToggle }: SlideProps) {
       <View style={styles.content}>
         {/* Spotlight Badge */}
         <View style={styles.spotlightBadge}>
-          <Sparkles size={11} color="#FBBF24" />
           <Text style={styles.spotlightText}>FEATURED PREMIERE</Text>
         </View>
 

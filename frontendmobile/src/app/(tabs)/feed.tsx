@@ -14,7 +14,7 @@ import {
   Plus,
   Compass,
   Users,
-  Sparkles,
+  MessageSquare,
 } from 'lucide-react-native';
 
 import { socialApi, type SocialPost } from '@/api/social';
@@ -244,7 +244,7 @@ export default function FeedScreen() {
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.emptyContainer}>
-              <Sparkles size={36} color={colors.secondaryLabel} />
+              <MessageSquare size={36} color={colors.secondaryLabel} />
               <Text style={styles.emptyTitle}>
                 {activeTab === 'following'
                   ? 'No posts from people you follow'

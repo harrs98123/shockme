@@ -6,7 +6,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Plus, UserPlus, Sparkles } from 'lucide-react-native';
+import { Plus, UserPlus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { colors, fonts, radius } from '@/theme';

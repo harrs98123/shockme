@@ -101,6 +101,32 @@ export interface Season {
   poster_path: string | null;
   air_date: string | null;
   overview: string | null;
+  vote_average?: number;
+}
+
+export interface Episode {
+  id: number;
+  name: string;
+  overview: string;
+  vote_average: number;
+  vote_count: number;
+  air_date: string;
+  episode_number: number;
+  runtime?: number;
+  season_number: number;
+  show_id: number;
+  still_path?: string | null;
+}
+
+export interface SeasonDetails {
+  id: number;
+  name: string;
+  overview: string;
+  season_number: number;
+  poster_path?: string | null;
+  air_date?: string;
+  vote_average?: number;
+  episodes: Episode[];
 }
 
 export type Movie = Media;
@@ -419,6 +445,7 @@ export interface TMDBResponse {
   page: number;
   total_pages: number;
   total_results: number;
+  corrected_query?: string;
 }
 
 export interface RecommendationResponse {

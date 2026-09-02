@@ -15,7 +15,7 @@ import {
   Check,
   Camera,
   RefreshCw,
-  Sparkles,
+  KeyRound,
   Link2,
 } from 'lucide-react-native';
 
@@ -285,7 +285,7 @@ export function AvatarModal({ visible, onClose, onAvatarUpdated }: AvatarModalPr
                 AVATAR SEED (TEXT / KEY)
               </Text>
               <View style={styles.inputBox}>
-                <Sparkles size={16} color={colors.textDim} />
+                <KeyRound size={16} color={colors.textDim} />
                 <TextInput
                   style={styles.textInput}
                   value={seed}

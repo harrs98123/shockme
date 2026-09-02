@@ -4,19 +4,19 @@
     "slug": "plotmint",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/ios/iTunesArtwork@2x.png",
     "scheme": "plotmint",
     "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/ios/iTunesArtwork@2x.png"
     },
     "android": {
       "package": "com.plotmint.myapp",
       "adaptiveIcon": {
-        "backgroundColor": "#0F0F0F",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#02022c",
+        "foregroundImage": "./assets/android/mipmap-xxxhdpi/plotmint_foreground.png",
+        "backgroundImage": "./assets/android/mipmap-xxxhdpi/plotmint.png",
+        "monochromeImage": "./assets/android/mipmap-xxxhdpi/plotmint_foreground.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -29,9 +29,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0F0F0F",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#030308",
+          "image": "./assets/images/splash-pm.png",
+          "imageWidth": 120
         }
       ],
       "expo-secure-store"

@@ -7,7 +7,6 @@ import {
   Plus,
   Search,
   Trash2,
-  Sparkles,
   RefreshCw,
   Film,
   CheckCircle2,
@@ -139,7 +138,7 @@ export default function AdminMustWatch() {
       <div className="p-5 rounded-2xl bg-zinc-950/40 border border-white/[0.06] space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Sparkles size={15} className="text-amber-400" />
+            <Plus size={15} className="text-amber-400" />
             Quick Add via TMDB
           </h3>
           <span className="text-[11px] font-mono text-zinc-500">Live Global Catalog</span>

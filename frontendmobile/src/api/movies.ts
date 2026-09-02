@@ -89,4 +89,8 @@ export const tvApi = {
   topRated: (page = 1) => list('/movies/tv/top-rated', { page }),
   discover: (params: DiscoverParams = {}) =>
     list('/movies/tv/discover', { page: 1, ...params }),
+  season: (tvId: number | string, seasonNumber: number) =>
+    request<import('@/types').SeasonDetails>(() =>
+      api.get(`/movies/tv/${tvId}/season/${seasonNumber}`)
+    ),
 };

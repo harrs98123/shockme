@@ -39,7 +39,6 @@ import {
   ChevronLeft,
   Gem,
   Award,
-  Sparkles,
   Check,
   TrendingUp,
   UtensilsCrossed,

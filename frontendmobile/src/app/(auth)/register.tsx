@@ -4,7 +4,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Link, router } from 'expo-router';
-import { AtSign, Check, Lock, Mail, User, X, Sparkles } from 'lucide-react-native';
+import { AtSign, Check, Lock, Mail, User, X } from 'lucide-react-native';
 
 import { authApi } from '@/api/auth';
 import { AuthScreen, FormError } from '@/components/auth/AuthScreen';

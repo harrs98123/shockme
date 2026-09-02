@@ -23,7 +23,6 @@ import {
   Search,
   Star,
   Film,
-  Sparkles,
   Send,
   AlertTriangle,
 } from 'lucide-react-native';

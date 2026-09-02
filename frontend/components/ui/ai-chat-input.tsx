@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useState, useEffect, useRef } from "react";
-import { Lightbulb, Mic, Globe, Paperclip, Send, Loader2, Sparkles } from "lucide-react";
+import { Lightbulb, Mic, Globe, Paperclip, Send, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
  
 const PLACEHOLDERS = [
@@ -317,7 +317,6 @@ const AIChatInput = ({ value, onChange, onSearch, loading, suggestions = [], onS
                         transition-all duration-200 active:scale-95
                         backdrop-blur-sm"
                     >
-                      <Sparkles className="w-3 h-3 text-purple-400 flex-shrink-0" />
                       {s}
                     </motion.button>
                   ))}

@@ -29,7 +29,6 @@ import {
   Camera,
   Trash2,
   ChevronRight,
-  Sparkles,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -722,7 +721,7 @@ function ProfileView() {
             accessibilityRole="button"
             accessibilityLabel="Avatar Studio"
           >
-            <Sparkles size={13} color="#FFFFFF" />
+            <Camera size={13} color="#FFFFFF" />
             <Text style={styles.avatarStudioText}>Avatar Studio</Text>
           </IOSPressable>
 

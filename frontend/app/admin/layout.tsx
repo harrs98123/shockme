@@ -16,7 +16,6 @@ import {
   Menu,
   X,
   ExternalLink,
-  Sparkles,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -155,7 +154,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] text-xs font-semibold text-gray-300 transition-all"
           >
             <span className="flex items-center gap-2">
-              <Sparkles size={14} className="text-purple-400" />
               <span>View Main Site</span>
             </span>
             <ExternalLink size={12} className="text-gray-400" />

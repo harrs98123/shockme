@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Gem, Star, Sparkles } from 'lucide-react-native';
+import { Gem, Star } from 'lucide-react-native';
 
 import { curatedApi } from '@/api/curated';
 import type { HiddenGem } from '@/types';
@@ -108,7 +108,7 @@ export default function GemsScreen() {
       <IOSHeader
         title="Hidden Gems"
         subtitle="Underrated Masterpieces"
-        rightAction={<Sparkles size={20} color="#06B6D4" />}
+        rightAction={<Gem size={20} color="#06B6D4" />}
       />
 
       {/* Rarity Tabs */}

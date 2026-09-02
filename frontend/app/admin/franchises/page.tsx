@@ -15,7 +15,6 @@ import {
   Tv,
   Film,
   Globe,
-  Sparkles,
   RefreshCw,
   ChevronRight,
 } from 'lucide-react';

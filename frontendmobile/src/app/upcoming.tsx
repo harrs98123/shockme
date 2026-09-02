@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Bell, BellCheck, Calendar, Sparkles } from 'lucide-react-native';
+import { Bell, BellCheck, Calendar } from 'lucide-react-native';
 
 import { moviesApi } from '@/api/movies';
 import { interestsApi } from '@/api/lists';
@@ -204,7 +204,7 @@ export default function UpcomingScreen() {
       <IOSHeader
         title="Upcoming Movies"
         subtitle="Future releases & alerts"
-        rightAction={<Sparkles size={18} color="#FFC107" />}
+        rightAction={<Calendar size={18} color="#FFC107" />}
       />
 
       {/* Region Filter Tabs */}

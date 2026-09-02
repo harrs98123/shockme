@@ -19,7 +19,6 @@ import {
   X,
   PlaySquare,
   Check,
-  Sparkles,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 

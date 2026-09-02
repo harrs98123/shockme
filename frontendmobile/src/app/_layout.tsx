@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -24,8 +24,10 @@ import { useSessionSync } from '@/hooks/useSessionSync';
 import { useAuthStore } from '@/stores/auth.store';
 import { colors } from '@/theme';
 import { AmbientGlow } from '@/components/layout/AmbientGlow';
+import { AppSplashScreen } from '@/components/layout/AppSplashScreen';
+import { NoInternetOverlay } from '@/components/common/NoInternetOverlay';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Paints the window background before the first frame, so a cold start does not
 // flash white behind the splash on Android.
@@ -34,6 +36,7 @@ SystemUI.setBackgroundColorAsync(colors.bg);
 export default function RootLayout() {
   const restore = useAuthStore((s) => s.restore);
   const authStatus = useAuthStore((s) => s.status);
+  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     Poppins_600SemiBold,
@@ -50,44 +53,52 @@ export default function RootLayout() {
     restore();
   }, [restore]);
 
-  // Hold the splash until fonts and the stored session are both settled — that
-  // avoids a flash of fallback type and a flash of the logged-out UI.
-  // A font *error* still releases it: shipping system type beats a stuck splash.
-  const ready = (fontsLoaded || fontError != null) && authStatus !== 'loading';
-
+  // Ensure the splash is visible smoothly for at least 800ms to avoid momentary flash
   useEffect(() => {
-    if (ready) SplashScreen.hideAsync();
-  }, [ready]);
+    const timer = setTimeout(() => {
+      setMinSplashElapsed(true);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
-  if (!ready) return null;
+  const ready = (fontsLoaded || fontError != null) && authStatus !== 'loading';
+  const isAppReady = ready && minSplashElapsed;
+
+  // Release native splash as soon as React component mounts to let animated splash take over
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <View style={styles.root}>
-            {/* Purple ambient glow from the corner — matches the web app */}
-            <AmbientGlow />
-            <StatusBar style="light" />
-            <SessionSync />
-            {/*
-              Screens are inferred from the filesystem. Declaring a
-              <Stack.Screen> for a route group that does not exist yet makes
-              Expo Router warn that it is extraneous, so per-group options are
-              added here as each group lands — `(auth)` arrives in Phase 1.
-            */}
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.bg },
-                animation: 'default',
-                gestureEnabled: true,
-                fullScreenGestureEnabled: true,
-                orientation: 'portrait',
-              }}
-            />
-            <ToastHost />
-          </View>
+          <AppSplashScreen isReady={isAppReady}>
+            <View style={styles.root}>
+              {/* Purple ambient glow from the corner — matches the web app */}
+              <AmbientGlow />
+              <StatusBar style="light" />
+              <SessionSync />
+              {/*
+                Screens are inferred from the filesystem. Declaring a
+                <Stack.Screen> for a route group that does not exist yet makes
+                Expo Router warn that it is extraneous, so per-group options are
+                added here as each group lands — `(auth)` arrives in Phase 1.
+              */}
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: colors.bg },
+                  animation: 'default',
+                  gestureEnabled: true,
+                  fullScreenGestureEnabled: false,
+                  orientation: 'portrait',
+                }}
+              />
+              <ToastHost />
+              <NoInternetOverlay />
+            </View>
+          </AppSplashScreen>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

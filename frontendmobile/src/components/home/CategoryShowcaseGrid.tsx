@@ -13,7 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import {
   Flame,
-  Sparkles,
+  Palette,
   Skull,
   Smile,
   Compass,
@@ -73,7 +73,7 @@ const CATEGORIES: CategoryItem[] = [
     tagline: 'Anime masterpieces',
     gradient: ['#7C3AED', '#4C1D95'],
     posterPath: '/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg', // Spider-Man Across the Spider-Verse
-    icon: Sparkles,
+    icon: Palette,
   },
   {
     id: 35,

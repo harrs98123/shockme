@@ -16,7 +16,7 @@ import {
   Languages,
   Users,
   Award,
-  Sparkles,
+  Crown,
   Disc,
   Video,
   Clapperboard,
@@ -88,7 +88,7 @@ const BROWSE_ITEMS: BrowseCategoryItem[] = [
   {
     id: 'select',
     label: 'Plotmint Select',
-    icon: <Sparkles size={22} color="#A78BFA" />,
+    icon: <Crown size={22} color="#A78BFA" />,
     color: '#A78BFA',
     route: '/must-watch',
   },

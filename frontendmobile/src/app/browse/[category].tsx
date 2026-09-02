@@ -14,7 +14,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Filter,
   Film,
-  Sparkles,
   Trophy,
   Award,
   Video,
@@ -29,7 +28,7 @@ import {
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { moviesApi } from '@/api/movies';
+import { moviesApi, tvApi } from '@/api/movies';
 import { curatedApi } from '@/api/curated';
 import type { Media } from '@/types';
 import { colors, fonts, radius, spacing } from '@/theme';
@@ -112,40 +111,38 @@ const ANIME_OPTIONS: FilterOption[] = [
 
 const AWARDS_OPTIONS: FilterOption[] = [
   {
+    id: 'oscars',
+    name: 'Academy Awards & Oscars',
+    params: {
+      with_keywords: '6091|8234|286595',
+      'vote_count.gte': 100,
+      sort_by: 'vote_average.desc',
+    },
+  },
+  {
+    id: 'golden-globes',
+    name: 'Golden Globes',
+    params: {
+      with_keywords: '11862',
+      'vote_count.gte': 100,
+      sort_by: 'vote_average.desc',
+    },
+  },
+  {
+    id: 'cannes',
+    name: 'Cannes Film Festival',
+    params: {
+      with_keywords: '13123',
+      'vote_count.gte': 50,
+      sort_by: 'vote_average.desc',
+    },
+  },
+  {
     id: 'all',
     name: 'All Acclaimed (8.0+)',
     params: {
       'vote_average.gte': 8.0,
       'vote_count.gte': 800,
-      sort_by: 'vote_average.desc',
-    },
-  },
-  {
-    id: 'masterpieces',
-    name: 'Masterpieces (8.5+)',
-    params: {
-      'vote_average.gte': 8.5,
-      'vote_count.gte': 500,
-      sort_by: 'vote_average.desc',
-    },
-  },
-  {
-    id: 'drama-winners',
-    name: 'Drama & Epic Winners',
-    params: {
-      with_genres: '18',
-      'vote_average.gte': 8.0,
-      'vote_count.gte': 600,
-      sort_by: 'vote_average.desc',
-    },
-  },
-  {
-    id: 'classics',
-    name: 'Classic Winners (Pre-2000)',
-    params: {
-      'primary_release_date.lte': '1999-12-31',
-      'vote_average.gte': 8.0,
-      'vote_count.gte': 400,
       sort_by: 'vote_average.desc',
     },
   },
@@ -155,12 +152,12 @@ const FRANCHISE_OPTIONS: FilterOption[] = [
   {
     id: 'marvel',
     name: 'Marvel Cinematic Universe',
-    params: { with_companies: 420, sort_by: 'primary_release_date.desc' },
+    params: { with_companies: '420|7505|13252', sort_by: 'primary_release_date.desc' },
   },
   {
     id: 'dc',
     name: 'DC Universe',
-    params: { with_keywords: 849, sort_by: 'primary_release_date.desc' },
+    params: { with_companies: '4043|128064|9993', sort_by: 'primary_release_date.desc' },
   },
   {
     id: 'starwars',
@@ -170,7 +167,7 @@ const FRANCHISE_OPTIONS: FilterOption[] = [
   {
     id: 'disney',
     name: 'Disney Classics',
-    params: { with_companies: 2, sort_by: 'popularity.desc' },
+    params: { with_companies: '2|6125', sort_by: 'popularity.desc' },
   },
   {
     id: 'pixar',
@@ -180,7 +177,7 @@ const FRANCHISE_OPTIONS: FilterOption[] = [
   {
     id: 'warner',
     name: 'Warner Bros. Blockbusters',
-    params: { with_companies: 174, sort_by: 'popularity.desc' },
+    params: { with_companies: '174|2739', sort_by: 'popularity.desc' },
   },
 ];
 
@@ -340,7 +337,46 @@ export default function CategoryBrowseScreen() {
       if (selectedFilter.endpoint === '/movies/anime') {
         return moviesApi.anime();
       }
-      return moviesApi.discover(selectedFilter.params || {});
+      
+      const params = selectedFilter.params || {};
+      
+      // Fetch both movies and TV for Franchise and Award categories
+      if (category === 'franchise' || category === 'awards') {
+        const [moviesRes, tvRes] = await Promise.all([
+          moviesApi.discover(params).catch(() => ({ results: [] })),
+          tvApi.discover(params).catch(() => ({ results: [] }))
+        ]);
+        
+        // Tag them so the UI knows where to route when clicked
+        const typedMovies = (moviesRes?.results || []).map(m => ({ ...m, media_type: 'movie' as const }));
+        const typedTv = (tvRes?.results || []).map(t => ({ ...t, media_type: 'tv' as const }));
+        
+        const merged = [...typedMovies, ...typedTv];
+        
+        // Local sort
+        const sortParam = (params.sort_by as string) || 'popularity.desc';
+        merged.sort((a, b) => {
+          if (sortParam.includes('primary_release_date')) {
+            const dateA = new Date(a.release_date || a.first_air_date || '1970-01-01').getTime();
+            const dateB = new Date(b.release_date || b.first_air_date || '1970-01-01').getTime();
+            return sortParam.includes('desc') ? dateB - dateA : dateA - dateB;
+          }
+          if (sortParam.includes('vote_average')) {
+            return (b.vote_average || 0) - (a.vote_average || 0);
+          }
+          // Fallback to popularity
+          return (b.popularity || 0) - (a.popularity || 0);
+        });
+        
+        return {
+          results: merged,
+          page: 1,
+          total_pages: 1,
+          total_results: merged.length
+        };
+      }
+      
+      return moviesApi.discover(params);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -461,7 +497,6 @@ export default function CategoryBrowseScreen() {
               style={StyleSheet.absoluteFillObject}
             />
             <View style={[styles.badgeTag, { borderColor: `${config.accent}40` }]}>
-              <Sparkles size={11} color={config.accent} />
               <Text style={[styles.badgeTagText, { color: config.accent }]}>
                 {config.badge}
               </Text>

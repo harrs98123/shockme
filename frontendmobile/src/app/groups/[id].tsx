@@ -19,7 +19,6 @@ import {
   UserPlus,
   Shield,
   Clock,
-  Sparkles,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 

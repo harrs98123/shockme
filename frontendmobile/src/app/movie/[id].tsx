@@ -9,7 +9,7 @@ import {
   Pressable,
   Platform,
 } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -48,11 +48,13 @@ import { IOSPressable } from '@/components/ios/IOSPressable';
 import { MovieRow } from '@/components/media/MovieRow';
 import { VibeChartSection } from '@/components/media/VibeChartSection';
 import { ScreenshotsGallery } from '@/components/media/ScreenshotsGallery';
+import { InteractiveStarRating } from '@/components/common/InteractiveStarRating';
 import { MoctaleMeterSection } from '@/components/media/MoctaleMeterSection';
 import { BattleGroundsSection } from '@/components/media/BattleGroundsSection';
 import { WhereToWatchSection } from '@/components/media/WhereToWatchSection';
 import { AiInsightsSection } from '@/components/media/AiInsightsSection';
 import { StarRatingModal } from '@/components/media/StarRatingModal';
+import { MovieQuoteLoader } from '@/components/media/MovieQuoteLoader';
 import { openTrailerInYouTube } from '@/lib/trailer';
 import showToast from '@/lib/toast';
 
@@ -264,9 +266,8 @@ export default function MovieDetailScreen() {
     }
   }, [user, movie, isWatched]);
 
-  const handleQuickStarRate = async (starIdx: number) => {
-    const starScore = starIdx + 1;
-    setUserRating(starScore);
+  const handleQuickStarRate = async (rating: number) => {
+    setUserRating(rating);
     if (!user) {
       showToast.info('Please log in to save your rating.');
       return;
@@ -276,9 +277,9 @@ export default function MovieDetailScreen() {
         await api.post('/ratings', {
           movie_id: Number(movie.id),
           media_type: 'movie',
-          rating: starScore,
+          rating: rating,
         });
-        showToast.success(`Rated ${starScore}/5 ⭐`);
+        showToast.success(`Rated ${rating}/5 ⭐`);
         refetchRating();
       } catch {
         showToast.error('Failed to submit rating');
@@ -337,19 +338,23 @@ export default function MovieDetailScreen() {
   });
 
   if (isLoading || !movie) {
-    return (
-      <View style={[styles.root, styles.center]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <MovieQuoteLoader onBack={() => router.back()} />;
   }
 
   const headerTopOffset = Math.max(insets.top, Platform.OS === 'android' ? 12 : 8) + 6;
 
   return (
     <View style={styles.root}>
+      <Stack.Screen
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+          fullScreenGestureEnabled: false,
+        }}
+      />
       {/* ── Fixed Solid/Blur Header on Scroll ── */}
       <Animated.View
+        pointerEvents="box-none"
         style={[
           styles.stickyHeaderBackground,
           { height: headerTopOffset + 48, paddingTop: headerTopOffset },
@@ -362,7 +367,7 @@ export default function MovieDetailScreen() {
       </Animated.View>
 
       {/* ── Fixed Floating Controls ── */}
-      <View style={[styles.headerFloating, { top: headerTopOffset }]}>
+      <View style={[styles.headerFloating, { top: headerTopOffset }]} pointerEvents="box-none">
         {/* Back Button */}
         <IOSPressable
           style={styles.circleBtn}
@@ -385,7 +390,7 @@ export default function MovieDetailScreen() {
 
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 20) + 70 }]}
         bounces={true}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
@@ -520,25 +525,14 @@ export default function MovieDetailScreen() {
           <View style={styles.rateCard}>
             <Text style={styles.rateLabel}>RATE THIS MOVIE</Text>
 
-            {/* 5 Stars */}
-            <View style={styles.starsRow}>
-              {Array.from({ length: 5 }).map((_, idx) => {
-                const filled = activeUserRating != null ? idx < Math.round(activeUserRating) : false;
-                return (
-                  <Pressable
-                    key={idx}
-                    onPress={() => handleQuickStarRate(idx)}
-                    hitSlop={6}
-                    style={styles.starPress}
-                  >
-                    <Star
-                      size={28}
-                      color={filled ? '#FFC107' : 'rgba(255, 255, 255, 0.2)'}
-                      fill={filled ? '#FFC107' : 'transparent'}
-                    />
-                  </Pressable>
-                );
-              })}
+            {/* Interactive Stars */}
+            <View style={{ marginBottom: 4 }}>
+              <InteractiveStarRating 
+                initialRating={activeUserRating || 0}
+                onRatingSubmit={handleQuickStarRate}
+                starSize={40}
+                gap={12}
+              />
             </View>
 
             {/* Community Rating Subtext */}

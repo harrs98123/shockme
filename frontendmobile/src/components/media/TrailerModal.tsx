@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Play, Film, ExternalLink, Sparkles, Bell } from 'lucide-react-native';
+import { X, Play, Film, ExternalLink, Bell } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { colors, fonts, radius, spacing } from '@/theme';

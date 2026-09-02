@@ -16,7 +16,7 @@ import {
   Star,
   Film,
   Clapperboard,
-  Sparkles,
+  Smile,
   Send,
   Popcorn,
   Flame,
@@ -43,7 +43,7 @@ const STORY_TYPES = [
   { id: 'review', label: 'Rating', icon: Star, color: '#FBBF24' },
   { id: 'hot_take', label: 'Hot Take', icon: Flame, color: '#F43F5E' },
   { id: 'gem', label: 'Gem', icon: Gem, color: '#8B5CF6' },
-  { id: 'mood', label: 'Vibe', icon: Sparkles, color: '#10B981' },
+  { id: 'mood', label: 'Vibe', icon: Smile, color: '#10B981' },
 ];
 
 export function CreateStoryModal({

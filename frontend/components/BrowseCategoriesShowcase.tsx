@@ -7,7 +7,7 @@ import {
   Flame,
   Zap,
   Skull,
-  Sparkles,
+  Palette,
   Smile,
   Compass,
   Film,
@@ -62,7 +62,7 @@ const CATEGORIES: CategoryItem[] = [
     tagline: 'Anime masterpieces',
     bgGradient: 'from-[#431d68] via-[#230f37] to-[#0f0518]',
     posterPath: '/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg', // Spider-Man Across the Spider-Verse
-    icon: Sparkles,
+    icon: Palette,
   },
   {
     id: 35,

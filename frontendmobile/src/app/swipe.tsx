@@ -9,7 +9,7 @@ import {
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Heart, X, Sparkles, Star, Info } from 'lucide-react-native';
+import { ChevronLeft, Heart, X, Star, Info } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
@@ -148,7 +148,7 @@ export default function MovieSwipeScreen() {
           <Text style={styles.topBarTitle}>Movie Match</Text>
           <Text style={styles.topBarSub}>Swipe right to favorite</Text>
         </View>
-        <Sparkles size={20} color="#E50914" />
+        <View style={{ width: 24 }} />
       </View>
 
       {/* Card Arena */}

@@ -7,13 +7,15 @@ import {
   Pressable,
   StyleSheet,
   Dimensions,
+  ActivityIndicator,
   type ListRenderItemInfo,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Search as SearchIcon, X } from 'lucide-react-native';
+import { Search as SearchIcon, X, TrendingUp } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { moviesApi } from '@/api/movies';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +35,8 @@ const GUTTER = spacing.sm;
 const SIDE_PAD = spacing.lg;
 const CARD_WIDTH = (SCREEN_WIDTH - SIDE_PAD * 2 - GUTTER * (COLUMNS - 1)) / COLUMNS;
 const CARD_HEIGHT = Math.round(CARD_WIDTH * 1.5);
+
+type FilterType = 'all' | 'movie' | 'tv';
 
 // ─── Grid Card ────────────────────────────────────────────────────────────────
 
@@ -62,7 +66,7 @@ function SearchCard({ item }: { item: Media }) {
       <View style={styles.cardMeta}>
         <Text style={styles.cardTitle} numberOfLines={1}>{title}</Text>
         <View style={styles.cardRow}>
-          {rating ? (
+          {rating && rating !== '0.0' ? (
             <View style={styles.ratingChip}>
               <Text style={styles.ratingText}>{rating}</Text>
             </View>
@@ -82,36 +86,82 @@ function SearchCard({ item }: { item: Media }) {
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  
   const [query, setQuery] = useState('');
+  const [forceQuery, setForceQuery] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterType>('all');
+  
   const debouncedQuery = useDebounce(query, 350);
+  const activeQuery = forceQuery || debouncedQuery;
 
+  // Primary Search Query
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['movies', 'search', debouncedQuery],
-    queryFn: () => moviesApi.search(debouncedQuery),
-    enabled: debouncedQuery.length >= 2,
+    queryKey: ['movies', 'search', activeQuery],
+    queryFn: () => moviesApi.search(activeQuery),
+    enabled: activeQuery.length >= 2,
     staleTime: 60 * 1000,
   });
 
-  const results = data?.results ?? [];
+  // Trending Fallback Query
+  const { data: trendingData, isLoading: isTrendingLoading } = useQuery({
+    queryKey: ['movies', 'trending', 'search-fallback'],
+    queryFn: () => moviesApi.trending(1),
+    enabled: activeQuery.length < 2,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const rawResults = data?.results ?? [];
+  const filteredResults = rawResults.filter((item) => {
+    if (filter === 'all') return true;
+    const mediaType = item.media_type ?? (item.title ? 'movie' : 'tv');
+    return mediaType === filter;
+  });
+
+  const trendingResults = trendingData?.results?.slice(0, 8) ?? [];
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<Media>) => <SearchCard item={item} />,
     []
   );
+  
   const keyExtractor = useCallback((item: Media) => String(item.id), []);
-  const clearQuery = useCallback(() => setQuery(''), []);
+  
+  const clearQuery = useCallback(() => {
+    setQuery('');
+    setForceQuery(null);
+  }, []);
+
   const searching = isLoading || isFetching;
+
+  // Filter Tabs Component
+  const FilterTabs = () => (
+    <View style={styles.filterRow}>
+      {(['all', 'movie', 'tv'] as FilterType[]).map((type) => {
+        const isActive = filter === type;
+        const labels = { all: 'All Results', movie: 'Movies', tv: 'TV Shows' };
+        return (
+          <Pressable
+            key={type}
+            onPress={() => setFilter(type)}
+            style={[styles.filterBtn, isActive && styles.filterBtnActive]}
+          >
+            <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
+              {labels[type]}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 6 }]}>
-      {/* Ambient Top Glow */}
       <LinearGradient
         colors={['rgba(139,92,246,0.14)', 'rgba(229,9,20,0.06)', 'transparent']}
         style={styles.ambientGlow}
         pointerEvents="none"
       />
 
-      {/* ── Top Bar Header (Logo + Avatar) ── */}
       <View style={styles.topBar}>
         <View style={styles.brandRow}>
           <PlotmintLogo size={24} />
@@ -124,8 +174,6 @@ export default function SearchScreen() {
           style={styles.avatarBtn}
           onPress={() => router.push('/(tabs)/profile' as never)}
           activeScale={0.92}
-          accessibilityRole="button"
-          accessibilityLabel="Profile"
         >
           <View style={styles.avatarWrap}>
             <Avatar
@@ -139,7 +187,6 @@ export default function SearchScreen() {
         </IOSPressable>
       </View>
 
-      {/* ── Giant Pill Search Input Bar ── */}
       <View style={styles.inputOuter}>
         <View style={styles.inputWrap}>
           <SearchIcon size={20} color="#38BDF8" style={styles.searchIcon} strokeWidth={2.4} />
@@ -148,35 +195,68 @@ export default function SearchScreen() {
             placeholder="Search for movies, series, shows..."
             placeholderTextColor="rgba(255, 255, 255, 0.45)"
             value={query}
-            onChangeText={setQuery}
+            onChangeText={(text) => {
+              setQuery(text);
+              if (forceQuery) setForceQuery(null);
+            }}
             returnKeyType="search"
             autoCapitalize="none"
             autoCorrect={false}
             keyboardAppearance="dark"
             clearButtonMode="never"
-            accessibilityLabel="Search input"
           />
           {query.length > 0 && (
-            <Pressable onPress={clearQuery} hitSlop={8} accessibilityLabel="Clear search">
+            <Pressable onPress={clearQuery} hitSlop={8}>
               <View style={styles.clearCircle}>
                 <X size={12} color="#FFFFFF" strokeWidth={2.4} />
               </View>
             </Pressable>
           )}
         </View>
+        
+        {/* Filter Tabs show only when searching */}
+        {activeQuery.length >= 2 && <FilterTabs />}
       </View>
 
-      {/* ── Content & States ── */}
-      {debouncedQuery.length < 2 ? (
-        <View style={styles.center}>
-          <Text style={styles.popcornEmoji}>🍿</Text>
-          <Text style={styles.findTitle}>Find your next favorite</Text>
-          <Text style={styles.findSub}>
-            Start typing to search global movies and TV shows.
+      {/* Typo Correction Notice */}
+      {data?.corrected_query && forceQuery === null && activeQuery.length >= 2 && (
+        <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.typoNotice}>
+          <Text style={styles.typoText}>
+            Showing results for <Text style={styles.typoHighlight}>{data.corrected_query}</Text>
           </Text>
+          <Pressable onPress={() => setForceQuery(debouncedQuery)} hitSlop={8}>
+            <Text style={styles.typoLink}>
+              Search instead for "{debouncedQuery}"
+            </Text>
+          </Pressable>
+        </Animated.View>
+      )}
+
+      {/* Content States */}
+      {activeQuery.length < 2 ? (
+        // Trending Empty State
+        <View style={styles.trendingContainer}>
+          <View style={styles.trendingHeader}>
+            <TrendingUp size={20} color={colors.primary} />
+            <Text style={styles.trendingTitle}>Trending Now</Text>
+          </View>
+          {isTrendingLoading ? (
+            <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
+          ) : (
+            <FlatList<Media>
+              data={trendingResults}
+              renderItem={renderItem}
+              keyExtractor={keyExtractor}
+              numColumns={COLUMNS}
+              contentContainerStyle={styles.grid}
+              columnWrapperStyle={styles.row}
+              showsVerticalScrollIndicator={false}
+              keyboardDismissMode="on-drag"
+            />
+          )}
         </View>
       ) : searching && !data ? (
-        // Loading Skeleton Grid
+        // Loading Skeleton
         <FlatList
           data={Array.from({ length: 6 }, (_, i) => i)}
           renderItem={({ item }) => (
@@ -191,14 +271,14 @@ export default function SearchScreen() {
           columnWrapperStyle={styles.row}
           scrollEnabled={false}
         />
-      ) : results.length === 0 ? (
+      ) : filteredResults.length === 0 ? (
         <EmptyState
           title="No results"
-          description={`Nothing matched "${debouncedQuery}"`}
+          description={`Nothing matched your search.`}
         />
       ) : (
         <FlatList<Media>
-          data={results}
+          data={filteredResults}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
           numColumns={COLUMNS}
@@ -206,12 +286,9 @@ export default function SearchScreen() {
           columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
           keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
           initialNumToRender={8}
           maxToRenderPerBatch={8}
           windowSize={5}
-          removeClippedSubviews
-          bounces={true}
         />
       )}
     </View>
@@ -221,17 +298,8 @@ export default function SearchScreen() {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#08080C',
-  },
-  ambientGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 180,
-  },
+  root: { flex: 1, backgroundColor: '#08080C' },
+  ambientGlow: { position: 'absolute', top: 0, left: 0, right: 0, height: 180 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -240,20 +308,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 12,
   },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandTitle: {
     fontFamily: fonts.headingBlack,
     fontSize: 22,
     color: '#FFFFFF',
     letterSpacing: -0.4,
   },
-  avatarBtn: {
-    padding: 2,
-  },
+  avatarBtn: { padding: 2 },
   avatarWrap: {
     width: 36,
     height: 36,
@@ -265,10 +327,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#16151E',
   },
-  inputOuter: {
-    paddingHorizontal: SIDE_PAD,
-    marginBottom: 20,
-  },
+  inputOuter: { paddingHorizontal: SIDE_PAD, marginBottom: 12 },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -278,10 +337,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.12)',
     paddingHorizontal: 16,
     height: 52,
+    marginBottom: 12,
   },
-  searchIcon: {
-    marginRight: 10,
-  },
+  searchIcon: { marginRight: 10 },
   input: {
     flex: 1,
     fontFamily: fonts.body,
@@ -297,41 +355,67 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingBottom: 110,
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
-  popcornEmoji: {
-    fontSize: 48,
-    marginBottom: 18,
+  filterBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  findTitle: {
-    fontFamily: fonts.headingBlack,
-    fontSize: 22,
-    color: '#FFFFFF',
-    marginBottom: 8,
-    textAlign: 'center',
-    letterSpacing: -0.4,
+  filterBtnActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  findSub: {
+  filterText: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.6)',
+  },
+  filterTextActive: {
+    color: '#FFF',
+    fontFamily: fonts.headingSemi,
+  },
+  typoNotice: {
+    paddingHorizontal: SIDE_PAD,
+    marginBottom: 16,
+  },
+  typoText: {
     fontFamily: fonts.body,
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.6)',
-    textAlign: 'center',
-    lineHeight: 20,
-    maxWidth: 280,
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 4,
   },
-  grid: {
+  typoHighlight: {
+    fontFamily: fonts.headingSemi,
+    color: '#FFF',
+  },
+  typoLink: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 14,
+    color: '#38BDF8',
+  },
+  trendingContainer: {
+    flex: 1,
+  },
+  trendingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: SIDE_PAD,
-    paddingBottom: 110,
+    marginBottom: 16,
+    gap: 8,
   },
-  row: {
-    justifyContent: 'space-between',
-    marginBottom: GUTTER,
+  trendingTitle: {
+    fontFamily: fonts.headingSemi,
+    fontSize: 18,
+    color: '#FFF',
   },
+  grid: { paddingHorizontal: SIDE_PAD, paddingBottom: 110 },
+  row: { justifyContent: 'space-between', marginBottom: GUTTER },
   card: {
     width: CARD_WIDTH,
     borderRadius: 16,
@@ -341,36 +425,22 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.06)',
     marginBottom: 8,
   },
-  cardMeta: {
-    padding: 8,
-  },
+  cardMeta: { padding: 8 },
   cardTitle: {
     fontFamily: fonts.headingSemi,
     fontSize: 13,
     color: '#FFFFFF',
     marginBottom: 4,
   },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
+  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ratingChip: {
     backgroundColor: colors.amber,
     borderRadius: radius.xs,
     paddingHorizontal: 5,
     paddingVertical: 1.5,
   },
-  ratingText: {
-    fontFamily: fonts.headingBlack,
-    fontSize: 9.5,
-    color: '#000',
-  },
-  yearText: {
-    fontFamily: fonts.body,
-    fontSize: 11,
-    color: colors.textMuted,
-  },
+  ratingText: { fontFamily: fonts.headingBlack, fontSize: 9.5, color: '#000' },
+  yearText: { fontFamily: fonts.body, fontSize: 11, color: colors.textMuted },
   seriesTag: {
     fontFamily: fonts.bodySemi,
     fontSize: 9,

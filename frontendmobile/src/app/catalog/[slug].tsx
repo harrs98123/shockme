@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Heart, Bookmark, Eye, Film, Sparkles } from 'lucide-react-native';
+import { Heart, Bookmark, Eye, Film } from 'lucide-react-native';
 
 import { moviesApi, tvApi, type DiscoverParams } from '@/api/movies';
 import { favoritesApi, watchlistApi, watchedApi } from '@/api/lists';
@@ -368,7 +368,7 @@ export default function CatalogScreen() {
       <IOSHeader
         title={typeConfig.title}
         subtitle={typeConfig.subtitle}
-        rightAction={<Sparkles size={18} color={colors.primary} />}
+        rightAction={<Film size={18} color={colors.primary} />}
       />
 
       {/* Catalog Grid */}

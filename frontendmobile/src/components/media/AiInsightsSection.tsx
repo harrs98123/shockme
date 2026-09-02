@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   Pressable,
 } from 'react-native';
-import { Sparkles, Brain, Wand2, Copy, Check } from 'lucide-react-native';
+import { Brain, Wand2, Copy, Check } from 'lucide-react-native';
 
 import { api } from '@/api/client';
 import { colors, fonts, radius, spacing } from '@/theme';
@@ -104,7 +104,7 @@ export function AiInsightsSection({ movieId, mediaType = 'movie', title }: Props
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <>
-                <Sparkles size={14} color="#FFFFFF" />
+                <Brain size={14} color="#FFFFFF" />
                 <Text style={styles.generateBtnText}>Generate Deep Analysis</Text>
               </>
             )}

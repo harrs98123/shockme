@@ -24,7 +24,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Flame,
-  Sparkles,
   Plus,
   ArrowUpRight,
   BarChart3,
@@ -437,7 +436,7 @@ export default function AdminDashboard() {
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
           }`}
         >
-          <Sparkles size={14} />
+          <Plus size={14} />
           <span>Quick Curator</span>
         </button>
 
@@ -908,7 +907,7 @@ export default function AdminDashboard() {
         <div className="space-y-5">
           <div className="p-5 rounded-2xl bg-zinc-950/40 border border-white/[0.06]">
             <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
-              <Sparkles size={16} className="text-purple-400" />
+              <Plus size={16} className="text-purple-400" />
               TMDB Fast Movie Curator
             </h3>
             <p className="text-xs text-zinc-400 mb-4">

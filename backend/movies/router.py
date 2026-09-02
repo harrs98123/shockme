@@ -183,10 +183,19 @@ async def tmdb_get(path: str, params: dict = {}, ttl: int = 600) -> dict:
 STATIC_TTL = 86400  # 24 hours
 
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from fastapi_cache.decorator import cache
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 router = APIRouter(prefix="/movies", tags=["movies"])
+
+# Per-IP rate limiting for endpoints that fan out to TMDB/OMDb or do heavy
+# in-process work. NOTE: requests proxied through the Next.js frontend's
+# server-side rendering all arrive from Vercel's shared egress IPs, so these
+# limits are intentionally generous — they exist to stop direct scraping/
+# enumeration of this API, not to throttle normal aggregate site traffic.
+_limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/trending")
@@ -222,7 +231,8 @@ async def get_top_rated(page: int = 1):
 
 
 @router.get("/search")
-async def search_multi(q: str = Query(..., min_length=1), page: int = 1):
+@_limiter.limit("30/minute")
+async def search_multi(request: Request, q: str = Query(..., min_length=1), page: int = 1):
     """Search for movies, TV shows, and people all at once."""
     data = await tmdb_get("/search/multi", {
         "query": q,
@@ -230,11 +240,33 @@ async def search_multi(q: str = Query(..., min_length=1), page: int = 1):
         "language": "en-US",
         "include_adult": False
     })
+    
+    # Advanced typo tolerance: If no results, try correcting the spelling
+    if data.get("total_results", 0) == 0:
+        try:
+            from autocorrect import Speller
+            spell = Speller(lang='en')
+            corrected = spell(q)
+            if corrected and corrected.lower() != q.lower():
+                retry_data = await tmdb_get("/search/multi", {
+                    "query": corrected,
+                    "page": page,
+                    "language": "en-US",
+                    "include_adult": False
+                })
+                if retry_data.get("total_results", 0) > 0:
+                    retry_data["corrected_query"] = corrected
+                    return retry_data
+        except ImportError:
+            pass
+            
     return data
 
 
 @router.get("/discover")
+@_limiter.limit("60/minute")
 async def discover_movies(
+    request: Request,
     with_genres: str = "",
     with_origin_country: str = "",
     with_original_language: str = "",
@@ -274,6 +306,56 @@ async def discover_movies(
         params["primary_release_date.lte"] = primary_release_date_lte
 
     data = await tmdb_get("/discover/movie", params)
+    return data
+
+
+@router.get("/tv/discover")
+@_limiter.limit("60/minute")
+async def discover_tv(
+    request: Request,
+    with_genres: str = "",
+    with_origin_country: str = "",
+    with_original_language: str = "",
+    with_keywords: str = "",
+    with_companies: str = "",
+    vote_average_gte: float = 0,
+    vote_count_gte: int = 0,
+    vote_count_lte: int = 0,
+    primary_release_year: int = 0,
+    primary_release_date_gte: str = "",
+    primary_release_date_lte: str = "",
+    sort_by: str = "popularity.desc",
+    page: int = 1
+):
+    # Map movie sort params to TV sort params
+    if sort_by and "primary_release_date" in sort_by:
+        sort_by = sort_by.replace("primary_release_date", "first_air_date")
+        
+    params = {"page": page, "language": "en-US", "sort_by": sort_by}
+    if with_genres:
+        params["with_genres"] = with_genres
+    if with_origin_country:
+        params["with_origin_country"] = with_origin_country
+    if with_original_language:
+        params["with_original_language"] = with_original_language
+    if with_keywords:
+        params["with_keywords"] = with_keywords
+    if with_companies:
+        params["with_companies"] = with_companies
+    if vote_average_gte > 0:
+        params["vote_average.gte"] = vote_average_gte
+    if vote_count_gte > 0:
+        params["vote_count.gte"] = vote_count_gte
+    if vote_count_lte > 0:
+        params["vote_count.lte"] = vote_count_lte
+    if primary_release_year > 0:
+        params["first_air_date_year"] = primary_release_year
+    if primary_release_date_gte:
+        params["first_air_date.gte"] = primary_release_date_gte
+    if primary_release_date_lte:
+        params["first_air_date.lte"] = primary_release_date_lte
+
+    data = await tmdb_get("/discover/tv", params)
     return data
 
 
@@ -463,7 +545,8 @@ async def get_upcoming_movies(
 
 
 @router.get("/universe/search/{query}")
-async def search_people(query: str):
+@_limiter.limit("40/minute")
+async def search_people(request: Request, query: str):
     """Search for people (actors/directors) for the universe map."""
     data = await tmdb_get("/search/person", {"query": query, "language": "en-US"})
     results = data.get("results", [])[:12]
@@ -483,8 +566,9 @@ async def search_people(query: str):
 
 
 @router.get("/universe/{person_id}")
+@_limiter.limit("20/minute")
 @cache(expire=7200)
-async def get_universe_map(person_id: int):
+async def get_universe_map(request: Request, person_id: int):
     """Build a COMPLETE connection graph for a person — fetches all films and all collaborators."""
     import asyncio
     
@@ -700,6 +784,15 @@ async def get_imdb_rating(movie_id: int, imdb_id: Optional[str] = None, title: O
             pass
 
     return {"rating": None, "votes": None, "source": "unavailable"}
+
+
+@router.get("/tv/{tv_id}/season/{season_number}")
+async def get_tv_season(tv_id: int, season_number: int):
+    """
+    Fetch all episodes and metadata for a specific season of a TV show from TMDB.
+    """
+    data = await tmdb_get(f"/tv/{tv_id}/season/{season_number}", {"language": "en-US"}, ttl=3600)
+    return data
 
 
 @router.get("/{movie_id}")

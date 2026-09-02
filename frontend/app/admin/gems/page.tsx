@@ -7,7 +7,6 @@ import {
   Plus,
   Search,
   Trash2,
-  Sparkles,
   RefreshCw,
 } from 'lucide-react';
 import api, { posterUrl, releaseYear } from '@/lib/api';
@@ -155,7 +154,7 @@ export default function AdminGems() {
       <div className="p-5 rounded-2xl bg-zinc-950/40 border border-white/[0.06] space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Sparkles size={15} className="text-emerald-400" />
+            <Plus size={15} className="text-emerald-400" />
             Curate New Hidden Gem
           </h3>
           <span className="text-[11px] font-mono text-zinc-500">Fast TMDB Ingestion</span>

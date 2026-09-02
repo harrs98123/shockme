@@ -7,7 +7,7 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -37,6 +37,8 @@ import type { Video } from '@/types';
 import { MoctaleMeterSection } from '@/components/media/MoctaleMeterSection';
 import { WhereToWatchSection } from '@/components/media/WhereToWatchSection';
 import { AiInsightsSection } from '@/components/media/AiInsightsSection';
+import { MovieQuoteLoader } from '@/components/media/MovieQuoteLoader';
+import { TvSeasonsEpisodesSection } from '@/components/media/TvSeasonsEpisodesSection';
 import showToast from '@/lib/toast';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -119,17 +121,20 @@ export default function TvDetailScreen() {
   }, [user, tvShow, isWatchlisted, title]);
 
   if (isLoading || !tvShow) {
-    return (
-      <View style={[styles.root, styles.center]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <MovieQuoteLoader onBack={() => router.back()} />;
   }
 
   return (
     <View style={styles.root}>
+      <Stack.Screen
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+          fullScreenGestureEnabled: false,
+        }}
+      />
       {/* Fixed Top Header Controls */}
-      <View style={[styles.headerFloating, { top: insets.top + 8 }]}>
+      <View style={[styles.headerFloating, { top: insets.top + 8 }]} pointerEvents="box-none">
         <IOSPressable
           style={styles.circleBtn}
           onPress={() => router.back()}
@@ -168,7 +173,7 @@ export default function TvDetailScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 20) + 70 }]}
         bounces={true}
         keyboardShouldPersistTaps="handled"
       >
@@ -272,6 +277,12 @@ export default function TvDetailScreen() {
             <Text style={styles.overviewBody}>{tvShow.overview}</Text>
           </View>
         ) : null}
+
+        {/* Seasons & Episodes Section with Ratings & Stills */}
+        <TvSeasonsEpisodesSection
+          tvId={tvShow.id}
+          seasons={tvShow.seasons}
+        />
 
         {/* Where to Watch (Streaming Providers) */}
         <WhereToWatchSection

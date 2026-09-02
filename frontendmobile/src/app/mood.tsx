@@ -13,7 +13,6 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Sparkles,
   Paperclip,
   Mic,
   Send,
@@ -231,7 +230,7 @@ export default function MoodScreen() {
             {/* Neural Vibe Engine Tag */}
             <View style={styles.tagWrap}>
               <View style={styles.engineBadge}>
-                <Sparkles size={13} color="#C084FC" />
+                <Zap size={13} color="#C084FC" />
                 <Text style={styles.engineBadgeText}>NEURAL VIBE ENGINE</Text>
               </View>
             </View>
