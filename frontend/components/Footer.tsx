@@ -180,16 +180,15 @@ export default function Footer() {
                     className="w-full rounded-2xl border border-white/10 bg-black/50 px-5 py-3.5 text-sm text-white placeholder-neutral-500 backdrop-blur-md transition-all focus:border-white/30 focus:bg-black/70 focus:outline-none focus:ring-1 focus:ring-white/20 disabled:opacity-60"
                   />
                 </div>
-                
+
                 {/* Solid High-Contrast Button */}
                 <button
                   type="submit"
                   disabled={subscribed}
-                  className={`inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-black transition-all cursor-pointer ${
-                    subscribed 
-                      ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' 
+                  className={`inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-black transition-all cursor-pointer ${subscribed
+                      ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
                       : 'bg-white text-black hover:bg-neutral-200 active:scale-95 shadow-md shadow-white/10'
-                  }`}
+                    }`}
                 >
                   {subscribed ? (
                     <>
@@ -233,7 +232,7 @@ export default function Footer() {
             <Link href="/" className="inline-block focus:outline-none">
               <PlotmintLogo size="large" />
             </Link>
-            
+
             <p className="text-sm text-neutral-400 leading-relaxed max-w-sm">
               The next-generation social platform for film lovers. Discover what to watch next, curate custom tier lists, host live watch parties, and debate cinema with a global community.
             </p>
@@ -254,16 +253,11 @@ export default function Footer() {
               <a
                 href="/plotmint.apk"
                 download="plotmint.apk"
-                className="group relative inline-flex items-center gap-3 overflow-hidden rounded-2xl border border-emerald-500/35 bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-teal-500/15 px-4 py-2.5 text-xs font-extrabold text-white backdrop-blur-xl transition-all duration-300 hover:border-emerald-400 hover:bg-emerald-500/25 hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] active:scale-95 cursor-pointer"
+                className="group inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-neutral-200 backdrop-blur-md transition-all duration-200 hover:border-emerald-500/40 hover:bg-emerald-500/[0.08] hover:text-white hover:shadow-[0_0_20px_rgba(0,229,153,0.15)] active:scale-95 cursor-pointer"
               >
-                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 group-hover:bg-emerald-400 group-hover:text-black transition-colors">
-                  <AndroidIcon size={14} />
-                </span>
-                <span className="flex flex-col text-left">
-                  <span className="text-white group-hover:text-emerald-200 transition-colors">Get Plotmint for Android</span>
-                  <span className="text-[10px] font-normal text-emerald-400/80">Direct APK Download • 98 MB</span>
-                </span>
-                <Download className="h-4 w-4 text-emerald-400 ml-1 transition-transform group-hover:translate-y-0.5" />
+                <AndroidIcon size={14} className="text-[#00E599] transition-transform duration-200 group-hover:scale-110" />
+                <span className="text-white group-hover:text-emerald-200 transition-colors">Get Plotmint for Android</span>
+                <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-neutral-400 group-hover:bg-[#00E599]/15 group-hover:text-[#00E599]">APK</span>
               </a>
             </div>
 

@@ -7,9 +7,21 @@ import { BACKEND_FETCH_HEADERS } from '@/lib/backendFetch';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Filmography changes rarely; a day-long window keeps Vercel from regenerating
+// and re-transferring this route hourly for every crawled person id.
+export const revalidate = 86400;
+export const dynamicParams = true;
+
+// Empty list — nothing is prebuilt — but declaring this opts the route into
+// full-route ISR (static shell cached at the CDN, regenerated on the
+// revalidate interval) instead of rendering in a function on every request.
+export function generateStaticParams(): { id: string }[] {
+  return [];
+}
+
 async function fetchPerson(id: string): Promise<PersonDetails | null> {
   try {
-    const res = await fetch(`${API_BASE}/movies/person/${id}`, { next: { revalidate: 3600 }, headers: BACKEND_FETCH_HEADERS });
+    const res = await fetch(`${API_BASE}/movies/person/${id}`, { next: { revalidate }, headers: BACKEND_FETCH_HEADERS });
     if (!res.ok) return null;
     const data = await res.json();
     if (data?.error) return null;

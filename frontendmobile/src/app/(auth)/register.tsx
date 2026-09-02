@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +8,6 @@ import { AtSign, Check, Lock, Mail, User, X } from 'lucide-react-native';
 
 import { authApi } from '@/api/auth';
 import { AuthScreen, FormError } from '@/components/auth/AuthScreen';
-import { TurnstileGate } from '@/components/auth/TurnstileGate';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Text } from '@/components/ui/Text';
@@ -21,8 +20,6 @@ import { colors, fonts, radius, spacing } from '@/theme';
 export default function RegisterScreen() {
   const { register } = useAuth();
 
-  const [turnstileToken, setTurnstileToken] = useState('');
-  const [turnstileReset, setTurnstileReset] = useState(0);
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -57,17 +54,11 @@ export default function RegisterScreen() {
     staleTime: 60_000,
   });
 
-  const handleInvalidate = useCallback(() => setTurnstileToken(''), []);
-
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError('');
 
     if (usernameCheck?.available === false) {
       setSubmitError('Please choose an available username');
-      return;
-    }
-    if (!turnstileToken) {
-      setSubmitError('Please complete the security verification');
       return;
     }
 
@@ -78,15 +69,12 @@ export default function RegisterScreen() {
         username: values.username.trim(),
         email: values.email.trim(),
         password: values.password,
-        turnstile_token: turnstileToken,
       });
       router.replace('/(tabs)/profile');
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : 'An error occurred during registration'
       );
-      setTurnstileToken('');
-      setTurnstileReset((n) => n + 1);
     } finally {
       setSubmitting(false);
     }
@@ -296,17 +284,10 @@ export default function RegisterScreen() {
         )}
       />
 
-      <TurnstileGate
-        onVerify={setTurnstileToken}
-        onInvalidate={handleInvalidate}
-        resetSignal={turnstileReset}
-      />
-
       <Button
         label="Create Account"
         onPress={onSubmit}
         loading={submitting}
-        disabled={!turnstileToken}
         fullWidth
       />
     </AuthScreen>

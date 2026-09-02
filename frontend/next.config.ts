@@ -56,6 +56,15 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // There are sibling lockfiles further up the drive (E:\all projects\...), so
+  // Next was inferring the wrong workspace root and tracing far too many files
+  // into each serverless function — bigger bundles, slower cold starts, more
+  // Fluid CPU. Pin the root to this project.
+  turbopack: {
+    root: __dirname,
+  },
+  outputFileTracingRoot: __dirname,
+
   // Enable Brotli/gzip compression
   compress: true,
 
@@ -63,13 +72,26 @@ const nextConfig: NextConfig = {
   // the many framer-motion-heavy client components without manual useMemo/useCallback.
   reactCompiler: true,
 
-  // Only bundle the modules actually imported from these packages instead of
-  // pulling in the whole library graph — meaningfully shrinks client JS.
   experimental: {
+    // Only bundle the modules actually imported from these packages instead of
+    // pulling in the whole library graph — meaningfully shrinks client JS.
     optimizePackageImports: ['framer-motion', 'radix-ui', 'react-markdown'],
+
+    // Re-enable the client-side Router Cache (off by default since v15). Within
+    // these windows, back/forward and repeat navigations are served from the
+    // browser's cache instead of firing a fresh RSC request to a Vercel
+    // function — fewer invocations and less origin transfer per session.
+    staleTimes: {
+      dynamic: 180,
+      static: 300,
+    },
   },
 
-  // Optimized image handling
+  // Image handling. `unoptimized` routes every <Image> straight to its source
+  // (TMDB / Cloudinary already serve correctly-sized, CDN-cached derivatives),
+  // so Vercel's Image Optimization pipeline is never invoked — that line item
+  // and its cache-writes stay at zero. Do NOT flip this back on without a plan
+  // for the per-transformation cost.
   images: {
     unoptimized: true,
     qualities: [75, 100],

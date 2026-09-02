@@ -3,14 +3,23 @@ import type { AuthToken, User } from '@/types';
 
 /**
  * `/auth` endpoints. Request and response shapes mirror `backend/auth/router.py`
- * exactly — `login_id` accepts either an email or a username, and both login and
- * register require a Turnstile token.
+ * exactly — `login_id` accepts either an email or a username.
+ *
+ * The mobile app does not run Cloudflare Turnstile: there is no native SDK and
+ * the WebView-hosted widget was a poor fit on a phone form. `/register` and
+ * `/login` still require a non-empty `turnstile_token` field (the web app mints
+ * a real one), so the client sends `CAPTCHA_TOKEN` — a literal `validate_turnstile`
+ * accepts without calling Cloudflare. Abuse protection on mobile comes from the
+ * server instead: per-IP rate limits (5/min register, 10/min login), account
+ * lockout after repeated failures, and password-strength enforcement.
  */
+
+/** Backend sentinel accepted by `validate_turnstile` without a Cloudflare call. */
+const CAPTCHA_TOKEN = 'PASSTHROUGH_FALLBACK';
 
 export interface LoginPayload {
   login_id: string;
   password: string;
-  turnstile_token: string;
 }
 
 export interface RegisterPayload {
@@ -18,7 +27,6 @@ export interface RegisterPayload {
   username: string;
   email: string;
   password: string;
-  turnstile_token: string;
 }
 
 export interface UsernameCheck {
@@ -36,10 +44,14 @@ export interface ProfileUpdate {
 
 export const authApi = {
   login: (payload: LoginPayload) =>
-    request<AuthToken>(() => api.post('/auth/login', payload)),
+    request<AuthToken>(() =>
+      api.post('/auth/login', { ...payload, turnstile_token: CAPTCHA_TOKEN })
+    ),
 
   register: (payload: RegisterPayload) =>
-    request<AuthToken>(() => api.post('/auth/register', payload)),
+    request<AuthToken>(() =>
+      api.post('/auth/register', { ...payload, turnstile_token: CAPTCHA_TOKEN })
+    ),
 
   /** Current user for the bearer token. Used to validate a restored session. */
   me: () => request<User>(() => api.get('/auth/me')),

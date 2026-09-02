@@ -14,13 +14,51 @@ import { BACKEND_FETCH_HEADERS } from '@/lib/backendFetch';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Movie detail data (cast, runtime, overview) is effectively immutable once a
+// film is released. A short window meant Vercel re-rendered + re-transferred
+// this route every 5 minutes for every id that gets any traffic or crawler
+// hits — ~288x/day per page. One day collapses that to ~1, and the live
+// community/review sections are client-fetched so they stay fresh regardless.
+export const revalidate = 86400;
+
+// Ids not listed by generateStaticParams still render on demand (then cache).
+export const dynamicParams = true;
+
 async function fetchMovie(id: string) {
   try {
-    const res = await fetch(`${API_BASE}/movies/${id}`, { next: { revalidate: 300 }, headers: BACKEND_FETCH_HEADERS });
+    const res = await fetch(`${API_BASE}/movies/${id}`, { next: { revalidate }, headers: BACKEND_FETCH_HEADERS });
     if (!res.ok) return null;
     return await res.json();
   } catch {
     return null;
+  }
+}
+
+// Prebuild the hottest movie pages at deploy time so they ship as static HTML
+// and never cost a function invocation. Fails soft: if the backend is
+// unreachable during the build, every page just falls back to on-demand ISR.
+export async function generateStaticParams(): Promise<{ id: string }[]> {
+  const endpoints = ['trending', 'popular', 'top-rated'];
+  try {
+    const lists = await Promise.all(
+      endpoints.map((e) =>
+        fetch(`${API_BASE}/movies/${e}`, {
+          next: { revalidate: 86400 },
+          headers: BACKEND_FETCH_HEADERS,
+        })
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null)
+      )
+    );
+    const ids = new Set<string>();
+    for (const list of lists) {
+      for (const m of list?.results ?? []) {
+        if (m?.id != null) ids.add(String(m.id));
+      }
+    }
+    return [...ids].slice(0, 100).map((id) => ({ id }));
+  } catch {
+    return [];
   }
 }
 

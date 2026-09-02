@@ -5,6 +5,19 @@ import { BACKEND_FETCH_HEADERS } from '@/lib/backendFetch';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// The SSR fetch here only feeds OG/meta tags for crawlers — the client
+// component fetches the real, auth-aware collection separately. An hour-long
+// window is plenty and stops per-request regeneration of this route.
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+// Empty list — nothing is prebuilt — but this opts the route into full-route
+// ISR (CDN-cached shell, regenerated on the revalidate interval) rather than a
+// function invocation per request.
+export function generateStaticParams(): { id: string }[] {
+  return [];
+}
+
 interface CollectionPreview {
   name: string;
   description: string | null;
@@ -19,7 +32,7 @@ interface CollectionPreview {
 // auth-aware collection data for actual rendering.
 async function fetchCollectionPreview(id: string): Promise<CollectionPreview | null> {
   try {
-    const res = await fetch(`${API_BASE}/collections/${id}`, { next: { revalidate: 600 }, headers: BACKEND_FETCH_HEADERS });
+    const res = await fetch(`${API_BASE}/collections/${id}`, { next: { revalidate }, headers: BACKEND_FETCH_HEADERS });
     if (!res.ok) return null;
     const data = await res.json();
     if (!data?.is_public) return null;

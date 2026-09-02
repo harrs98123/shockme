@@ -13,13 +13,40 @@ import { BACKEND_FETCH_HEADERS } from '@/lib/backendFetch';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// See the note in app/movie/[id]/page.tsx — series metadata changes slowly and
+// the interactive sections fetch their own data client-side, so a long
+// revalidate window keeps Vercel from re-rendering this route on a 5-minute
+// loop for every id that gets traffic.
+export const revalidate = 86400;
+export const dynamicParams = true;
+
 async function fetchTV(id: string) {
   try {
-    const res = await fetch(`${API_BASE}/movies/${id}?media_type=tv`, { next: { revalidate: 300 }, headers: BACKEND_FETCH_HEADERS });
+    const res = await fetch(`${API_BASE}/movies/${id}?media_type=tv`, { next: { revalidate }, headers: BACKEND_FETCH_HEADERS });
     if (!res.ok) return null;
     return await res.json();
   } catch {
     return null;
+  }
+}
+
+// Prebuild the most popular series pages; everything else is on-demand ISR.
+// Fails soft to [] if the backend is down at build time.
+export async function generateStaticParams(): Promise<{ id: string }[]> {
+  try {
+    const res = await fetch(`${API_BASE}/movies/tv/popular`, {
+      next: { revalidate: 86400 },
+      headers: BACKEND_FETCH_HEADERS,
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const ids = new Set<string>();
+    for (const t of data?.results ?? []) {
+      if (t?.id != null) ids.add(String(t.id));
+    }
+    return [...ids].slice(0, 60).map((id) => ({ id }));
+  } catch {
+    return [];
   }
 }
 

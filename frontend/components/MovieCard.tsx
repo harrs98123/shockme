@@ -227,7 +227,12 @@ export default function MovieCard({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <Link href={`/${mediaType}/${movie.id}`} className="mc-link">
+      {/* prefetch={false}: a grid/row renders dozens of these cards, and the
+          default viewport prefetch fires an RSC request per card that hits the
+          proxy middleware + Upstash on every one — the single biggest driver of
+          Vercel Edge Requests / Function Invocations / Origin Transfer. The
+          detail page is fetched on click instead; navigation is still instant. */}
+      <Link href={`/${mediaType}/${movie.id}`} prefetch={false} className="mc-link">
         <div className="mc-poster">
           {!imgError && movie.poster_path ? (
             <Image

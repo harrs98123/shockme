@@ -809,35 +809,20 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* Ultra Aesthetic Desktop Download APK Button */}
+            {/* Minimal & Modern Desktop Download APK Button */}
             <motion.a
               href="/plotmint.apk"
               download="plotmint.apk"
-              whileHover={{ scale: 1.05, y: -1 }}
-              whileTap={{ scale: 0.96 }}
-              title="Download Plotmint Android App (v1.0 • 98MB APK)"
-              className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-full p-[1px] shadow-[0_0_20px_rgba(16,185,129,0.22)] transition-all duration-300 hover:shadow-[0_0_28px_rgba(52,211,153,0.45)]"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              title="Download Plotmint Android App (v1.0 APK)"
+              className="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold text-neutral-200 backdrop-blur-md transition-all duration-200 hover:border-emerald-500/40 hover:bg-emerald-500/[0.08] hover:text-white hover:shadow-[0_0_20px_rgba(0,229,153,0.15)]"
               style={{ marginLeft: 6, textDecoration: 'none' }}
             >
-              {/* Spinning gradient border */}
-              <span className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#052e16_0%,#10b981_50%,#052e16_100%)] opacity-80 group-hover:opacity-100 transition-opacity" />
-
-              {/* Inner button surface */}
-              <span className="relative flex items-center gap-2 rounded-full bg-[#080e0a]/95 px-3.5 py-1.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-[#0c1610]">
-                {/* Glowing Android Icon Pip */}
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 group-hover:bg-emerald-400 group-hover:text-black transition-all">
-                  <AndroidIcon size={12} />
-                </span>
-
-                <span className="text-[13px] font-extrabold tracking-tight text-white group-hover:text-emerald-200 transition-colors">
-                  Get App
-                </span>
-
-                {/* Pulsing micro badge */}
-                <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[10px] font-mono font-bold text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>APK</span>
-                </span>
+              <AndroidIcon size={13} className="text-[#00E599] transition-transform duration-200 group-hover:scale-110" />
+              <span className="font-semibold tracking-tight">Get App</span>
+              <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-neutral-400 transition-colors group-hover:bg-[#00E599]/15 group-hover:text-[#00E599]">
+                APK
               </span>
             </motion.a>
           </nav>
@@ -859,22 +844,17 @@ export default function Navbar() {
             <PlotmintLogo size="mobile" />
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {/* Mobile Download APK Pill */}
+            {/* Minimal Mobile Download APK Button */}
             <motion.a
               href="/plotmint.apk"
               download="plotmint.apk"
-              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               aria-label="Download Android App APK"
-              className="relative inline-flex items-center gap-1.5 overflow-hidden rounded-full p-[1px] shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-neutral-200 backdrop-blur-md transition-colors active:bg-white/[0.08] hover:border-emerald-500/40 hover:text-white"
               style={{ textDecoration: 'none' }}
             >
-              <span className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#052e16_0%,#10b981_50%,#052e16_100%)] opacity-90" />
-              <span className="relative flex items-center gap-1.5 rounded-full bg-[#080e0a]/95 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md">
-                <AndroidIcon size={12} className="text-emerald-400" />
-                <span>APK</span>
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-              </span>
+              <AndroidIcon size={12} className="text-[#00E599]" />
+              <span>Get App</span>
             </motion.a>
             {user ? (
               <button
@@ -1122,28 +1102,71 @@ export default function Navbar() {
                       <motion.a
                         href="/plotmint.apk"
                         download="plotmint.apk"
-                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.18 }}
+                        className="active:scale-[0.99] transition-all"
                         style={{
-                          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '16px 20px', marginBottom: 14,
-                          background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,185,129,0.08))',
-                          border: '1px solid rgba(34,197,94,0.3)',
-                          borderRadius: 18, textDecoration: 'none', color: 'white',
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '14px 16px',
+                          marginBottom: 12,
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          borderRadius: 16,
+                          textDecoration: 'none',
+                          color: 'white',
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(34,197,94,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Smartphone size={18} strokeWidth={2.2} style={{ color: '#4ade80' }} />
+                          <div
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: 10,
+                              background: 'rgba(0, 229, 153, 0.12)',
+                              border: '1px solid rgba(0, 229, 153, 0.2)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <AndroidIcon size={16} className="text-[#00E599]" />
                           </div>
                           <div style={{ textAlign: 'left' }}>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: '#4ade80', display: 'flex', alignItems: 'center', gap: 6 }}>
-                              Download Android App
-                              <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 6, background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.3)' }}>v1.0</span>
+                            <div
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 700,
+                                color: '#ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                              }}
+                            >
+                              Plotmint for Android
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  padding: '1px 6px',
+                                  borderRadius: 6,
+                                  background: 'rgba(0, 229, 153, 0.15)',
+                                  border: '1px solid rgba(0, 229, 153, 0.3)',
+                                  color: '#00E599',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                APK
+                              </span>
                             </div>
-                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 }}>Direct APK Download (98 MB)</div>
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                              Direct Download • 98 MB
+                            </div>
                           </div>
                         </div>
-                        <Download size={18} style={{ color: '#4ade80' }} />
+                        <Download size={16} style={{ color: 'rgba(255,255,255,0.5)' }} />
                       </motion.a>
 
                       {/* Browse Button */}

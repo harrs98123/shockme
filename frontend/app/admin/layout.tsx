@@ -17,6 +17,7 @@ import {
   X,
   ExternalLink,
 } from 'lucide-react';
+import PlotmintLogo from '@/components/PlotmintLogo';
 
 const NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, tag: 'Live' },
@@ -96,12 +97,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Shield size={18} />
             </div>
             <div>
-              <div className="text-base font-black text-white tracking-tight flex items-center gap-1.5">
-                <span>CineMatch</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+              <div className="flex items-center gap-1.5">
+                <PlotmintLogo size="small" />
               </div>
-              <div className="text-[10px] font-extrabold text-purple-400 uppercase tracking-widest">
-                Master Control
+              <div className="text-[10px] font-extrabold text-emerald-400 uppercase tracking-widest mt-0.5">
+                Admin Control
               </div>
             </div>
           </div>

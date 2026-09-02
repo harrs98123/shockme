@@ -18,7 +18,7 @@ Companion to [MIGRATION_PLAN.md](./MIGRATION_PLAN.md).
 |---|---|---|
 | Analysis | Full audit of `frontend/` + `backend/` | ✅ COMPLETED |
 | 0 · Foundation | Theme, primitives, API client, auth store, providers, shell | ✅ COMPLETED |
-| 1 · Auth | Turnstile bridge, login, register, forgot-password, guards | ✅ IMPLEMENTED |
+| 1 · Auth | login, register, forgot-password, guards (no Turnstile — see note below) | ✅ IMPLEMENTED |
 | 2 · Home | MovieCard → rows → Hero → Home screen | ✅ IMPLEMENTED |
 | 3 · Detail | movie/[id], tv/[id], person/[id] | ✅ IMPLEMENTED |
 | 4 · Search & Catalog | Search tab, catalog/[slug] | ✅ IMPLEMENTED |
@@ -65,7 +65,7 @@ Companion to [MIGRATION_PLAN.md](./MIGRATION_PLAN.md).
 
 | Web file | Mobile file | Status | API | Tested |
 |---|---|---|---|---|
-| `components/TurnstileWidget.tsx` | `src/components/auth/TurnstileGate.tsx` (WebView bridge) | COMPLETED | Cloudflare siteverify | ✅ real widget renders, token reaches the API |
+| `components/TurnstileWidget.tsx` | — (removed; mobile does not run Turnstile) | N/A | — | `src/api/auth.ts` sends the `PASSTHROUGH_FALLBACK` sentinel |
 | — (new) | `src/api/auth.ts` (all 9 `/auth` endpoints) | IMPLEMENTED | `/auth/*` | ☐ |
 | `app/(auth)/layout.tsx` | `src/app/(auth)/_layout.tsx` | COMPLETED | — | ✅ |
 | `app/(auth)/login/page.tsx` | `src/app/(auth)/login.tsx` | TESTING | `POST /auth/login` | ⚠️ error path verified against live API; success path needs a test account |
@@ -240,7 +240,7 @@ Companion to [MIGRATION_PLAN.md](./MIGRATION_PLAN.md).
 | 1 | Styling: StyleSheet design system vs NativeWind | RESOLVED | Went with StyleSheet (plan §8) on "okay do it". Swapping later touches only `src/components/ui/` |
 | 2 | Tab set: Home / Search / Browse / Feed / Profile | RESOLVED | Implemented in `(tabs)/_layout.tsx`. Menu became Profile; its links move under Browse and Profile |
 | 3 | Admin routes deferred | RESOLVED | Deferred; ~2,900 LOC of desktop tables |
-| 4 | Turnstile on native | RESOLVED | WebView bridge; backend unchanged |
+| 4 | Turnstile on native | RESOLVED | Removed. `src/api/auth.ts` sends the `PASSTHROUGH_FALLBACK` sentinel; server-side rate limiting + lockout carry abuse protection. Backend unchanged. |
 | 5 | Refresh-token flow (web never uses it) | RESOLVED | Mobile will implement it; `POST /auth/refresh` already exists |
 
 ## Backend findings (reported, NOT changed)
@@ -286,5 +286,13 @@ local session regardless, which this test confirmed is the right call.
 `validate_turnstile` accepts three literal tokens — `P1_TOKEN_ALWAYS_PASS`, `DEV_PASS`,
 `PASSTHROUGH_FALLBACK` — and also returns `True` on any network error reaching Cloudflare. The web
 `TurnstileWidget` already surfaces this to end users as a "click to bypass" link, so the captcha is
-effectively optional today. Per your decision, `TurnstileGate` mirrors that behaviour for parity.
-Changing it is a backend change that would affect the web app, so it has not been touched.
+effectively optional today. Changing it is a backend change that would affect the web app, so it has
+not been touched.
+
+**Update:** the mobile Turnstile WebView bridge (`TurnstileGate.tsx`) has been removed. `/auth/login`
+and `/auth/register` still require a non-empty `turnstile_token`, so `src/api/auth.ts` sends the
+`PASSTHROUGH_FALLBACK` sentinel transparently. Mobile abuse protection is entirely server-side:
+per-IP rate limits (`5/minute` register, `10/minute` login), account lockout after repeated failed
+logins, bcrypt password hashing, password-strength enforcement, and refresh-token rotation. Zod
+form validation on the client mirrors the backend rules. The web app is unchanged and keeps its real
+Turnstile widget.

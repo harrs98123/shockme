@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,7 +6,6 @@ import { Link, router, useLocalSearchParams } from 'expo-router';
 import { AtSign, Lock, User, Check } from 'lucide-react-native';
 
 import { AuthScreen, FormError } from '@/components/auth/AuthScreen';
-import { TurnstileGate } from '@/components/auth/TurnstileGate';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Text } from '@/components/ui/Text';
@@ -20,8 +19,6 @@ export default function LoginScreen() {
   /** Set when a guard bounced the user here, so we can return them after. */
   const { from } = useLocalSearchParams<{ from?: string }>();
 
-  const [turnstileToken, setTurnstileToken] = useState('');
-  const [turnstileReset, setTurnstileReset] = useState(0);
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(true); // 30-day persistent session
@@ -37,21 +34,14 @@ export default function LoginScreen() {
 
   const loginId = useWatch({ control, name: 'loginId' });
 
-  const handleInvalidate = useCallback(() => setTurnstileToken(''), []);
-
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError('');
-    if (!turnstileToken) {
-      setSubmitError('Please complete the security verification');
-      return;
-    }
 
     setSubmitting(true);
     try {
       await login({
         login_id: values.loginId,
         password: values.password,
-        turnstile_token: turnstileToken,
       });
       // `replace`, not `push` — the login screen must not stay on the back
       // stack once the session exists.
@@ -60,8 +50,6 @@ export default function LoginScreen() {
       setSubmitError(
         error instanceof Error ? error.message : 'Invalid identification or password'
       );
-      setTurnstileToken('');
-      setTurnstileReset((n) => n + 1);
     } finally {
       setSubmitting(false);
     }
@@ -161,17 +149,10 @@ export default function LoginScreen() {
         </Link>
       </View>
 
-      <TurnstileGate
-        onVerify={setTurnstileToken}
-        onInvalidate={handleInvalidate}
-        resetSignal={turnstileReset}
-      />
-
       <Button
         label="Sign in"
         onPress={onSubmit}
         loading={submitting}
-        disabled={!turnstileToken}
         fullWidth
       />
     </AuthScreen>

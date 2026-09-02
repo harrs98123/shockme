@@ -1,100 +1,113 @@
 'use client';
 
+import React from 'react';
 import { motion } from 'framer-motion';
 
 interface PlotmintLogoProps {
-  size?: 'desktop' | 'mobile' | 'medium' | 'large' | number;
+  size?: 'small' | 'mobile' | 'desktop' | 'medium' | 'large' | number;
   className?: string;
+  animate?: boolean;
 }
 
-export default function PlotmintLogo({ size = 'desktop', className = '' }: PlotmintLogoProps) {
+export default function PlotmintLogo({
+  size = 'desktop',
+  className = '',
+  animate = true,
+}: PlotmintLogoProps) {
+  const isSmall = size === 'small';
   const isMobile = size === 'mobile';
-  const isLarge = size === 'large';
   const isMedium = size === 'medium';
-  
-  const fontSize = typeof size === 'number' 
-    ? size 
-    : isLarge 
-      ? 34 
-      : isMedium
-        ? 28
-        : isMobile 
-          ? 23 
-          : 27;
+  const isLarge = size === 'large';
+
+  const fontSize =
+    typeof size === 'number'
+      ? size
+      : isLarge
+        ? 34
+        : isMedium
+          ? 28
+          : isSmall
+            ? 18
+            : isMobile
+              ? 22
+              : 26;
+
+  // Sizing for the 4-pointed sparkle star icon
+  const sparkleSize = Math.max(12, Math.round(fontSize * 0.72));
+  const sparkleMargin = Math.max(3, Math.round(fontSize * 0.14));
 
   return (
     <motion.span
-      whileHover={{ scale: 1.04, filter: 'drop-shadow(0 0 16px rgba(52, 211, 153, 0.45))' }}
-      transition={{ type: 'spring', stiffness: 380, damping: 18 }}
-      className={className}
+      whileHover={{ scale: 1.03, filter: 'drop-shadow(0 0 16px rgba(0, 229, 153, 0.4))' }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+      className={`inline-flex items-center select-none cursor-pointer ${className}`}
       style={{
         fontSize,
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontWeight: 900,
-        letterSpacing: '-1.2px',
-        display: 'inline-flex',
-        alignItems: 'baseline',
-        textTransform: 'lowercase',
-        position: 'relative',
-        cursor: 'pointer',
-        userSelect: 'none',
+        fontFamily: "var(--font-poppins), 'Plus Jakarta Sans', var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        fontWeight: 800,
+        letterSpacing: '-0.04em',
+        lineHeight: 1,
+        textDecoration: 'none',
       }}
     >
-      {/* "plot" - Luminous Violet/Indigo Gradient */}
+      {/* "plot" - Crisp White */}
       <span
         style={{
-          background: 'linear-gradient(135deg, #F3E8FF 0%, #C084FC 45%, #9333EA 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          display: 'inline-flex',
-          alignItems: 'baseline',
+          color: '#FFFFFF',
+          fontWeight: 800,
+          letterSpacing: '-0.035em',
         }}
       >
-        <span style={{ fontSize: '1.22em', lineHeight: 0.8 }}>p</span>
-        <span style={{ fontSize: '1.28em', lineHeight: 0.8 }}>l</span>
-        <span style={{ fontSize: '0.84em', letterSpacing: '-0.5px' }}>o</span>
-        <span style={{ fontSize: '1.16em', lineHeight: 0.85 }}>t</span>
+        plot
       </span>
 
-      {/* "mint" - Electric Emerald Mint & Cyan Gradient */}
+      {/* "mint" - Electric Vibrant Mint Green */}
       <span
         style={{
-          background: 'linear-gradient(135deg, #A7F3D0 0%, #34D399 50%, #059669 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          display: 'inline-flex',
-          alignItems: 'baseline',
-          marginLeft: '1px',
+          color: '#00E599',
+          fontWeight: 800,
+          letterSpacing: '-0.035em',
         }}
       >
-        <span style={{ fontSize: '0.94em' }}>m</span>
-        <span style={{ fontSize: '1.22em', lineHeight: 0.8 }}>i</span>
-        <span style={{ fontSize: '0.92em' }}>n</span>
-        <span style={{ fontSize: '1.14em', lineHeight: 0.85 }}>t</span>
+        mint
       </span>
 
-      {/* Pulsing Emerald Mint Spark Node */}
-      <motion.span
-        animate={{
-          scale: [1, 1.25, 1],
-          opacity: [0.6, 1, 0.6],
-          boxShadow: [
-            '0 0 8px #34D399, 0 0 14px rgba(52, 211, 153, 0.5)',
-            '0 0 14px #34D399, 0 0 24px rgba(52, 211, 153, 0.9)',
-            '0 0 8px #34D399, 0 0 14px rgba(52, 211, 153, 0.5)',
-          ],
-        }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+      {/* Electric Cyan 4-Pointed Sparkle Star Icon */}
+      <motion.svg
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
         style={{
-          width: isMobile ? 5 : isLarge ? 8 : 6,
-          height: isMobile ? 5 : isLarge ? 8 : 6,
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, #A7F3D0, #10B981)',
-          marginLeft: 3,
-          alignSelf: 'center',
-          marginBottom: 2,
+          width: sparkleSize,
+          height: sparkleSize,
+          color: '#00F0FF',
+          marginLeft: sparkleMargin,
+          flexShrink: 0,
+          filter: 'drop-shadow(0 0 8px rgba(0, 240, 255, 0.65))',
         }}
-      />
+        animate={
+          animate
+            ? {
+                scale: [1, 1.15, 1],
+                rotate: [0, 6, 0, -6, 0],
+                filter: [
+                  'drop-shadow(0 0 6px rgba(0, 240, 255, 0.5))',
+                  'drop-shadow(0 0 14px rgba(0, 240, 255, 0.9))',
+                  'drop-shadow(0 0 6px rgba(0, 240, 255, 0.5))',
+                ],
+              }
+            : undefined
+        }
+        transition={{
+          duration: 3.2,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      >
+        <path d="M12 0C12 6.627 17.373 12 24 12C17.373 12 12 17.373 12 24C12 17.373 6.627 12 0 12C6.627 12 12 6.627 12 0Z" />
+      </motion.svg>
     </motion.span>
   );
 }
+

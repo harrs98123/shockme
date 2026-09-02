@@ -20,10 +20,6 @@ function normalizeUrl(url: string): string {
 
 export const env = {
   apiUrl: normalizeUrl(readEnv(process.env.EXPO_PUBLIC_API_URL, DEFAULT_API_URL)),
-  turnstileSiteKey: readEnv(process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY, ''),
-  turnstileHost: normalizeUrl(
-    readEnv(process.env.EXPO_PUBLIC_TURNSTILE_HOST, 'http://localhost:3000')
-  ),
   cloudinaryCloudName: readEnv(process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME, ''),
   cloudinaryUploadPreset: readEnv(process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET, ''),
   isDev: __DEV__,
