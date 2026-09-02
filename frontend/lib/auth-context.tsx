@@ -2,12 +2,18 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/lib/types';
-import api from '@/lib/api';
+import {
+  TOKEN_KEY,
+  USER_KEY,
+  clearSession,
+  ensureFreshToken,
+  persistSession,
+} from '@/lib/session';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (token: string, user: User) => void;
+  login: (token: string, user: User, refreshToken?: string | null) => void;
   logout: () => void;
   updateUser: (user: User) => void;
   isLoading: boolean;
@@ -28,41 +34,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('cinematch_token');
-    const savedUser = localStorage.getItem('cinematch_user');
+    const savedToken = localStorage.getItem(TOKEN_KEY);
+    const savedUser = localStorage.getItem(USER_KEY);
     if (savedToken && savedUser) {
       try {
         setToken(savedToken);
         setUser(JSON.parse(savedUser));
+        // Renew now if the token is within a week of expiring, so an active
+        // user's 30-day session keeps rolling and never dead-ends mid-use.
+        ensureFreshToken()
+          .then(() => {
+            const refreshed = localStorage.getItem(TOKEN_KEY);
+            if (refreshed && refreshed !== savedToken) setToken(refreshed);
+          })
+          .catch(() => {});
       } catch {
-        localStorage.removeItem('cinematch_token');
-        localStorage.removeItem('cinematch_user');
+        clearSession();
       }
     }
     setIsLoading(false);
   }, []);
 
-  const login = (tok: string, u: User) => {
+  const login = (tok: string, u: User, refreshToken?: string | null) => {
     setToken(tok);
     setUser(u);
-    localStorage.setItem('cinematch_token', tok);
-    localStorage.setItem('cinematch_user', JSON.stringify(u));
-    // Also set cookie for proxy.ts auth guard (30 days)
-    document.cookie = `cinematch_token=${tok}; path=/; max-age=${30 * 24 * 3600}; SameSite=Lax`;
+    persistSession(tok, u, refreshToken);
   };
 
   const logout = async () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('cinematch_token');
-    localStorage.removeItem('cinematch_user');
-    document.cookie = 'cinematch_token=; path=/; max-age=0';
+    clearSession();
     window.location.href = '/';
   };
 
   const updateUser = (u: User) => {
     setUser(u);
-    localStorage.setItem('cinematch_user', JSON.stringify(u));
+    localStorage.setItem(USER_KEY, JSON.stringify(u));
   };
 
   return (

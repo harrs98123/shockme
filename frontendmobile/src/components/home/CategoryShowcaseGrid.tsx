@@ -126,11 +126,7 @@ export function CategoryShowcaseGrid() {
 
         <IOSPressable
           style={styles.seeAllBtn}
-          onPress={() =>
-            router.push(
-              `/genre?id=${selectedGenreId}&name=${encodeURIComponent(activeCategory.name)}` as never
-            )
-          }
+          onPress={() => router.push('/(tabs)/browse' as never)}
           activeScale={0.92}
         >
           <Text style={styles.seeAllText}>See all</Text>
@@ -227,10 +223,25 @@ export function CategoryShowcaseGrid() {
         style={styles.reelSection}
       >
         <View style={styles.reelHeaderRow}>
-          <Text style={styles.reelTitle}>
-            Top in <Text style={{ color: '#FBBF24' }}>{activeCategory.name}</Text>
-          </Text>
-          <Text style={styles.reelSub}>{activeCategory.tagline}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.reelTitle}>
+              Top in <Text style={{ color: '#FBBF24' }}>{activeCategory.name}</Text>
+            </Text>
+            <Text style={styles.reelSub}>{activeCategory.tagline}</Text>
+          </View>
+
+          <IOSPressable
+            style={styles.reelSeeMoreBtn}
+            onPress={() =>
+              router.push(`/catalog/discover?with_genres=${activeCategory.id}` as never)
+            }
+            activeScale={0.92}
+            accessibilityRole="button"
+            accessibilityLabel={`See more ${activeCategory.name}`}
+          >
+            <Text style={styles.reelSeeMoreText}>See More</Text>
+            <ChevronRight size={13} color="#FBBF24" />
+          </IOSPressable>
         </View>
 
         <ScrollView
@@ -239,55 +250,102 @@ export function CategoryShowcaseGrid() {
           contentContainerStyle={styles.reelScrollContent}
         >
           {categoryMovies.length > 0
-            ? categoryMovies.map((movie: Media, idx) => {
-                const title = getEnglishTitle(movie);
-                const poster = posterUrl(movie.poster_path, 'w342');
-                const rating = movie.vote_average ? movie.vote_average.toFixed(1) : '7.5';
+            ? (
+                <>
+                  {categoryMovies.map((movie: Media, idx) => {
+                    const title = getEnglishTitle(movie);
+                    const poster = posterUrl(movie.poster_path, 'w342');
+                    const rating = movie.vote_average ? movie.vote_average.toFixed(1) : '7.5';
 
-                return (
-                  <Animated.View
-                    key={movie.id}
-                    entering={FadeInDown.delay(idx * 40).duration(300)}
+                    return (
+                      <Animated.View
+                        key={movie.id}
+                        entering={FadeInDown.delay(idx * 40).duration(300)}
+                      >
+                        <IOSPressable
+                          style={styles.movieCard}
+                          onPress={() => router.push(`/movie/${movie.id}` as never)}
+                          activeScale={0.94}
+                        >
+                          <View style={styles.posterWrapper}>
+                            {poster ? (
+                              <Image
+                                source={{ uri: poster }}
+                                style={styles.posterImg}
+                                contentFit="cover"
+                              />
+                            ) : (
+                              <View style={[styles.posterImg, { backgroundColor: '#1E1E26' }]} />
+                            )}
+
+                            <LinearGradient
+                              colors={['transparent', 'rgba(0,0,0,0.85)']}
+                              style={styles.posterGradient}
+                            />
+
+                            {/* Top Rating Badge */}
+                            <View style={styles.ratingBadge}>
+                              <Star size={10} color="#F59E0B" fill="#F59E0B" />
+                              <Text style={styles.ratingText}>{rating}</Text>
+                            </View>
+                          </View>
+
+                          <Text style={styles.movieTitle} numberOfLines={1}>
+                            {title}
+                          </Text>
+                        </IOSPressable>
+                      </Animated.View>
+                    );
+                  })}
+
+                  {/* See All Card at the end of the reel */}
+                  <IOSPressable
+                    style={styles.seeAllEndCard}
+                    onPress={() =>
+                      router.push(`/catalog/discover?with_genres=${activeCategory.id}` as never)
+                    }
+                    activeScale={0.94}
+                    accessibilityRole="button"
+                    accessibilityLabel={`See all ${activeCategory.name}`}
                   >
-                    <IOSPressable
-                      style={styles.movieCard}
-                      onPress={() => router.push(`/movie/${movie.id}` as never)}
-                      activeScale={0.94}
-                    >
-                      <View style={styles.posterWrapper}>
-                        {poster ? (
-                          <Image
-                            source={{ uri: poster }}
-                            style={styles.posterImg}
-                            contentFit="cover"
-                          />
-                        ) : (
-                          <View style={[styles.posterImg, { backgroundColor: '#1E1E26' }]} />
-                        )}
-
-                        <LinearGradient
-                          colors={['transparent', 'rgba(0,0,0,0.85)']}
-                          style={styles.posterGradient}
-                        />
-
-                        {/* Top Rating Badge */}
-                        <View style={styles.ratingBadge}>
-                          <Star size={10} color="#F59E0B" fill="#F59E0B" />
-                          <Text style={styles.ratingText}>{rating}</Text>
-                        </View>
-                      </View>
-
-                      <Text style={styles.movieTitle} numberOfLines={1}>
-                        {title}
-                      </Text>
-                    </IOSPressable>
-                  </Animated.View>
-                );
-              })
+                    <View style={styles.seeAllIconWrap}>
+                      <Film size={20} color="#FBBF24" />
+                    </View>
+                    <Text style={styles.seeAllEndTitle}>See All</Text>
+                    <Text style={styles.seeAllEndSub} numberOfLines={1}>
+                      {activeCategory.name}
+                    </Text>
+                    <Text style={styles.seeAllEndCount}>1,000+ Titles</Text>
+                  </IOSPressable>
+                </>
+              )
             : Array.from({ length: 5 }).map((_, i) => (
                 <View key={i} style={styles.movieSkeleton} />
               ))}
         </ScrollView>
+
+        {/* Bottom Bar: See More Button */}
+        <View style={styles.reelBottomBar}>
+          <Text style={styles.reelBottomText} numberOfLines={1}>
+            Discover all trending{' '}
+            <Text style={{ color: '#FFFFFF', fontFamily: fonts.headingSemi }}>
+              {activeCategory.name}
+            </Text>{' '}
+            movies
+          </Text>
+          <IOSPressable
+            style={styles.reelBottomBtn}
+            onPress={() =>
+              router.push(`/catalog/discover?with_genres=${activeCategory.id}` as never)
+            }
+            activeScale={0.94}
+            accessibilityRole="button"
+            accessibilityLabel={`See more ${activeCategory.name}`}
+          >
+            <Text style={styles.reelBottomBtnText}>See More</Text>
+            <ChevronRight size={12} color="#FBBF24" />
+          </IOSPressable>
+        </View>
       </Animated.View>
     </View>
   );
@@ -437,6 +495,25 @@ const styles = StyleSheet.create({
   reelHeaderRow: {
     paddingHorizontal: spacing.lg,
     marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  reelSeeMoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.sm,
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+  },
+  reelSeeMoreText: {
+    fontFamily: fonts.headingSemi,
+    fontSize: 11.5,
+    color: '#FBBF24',
   },
   reelTitle: {
     fontFamily: fonts.headingSemi,
@@ -455,6 +532,77 @@ const styles = StyleSheet.create({
   },
   movieCard: {
     width: 120,
+  },
+  seeAllEndCard: {
+    width: 120,
+    height: 175,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(251, 191, 36, 0.35)',
+    backgroundColor: 'rgba(251, 191, 36, 0.04)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+  },
+  seeAllIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  seeAllEndTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 12.5,
+    color: '#FFFFFF',
+  },
+  seeAllEndSub: {
+    fontFamily: fonts.headingSemi,
+    fontSize: 10.5,
+    color: '#FBBF24',
+    marginTop: 2,
+  },
+  seeAllEndCount: {
+    fontFamily: fonts.body,
+    fontSize: 9.5,
+    color: colors.textMuted,
+    marginTop: 4,
+  },
+  reelBottomBar: {
+    marginTop: 14,
+    marginHorizontal: spacing.lg,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  reelBottomText: {
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 11.5,
+    color: colors.textMuted,
+  },
+  reelBottomBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.sm,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+  },
+  reelBottomBtnText: {
+    fontFamily: fonts.headingSemi,
+    fontSize: 11.5,
+    color: '#FBBF24',
   },
   posterWrapper: {
     width: 120,

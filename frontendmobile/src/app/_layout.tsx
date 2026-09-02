@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AppState, StyleSheet, View, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -19,6 +19,7 @@ import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
 import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
 
 import { ToastHost } from '@/components/ui/ToastHost';
+import { maybeRefreshSession } from '@/api/client';
 import { queryClient } from '@/lib/query-client';
 import { useSessionSync } from '@/hooks/useSessionSync';
 import { useAuthStore } from '@/stores/auth.store';
@@ -53,11 +54,32 @@ export default function RootLayout() {
     restore();
   }, [restore]);
 
-  // Ensure the splash is visible smoothly for at least 800ms to avoid momentary flash
+  // Keep the 30-day session rolling: rotate the token on cold start and every
+  // time the app comes back to the foreground, before it can lapse into a
+  // user-visible logout. Runs after `restore()` has populated the store.
+  const appState = useRef(AppState.currentState);
+  useEffect(() => {
+    if (authStatus === 'authenticated') {
+      maybeRefreshSession();
+    }
+  }, [authStatus]);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
+      const cameToForeground =
+        appState.current.match(/inactive|background/) && next === 'active';
+      appState.current = next;
+      if (cameToForeground) maybeRefreshSession();
+    });
+    return () => sub.remove();
+  }, []);
+
+  // Hold the splash briefly so a fast cold start doesn't flash the UI in and
+  // straight back out. 500ms is long enough to read as intentional without
+  // adding avoidable startup latency.
   useEffect(() => {
     const timer = setTimeout(() => {
       setMinSplashElapsed(true);
-    }, 800);
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
 

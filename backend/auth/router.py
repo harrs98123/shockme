@@ -7,7 +7,8 @@ from auth.utils import (
     hash_password, verify_password, create_access_token, create_refresh_token,
     decode_refresh_token, hash_token, get_current_user,
     check_account_locked, record_failed_login, reset_failed_logins,
-    validate_password_strength, blacklist_access_token
+    validate_password_strength, blacklist_access_token,
+    REFRESH_TOKEN_EXPIRE_DAYS,
 )
 from fastapi.security import OAuth2PasswordBearer
 import random
@@ -84,7 +85,10 @@ def validate_turnstile(token: str, request: Request) -> bool:
 def _store_refresh_token(user_id: int, refresh_token: str, db: Session) -> None:
     """Hash and persist a refresh token in the DB."""
     token_hash = hash_token(refresh_token)
-    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    # Must match the JWT's own lifetime (REFRESH_TOKEN_EXPIRE_DAYS). A shorter
+    # window here silently logs users out while their refresh token is still
+    # cryptographically valid — the cause of "it logs me out after a week".
+    expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     record = models.RefreshToken(
         user_id=user_id,
         token_hash=token_hash,

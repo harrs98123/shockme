@@ -68,6 +68,7 @@ export interface Media {
   first_air_date?: string; // TV Show
   vote_average: number;
   vote_count: number;
+  popularity?: number;
   genre_ids: number[];
   genres?: Genre[];
   runtime?: number;

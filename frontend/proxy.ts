@@ -75,4 +75,6 @@ export async function proxy(request: NextRequest) {
       return rateLimit429(reset, limit, remaining);
     }
   }
+
+  return NextResponse.next();
 }

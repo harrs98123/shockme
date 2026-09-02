@@ -13,6 +13,8 @@ export interface User {
 
 export interface AuthToken {
   access_token: string;
+  /** Long-lived (30d) token used to silently mint a new access token. */
+  refresh_token?: string;
   token_type: string;
   user: User;
 }
@@ -32,6 +34,7 @@ export interface Media {
   first_air_date?: string; // TV Show
   vote_average: number;
   vote_count: number;
+  popularity?: number;
   genre_ids: number[];
   genres?: Genre[];
   runtime?: number;

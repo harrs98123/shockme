@@ -111,7 +111,7 @@ function LoginForm() {
 
     try {
       const res = await api.post('/auth/login', { login_id: loginId, password, turnstile_token: turnstileToken });
-      login(res.data.access_token, res.data.user);
+      login(res.data.access_token, res.data.user, res.data.refresh_token);
 
       const from = searchParams?.get('from') || '/profile';
       router.push(from);

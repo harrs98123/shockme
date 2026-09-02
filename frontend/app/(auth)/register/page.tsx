@@ -166,7 +166,7 @@ export default function RegisterPage() {
 
     try {
       const res = await api.post('/auth/register', { name, username, email, password, turnstile_token: turnstileToken });
-      login(res.data.access_token, res.data.user);
+      login(res.data.access_token, res.data.user, res.data.refresh_token);
       router.push('/profile');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'An error occurred during registration');

@@ -176,6 +176,28 @@ function CatalogMovieCard({
   );
 }
 
+const GENRE_NAME_MAP: Record<string, string> = {
+  '28': 'Action',
+  '12': 'Adventure',
+  '16': 'Animation',
+  '35': 'Comedy',
+  '80': 'Crime',
+  '99': 'Documentary',
+  '18': 'Drama',
+  '10751': 'Family',
+  '14': 'Fantasy',
+  '36': 'History',
+  '27': 'Horror',
+  '10402': 'Music',
+  '9648': 'Mystery',
+  '10749': 'Romance',
+  '878': 'Sci-Fi',
+  '10770': 'TV Movie',
+  '53': 'Thriller',
+  '10752': 'War',
+  '37': 'Western',
+};
+
 export default function CatalogScreen() {
   const { slug, with_genres, with_origin_country, with_original_language, sort_by } =
     useLocalSearchParams<{
@@ -189,10 +211,14 @@ export default function CatalogScreen() {
   const { isAuthenticated } = useAuth();
   const qc = useQueryClient();
 
+  const genreName = with_genres ? GENRE_NAME_MAP[with_genres] : null;
+
   const typeConfig = CATALOG_TYPE_MAP[slug || 'trending'] || {
-    title: slug === 'discover' ? 'Discover Cinema' : 'Catalog',
-    subtitle: 'Browsing all titles',
-    description: 'Explore our comprehensive movie and TV catalogue.',
+    title: genreName ? `${genreName} Movies` : slug === 'discover' ? 'Discover Cinema' : 'Catalog',
+    subtitle: genreName ? `Curated ${genreName.toLowerCase()} collection` : 'Browsing all titles',
+    description: genreName
+      ? `Explore top-rated and trending ${genreName.toLowerCase()} movies.`
+      : 'Explore our comprehensive movie and TV catalogue.',
   };
 
   // User list queries for active button states

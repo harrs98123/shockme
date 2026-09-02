@@ -16,6 +16,28 @@ export default function CatalogClient() {
   );
 }
 
+const GENRE_NAME_MAP: Record<string, string> = {
+  '28': 'Action',
+  '12': 'Adventure',
+  '16': 'Animation',
+  '35': 'Comedy',
+  '80': 'Crime',
+  '99': 'Documentary',
+  '18': 'Drama',
+  '10751': 'Family',
+  '14': 'Fantasy',
+  '36': 'History',
+  '27': 'Horror',
+  '10402': 'Music',
+  '9648': 'Mystery',
+  '10749': 'Romance',
+  '878': 'Sci-Fi',
+  '10770': 'TV Movie',
+  '53': 'Thriller',
+  '10752': 'War',
+  '37': 'Western',
+};
+
 function CatalogContent() {
   const { type } = useParams() as { type: string };
   const searchParams = useSearchParams();
@@ -24,13 +46,19 @@ function CatalogContent() {
   const [displayTitle, setDisplayTitle] = useState(config.title);
 
   useEffect(() => {
-    // If we have search params like with_genres, we don't know the name easily without full lists.
-    // However, for typical 'discover' cases, we can at least show a better base title.
     if (type === 'discover') {
-      if (searchParams.has('with_genres')) setDisplayTitle('Genre Results');
-      else if (searchParams.has('with_origin_country')) setDisplayTitle('Global Cinema');
-      else if (searchParams.has('with_original_language')) setDisplayTitle('Language Collection');
-      else setDisplayTitle('Discover');
+      const gId = searchParams.get('with_genres');
+      if (gId && GENRE_NAME_MAP[gId]) {
+        setDisplayTitle(`${GENRE_NAME_MAP[gId]} Movies`);
+      } else if (searchParams.has('with_genres')) {
+        setDisplayTitle('Genre Results');
+      } else if (searchParams.has('with_origin_country')) {
+        setDisplayTitle('Global Cinema');
+      } else if (searchParams.has('with_original_language')) {
+        setDisplayTitle('Language Collection');
+      } else {
+        setDisplayTitle('Discover');
+      }
     } else {
       setDisplayTitle(config.title);
     }

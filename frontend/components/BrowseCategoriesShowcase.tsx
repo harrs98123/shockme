@@ -166,7 +166,7 @@ export default function BrowseCategoriesShowcase({
           </div>
 
           <Link
-            href={`/catalog/discover?with_genres=${activeCategory.id}`}
+            href="/browse/genre"
             className="text-xs sm:text-sm font-semibold text-[#FBBF24] hover:underline flex items-center gap-1"
           >
             <span>See all</span>

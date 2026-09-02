@@ -58,13 +58,20 @@ const GENRE_OPTIONS: FilterOption[] = [
   { id: '16', name: 'Animation', params: { with_genres: '16' } },
   { id: '35', name: 'Comedy', params: { with_genres: '35' } },
   { id: '80', name: 'Crime', params: { with_genres: '80' } },
+  { id: '99', name: 'Documentary', params: { with_genres: '99' } },
   { id: '18', name: 'Drama', params: { with_genres: '18' } },
+  { id: '10751', name: 'Family', params: { with_genres: '10751' } },
   { id: '14', name: 'Fantasy', params: { with_genres: '14' } },
+  { id: '36', name: 'History', params: { with_genres: '36' } },
   { id: '27', name: 'Horror', params: { with_genres: '27' } },
+  { id: '10402', name: 'Music', params: { with_genres: '10402' } },
   { id: '9648', name: 'Mystery', params: { with_genres: '9648' } },
   { id: '10749', name: 'Romance', params: { with_genres: '10749' } },
   { id: '878', name: 'Sci-Fi', params: { with_genres: '878' } },
+  { id: '10770', name: 'TV Movie', params: { with_genres: '10770' } },
   { id: '53', name: 'Thriller', params: { with_genres: '53' } },
+  { id: '10752', name: 'War', params: { with_genres: '10752' } },
+  { id: '37', name: 'Western', params: { with_genres: '37' } },
 ];
 
 const ANIME_OPTIONS: FilterOption[] = [
@@ -75,8 +82,8 @@ const ANIME_OPTIONS: FilterOption[] = [
     params: {
       with_genres: '16',
       with_original_language: 'ja',
-      'vote_average.gte': 7.8,
-      'vote_count.gte': 200,
+      vote_average_gte: 7.8,
+      vote_count_gte: 200,
       sort_by: 'vote_average.desc',
     },
   },
@@ -115,7 +122,7 @@ const AWARDS_OPTIONS: FilterOption[] = [
     name: 'Academy Awards & Oscars',
     params: {
       with_keywords: '6091|8234|286595',
-      'vote_count.gte': 100,
+      vote_count_gte: 100,
       sort_by: 'vote_average.desc',
     },
   },
@@ -124,7 +131,7 @@ const AWARDS_OPTIONS: FilterOption[] = [
     name: 'Golden Globes',
     params: {
       with_keywords: '11862',
-      'vote_count.gte': 100,
+      vote_count_gte: 100,
       sort_by: 'vote_average.desc',
     },
   },
@@ -133,7 +140,7 @@ const AWARDS_OPTIONS: FilterOption[] = [
     name: 'Cannes Film Festival',
     params: {
       with_keywords: '13123',
-      'vote_count.gte': 50,
+      vote_count_gte: 50,
       sort_by: 'vote_average.desc',
     },
   },
@@ -141,8 +148,8 @@ const AWARDS_OPTIONS: FilterOption[] = [
     id: 'all',
     name: 'All Acclaimed (8.0+)',
     params: {
-      'vote_average.gte': 8.0,
-      'vote_count.gte': 800,
+      vote_average_gte: 8.0,
+      vote_count_gte: 800,
       sort_by: 'vote_average.desc',
     },
   },
@@ -188,7 +195,7 @@ const FAMILY_OPTIONS: FilterOption[] = [
     params: {
       with_genres: '10751',
       without_genres: '27,53,80,10752',
-      'vote_average.gte': 6.5,
+      vote_average_gte: 6.5,
       sort_by: 'popularity.desc',
     },
   },
@@ -198,7 +205,7 @@ const FAMILY_OPTIONS: FilterOption[] = [
     params: {
       with_genres: '10751,16',
       without_genres: '27,53,80',
-      'vote_average.gte': 7.0,
+      vote_average_gte: 7.0,
       sort_by: 'vote_average.desc',
     },
   },
@@ -208,7 +215,7 @@ const FAMILY_OPTIONS: FilterOption[] = [
     params: {
       with_genres: '10751,12,14',
       without_genres: '27,53,80',
-      'vote_average.gte': 6.5,
+      vote_average_gte: 6.5,
       sort_by: 'popularity.desc',
     },
   },
@@ -218,7 +225,7 @@ const FAMILY_OPTIONS: FilterOption[] = [
     params: {
       with_genres: '10751,35',
       without_genres: '27,53,80',
-      'vote_average.gte': 6.2,
+      vote_average_gte: 6.2,
       sort_by: 'popularity.desc',
     },
   },
@@ -320,15 +327,30 @@ function getCategoryConfig(categoryKey: string): HeaderMeta {
 }
 
 export default function CategoryBrowseScreen() {
-  const { category = 'genre' } = useLocalSearchParams<{ category: string }>();
+  const { category = 'genre', initialId } = useLocalSearchParams<{ category: string; initialId?: string }>();
   const config = useMemo(() => getCategoryConfig(category), [category]);
 
-  const [selectedFilter, setSelectedFilter] = useState<FilterOption>(config.options[0]);
+  const initialFilter = useMemo(() => {
+    if (initialId) {
+      const match = config.options.find((opt) => opt.id === initialId);
+      if (match) return match;
+    }
+    return config.options[0];
+  }, [config, initialId]);
 
-  // Keep state updated if URL param category changes
+  const [selectedFilter, setSelectedFilter] = useState<FilterOption>(initialFilter);
+
+  // Keep state updated if URL param category or initialId changes
   React.useEffect(() => {
+    if (initialId) {
+      const match = config.options.find((opt) => opt.id === initialId);
+      if (match) {
+        setSelectedFilter(match);
+        return;
+      }
+    }
     setSelectedFilter(config.options[0]);
-  }, [config]);
+  }, [config, initialId]);
 
   // Live Query
   const { data, isLoading, refetch, isRefetching } = useQuery({

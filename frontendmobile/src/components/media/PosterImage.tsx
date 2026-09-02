@@ -48,6 +48,10 @@ function PosterImageComponent({
       contentFit="cover"
       transition={200}
       cachePolicy="memory-disk"
+      // Lets expo-image reuse the native view for the next poster as this row
+      // scrolls, instead of tearing it down and rebuilding — smoother fast
+      // flings through long rails.
+      recyclingKey={uri}
       placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
     />
   );

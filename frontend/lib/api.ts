@@ -1,6 +1,12 @@
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
+import { clearSession, getToken, refreshAccessToken } from '@/lib/session';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+type RetriableConfig = InternalAxiosRequestConfig & {
+  _retried?: boolean;
+  _skipAuthRefresh?: boolean;
+};
 
 const api = axios.create({
   baseURL: API_URL,
@@ -9,28 +15,46 @@ const api = axios.create({
 
 // Attach JWT on every request
 api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('cinematch_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+  const token = getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Redirect to login on 401
+// On a 401, try a silent token refresh and replay the request once. Only when
+// that fails (no refresh token, or it's expired/revoked) do we end the session.
+// A single transient 401 no longer logs the user out.
 api.interceptors.response.use(
   (res) => res,
-  (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
-      const isAuthRoute =
-        window.location.pathname.startsWith('/login') ||
-        window.location.pathname.startsWith('/register');
-      if (!isAuthRoute) {
-        localStorage.removeItem('cinematch_token');
-        localStorage.removeItem('cinematch_user');
-        window.location.href = '/login';
-      }
+  async (error) => {
+    const config = error.config as RetriableConfig | undefined;
+    const status = error.response?.status;
+
+    if (
+      status !== 401 ||
+      typeof window === 'undefined' ||
+      !config ||
+      config._retried ||
+      config._skipAuthRefresh
+    ) {
+      return Promise.reject(error);
+    }
+
+    config._retried = true;
+    const newToken = await refreshAccessToken();
+
+    if (newToken) {
+      config.headers.Authorization = `Bearer ${newToken}`;
+      return api(config);
+    }
+
+    const isAuthRoute =
+      window.location.pathname.startsWith('/login') ||
+      window.location.pathname.startsWith('/register');
+    clearSession();
+    if (!isAuthRoute) {
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }

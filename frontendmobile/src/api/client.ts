@@ -62,6 +62,51 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+/** ms-since-epoch of a JWT's `exp` claim, or null if it can't be parsed. */
+function readJwtExpiry(token: string): number | null {
+  try {
+    const [, payload] = token.split('.');
+    const json = JSON.parse(
+      // RN's atob (Hermes) handles standard base64; JWT uses base64url.
+      atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    );
+    return typeof json.exp === 'number' ? json.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+const PROACTIVE_REFRESH_THRESHOLD_MS = 7 * 24 * 3600 * 1000;
+
+/**
+ * Rotates the token pair ahead of expiry. Call on cold start and whenever the
+ * app returns to the foreground, so a session that has been idle for weeks is
+ * renewed before the access token lapses rather than after a user-visible 401.
+ * Cheap and safe to call often: it no-ops unless the token is within a week of
+ * expiring, and shares the single-flight promise with the 401 path.
+ */
+export async function maybeRefreshSession(): Promise<void> {
+  const token = authStore.getAccessToken();
+  if (!token || !authStore.getRefreshToken()) return;
+
+  const expiry = readJwtExpiry(token);
+  if (expiry !== null && expiry - Date.now() > PROACTIVE_REFRESH_THRESHOLD_MS) {
+    return;
+  }
+
+  refreshPromise ??= refreshAccessToken().finally(() => {
+    refreshPromise = null;
+  });
+  const next = await refreshPromise;
+
+  // Only tear down the session if the access token is genuinely dead. A failed
+  // refresh while merely offline must not sign out a user whose token is still
+  // valid for weeks — the reactive 401 path will retry later.
+  if (!next && expiry !== null && expiry <= Date.now()) {
+    await authStore.clear();
+  }
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {

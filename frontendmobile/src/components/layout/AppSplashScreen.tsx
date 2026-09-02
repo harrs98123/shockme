@@ -111,10 +111,10 @@ export function AppSplashScreen({ isReady, onTransitionEnd, children }: AppSplas
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#030308',
+    backgroundColor: '#08011D',
   },
   splashContainer: {
-    backgroundColor: '#030308',
+    backgroundColor: '#08011D',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 99999,

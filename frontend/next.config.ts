@@ -109,6 +109,16 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  async redirects() {
+    return [
+      {
+        source: '/category',
+        destination: '/browse/category',
+        permanent: true,
+      },
+    ];
+  },
+
   // Disable the X-Powered-By: Next.js header
   poweredByHeader: false,
 };

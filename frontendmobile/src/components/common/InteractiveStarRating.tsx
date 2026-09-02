@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   runOnJS,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { Star } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -98,9 +99,9 @@ export function InteractiveStarRating({
 
 interface FractionalStarProps {
   index: number;
-  rating: Animated.SharedValue<number>;
+  rating: SharedValue<number>;
   size: number;
-  isDragging: Animated.SharedValue<boolean>;
+  isDragging: SharedValue<boolean>;
 }
 
 function FractionalStar({ index, rating, size, isDragging }: FractionalStarProps) {
