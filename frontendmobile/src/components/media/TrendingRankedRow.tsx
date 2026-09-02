@@ -12,7 +12,7 @@ import { Heart } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import type { Media } from '@/types';
-import { colors, fonts, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing, createTextShadow } from '@/theme';
 import { getEnglishTitle } from '@/lib/format';
 import { IOSPressable } from '@/components/ios/IOSPressable';
 import { PosterImage } from './PosterImage';
@@ -108,8 +108,7 @@ function RankedCard({
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.92)']}
           locations={[0, 0.5, 1]}
-          style={StyleSheet.absoluteFillObject}
-          pointerEvents="none"
+          style={[StyleSheet.absoluteFillObject, { pointerEvents: 'none' }]}
         />
 
         {/* Floating Glass Favorite Heart Button */}
@@ -243,9 +242,7 @@ const styles = StyleSheet.create({
     marginRight: -12,
     zIndex: 0,
     letterSpacing: -4,
-    textShadowColor: 'rgba(255,255,255,0.32)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 1,
+    ...createTextShadow('rgba(255,255,255,0.32)', -1, 1, 1),
     includeFontPadding: false,
   },
   card: {

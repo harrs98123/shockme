@@ -36,11 +36,11 @@ export function IOSGlassSurface({
 }: IOSGlassSurfaceProps) {
   return (
     <View
-      pointerEvents={pointerEvents}
       style={[
         styles.root,
         { borderRadius },
         elevated && styles.elevated,
+        pointerEvents ? { pointerEvents } : undefined,
         style,
       ]}
     >
@@ -54,13 +54,13 @@ export function IOSGlassSurface({
 
       {/* Specular Hairline Rim */}
       <View
-        pointerEvents="none"
         style={[
           StyleSheet.absoluteFill,
           styles.specularRim,
           {
             borderRadius,
             borderColor: `rgba(255, 255, 255, ${borderOpacity})`,
+            pointerEvents: 'none',
           },
         ]}
       />

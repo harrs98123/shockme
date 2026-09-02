@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import CollectionDetailClient from '@/components/CollectionDetailClient';
 import { absoluteUrl, posterAbsoluteUrl, toDescription } from '@/lib/seo';
+import { BACKEND_FETCH_HEADERS } from '@/lib/backendFetch';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -18,7 +19,7 @@ interface CollectionPreview {
 // auth-aware collection data for actual rendering.
 async function fetchCollectionPreview(id: string): Promise<CollectionPreview | null> {
   try {
-    const res = await fetch(`${API_BASE}/collections/${id}`, { next: { revalidate: 600 } });
+    const res = await fetch(`${API_BASE}/collections/${id}`, { next: { revalidate: 600 }, headers: BACKEND_FETCH_HEADERS });
     if (!res.ok) return null;
     const data = await res.json();
     if (!data?.is_public) return null;

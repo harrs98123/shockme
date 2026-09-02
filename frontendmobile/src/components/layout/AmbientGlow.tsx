@@ -10,7 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
  */
 export function AmbientGlow() {
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
       {/* Primary diagonal purple/violet wash */}
       <LinearGradient
         colors={[

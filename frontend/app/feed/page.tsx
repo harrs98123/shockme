@@ -235,9 +235,19 @@ export default function SocialFeedPage() {
       return { ...p, user_reaction: newReaction, reactions: newReactions };
     }));
 
-    api.post(`/posts/posts/${postId}/react`, { reaction_type: reactionType }).catch((err) => {
-      console.error(err);
-    });
+    api.post<SocialPost>(`/posts/posts/${postId}/react`, { reaction_type: reactionType })
+      .then((res) => {
+        // Replace the optimistic guess with the server's authoritative
+        // reaction state — protects against races (rapid clicks, another
+        // tab reacting) leaving the UI showing something that isn't real.
+        const { user_reaction, reactions } = res.data;
+        updateAllTabs((posts) => posts.map((p) => (
+          p.id === postId ? { ...p, user_reaction, reactions } : p
+        )));
+      })
+      .catch((err) => {
+        console.error(err);
+      });
   }, [currentUser, updateAllTabs]);
 
   const handlePollVoteSuccess = useCallback((postId: number, updatedPayload: any) => {

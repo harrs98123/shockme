@@ -9,7 +9,7 @@ import { Heart, Tv } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import type { Media } from '@/types';
-import { colors, radius, shadows } from '@/theme';
+import { colors, radius, shadows, createTextShadow } from '@/theme';
 import { getEnglishTitle } from '@/lib/format';
 import { posterSize, POSTER_ASPECT, HIT_SLOP } from '@/theme/layout';
 import { IOSPressable } from '@/components/ios/IOSPressable';
@@ -25,8 +25,11 @@ interface Props {
 
 /**
  * Vertical poster card with Apple spring touch physics and subtle liquid depth.
+ * Memoized — rendered as a FlatList row in every movie rail on the app, so an
+ * unrelated prop change on the row (e.g. another card's favorite toggling)
+ * shouldn't re-render every card in view.
  */
-export function MovieCard({ movie, isFav = false, onFavToggle, width }: Props) {
+function MovieCardComponent({ movie, isFav = false, onFavToggle, width }: Props) {
   const cardWidth = width ?? posterSize.md;
   const cardHeight = Math.round(cardWidth / POSTER_ASPECT);
 
@@ -112,6 +115,8 @@ export function MovieCard({ movie, isFav = false, onFavToggle, width }: Props) {
   );
 }
 
+export const MovieCard = React.memo(MovieCardComponent);
+
 const styles = StyleSheet.create({
   root: {
     marginRight: 10,
@@ -173,9 +178,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.text,
     lineHeight: 13,
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    ...createTextShadow('rgba(0,0,0,0.8)', 0, 1, 3),
   },
   ratingChip: {
     position: 'absolute',

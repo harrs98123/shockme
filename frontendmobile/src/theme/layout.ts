@@ -31,6 +31,7 @@ export const radius = {
 /** `--shadow-card` and `--shadow-glow`, translated to RN shadow props. */
 export const shadows = {
   card: Platform.select({
+    web: { boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)' },
     ios: {
       shadowColor: '#000000',
       shadowOffset: { width: 0, height: 4 },
@@ -40,6 +41,7 @@ export const shadows = {
     default: { elevation: 6 },
   }),
   poster: Platform.select({
+    web: { boxShadow: '0 10px 15px rgba(0, 0, 0, 0.5)' },
     ios: {
       shadowColor: '#000000',
       shadowOffset: { width: 0, height: 10 },
@@ -49,6 +51,7 @@ export const shadows = {
     default: { elevation: 8 },
   }),
   glow: Platform.select({
+    web: { boxShadow: '0 0 15px rgba(229, 9, 20, 0.45)' },
     ios: {
       shadowColor: '#E50914',
       shadowOffset: { width: 0, height: 0 },
@@ -58,10 +61,25 @@ export const shadows = {
     default: { elevation: 10 },
   }),
   none: Platform.select({
+    web: { boxShadow: 'none' },
     ios: { shadowOpacity: 0 },
     default: { elevation: 0 },
   }),
 } as const;
+
+/**
+ * Cross-platform textShadow helper avoiding React Native Web deprecation warnings.
+ */
+export function createTextShadow(color: string, offsetX = 0, offsetY = 1, radius = 3) {
+  return Platform.select({
+    web: { textShadow: `${offsetX}px ${offsetY}px ${radius}px ${color}` },
+    default: {
+      textShadowColor: color,
+      textShadowOffset: { width: offsetX, height: offsetY },
+      textShadowRadius: radius,
+    },
+  });
+}
 
 /**
  * Poster sizing. The web card is 135×202 on small phones and 148×222 from the

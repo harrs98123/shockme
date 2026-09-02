@@ -735,10 +735,28 @@ async def get_universe_map(request: Request, person_id: int):
 
 
 @router.get("/{movie_id}/imdb-rating")
-async def get_imdb_rating(movie_id: int, imdb_id: Optional[str] = None, title: Optional[str] = None):
+@_limiter.limit("60/minute")
+async def get_imdb_rating(request: Request, movie_id: int, imdb_id: Optional[str] = None, title: Optional[str] = None):
     """
     Fetch real live IMDb rating from internet using OMDb.
+    Cached — OMDb has no bulk endpoint and ratings change slowly, so every
+    uncached call was up to 4 uncached external HTTP round-trips per movie.
     """
+    from cache_utils import cache_get, cache_set
+
+    cache_key = f"imdb_rating:{movie_id}:{imdb_id or ''}:{title or ''}"
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    result = await _fetch_imdb_rating(movie_id, imdb_id, title)
+    # Cache both hits and misses for 24h — ratings rarely change, and caching
+    # "unavailable" too stops repeat requests from re-triggering the OMDb fan-out.
+    await cache_set(cache_key, result, 86400)
+    return result
+
+
+async def _fetch_imdb_rating(movie_id: int, imdb_id: Optional[str], title: Optional[str]) -> dict:
     if not imdb_id:
         try:
             tmdb_data = await tmdb_get(f"/movie/{movie_id}", {"append_to_response": "external_ids"})
@@ -796,7 +814,8 @@ async def get_tv_season(tv_id: int, season_number: int):
 
 
 @router.get("/{movie_id}")
-async def get_details(movie_id: int, media_type: str = "movie"):
+@_limiter.limit("100/minute")
+async def get_details(request: Request, movie_id: int, media_type: str = "movie"):
     path = f"/movie/{movie_id}" if media_type == "movie" else f"/tv/{movie_id}"
     data = await tmdb_get(
         path,
@@ -915,7 +934,8 @@ async def get_franchise_info(movie_id: int, media_type: str = "movie"):
 
 
 @router.get("/person/{person_id}")
-async def get_person_details(person_id: int):
+@_limiter.limit("60/minute")
+async def get_person_details(request: Request, person_id: int):
     """
     Fetch comprehensive person details:
     1. Basic Info (Bio, Birthday, Place of Birth)

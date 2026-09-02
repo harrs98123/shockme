@@ -159,7 +159,10 @@ export default function MovieSwipeScreen() {
           <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.cardContainer, animatedCardStyle]}>
               <Image
-                source={{ uri: posterUrl(currentMovie.poster_path, 'original') || undefined }}
+                // w780 is TMDB's largest non-'original' poster size — 'original'
+                // runs 2000px+ and was costing several MB per card for no visible
+                // gain at screen width.
+                source={{ uri: posterUrl(currentMovie.poster_path, 'w780') || undefined }}
                 style={styles.poster}
                 contentFit="cover"
               />

@@ -336,11 +336,14 @@ export interface Debate {
   id: number;
   movie_id: number;
   user_id: number;
-  stance: 'agree' | 'disagree';
+  // "neutral" is a reply — only a top-level argument carries agree/disagree.
+  stance: 'agree' | 'disagree' | 'neutral';
   content: string;
   parent_id: number | null;
   created_at: string;
   author_name: string;
+  author_username?: string | null;
+  author_avatar?: string | null;
   upvotes: number;
   downvotes: number;
   user_vote: 'up' | 'down' | null;

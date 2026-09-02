@@ -354,10 +354,9 @@ export default function MovieDetailScreen() {
       />
       {/* ── Fixed Solid/Blur Header on Scroll ── */}
       <Animated.View
-        pointerEvents="box-none"
         style={[
           styles.stickyHeaderBackground,
-          { height: headerTopOffset + 48, paddingTop: headerTopOffset },
+          { height: headerTopOffset + 48, paddingTop: headerTopOffset, pointerEvents: 'box-none' },
           headerBarAnimStyle,
         ]}
       >
@@ -367,7 +366,7 @@ export default function MovieDetailScreen() {
       </Animated.View>
 
       {/* ── Fixed Floating Controls ── */}
-      <View style={[styles.headerFloating, { top: headerTopOffset }]} pointerEvents="box-none">
+      <View style={[styles.headerFloating, { top: headerTopOffset, pointerEvents: 'box-none' }]}>
         {/* Back Button */}
         <IOSPressable
           style={styles.circleBtn}

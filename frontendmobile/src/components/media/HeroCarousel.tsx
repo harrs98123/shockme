@@ -30,7 +30,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import type { Media } from '@/types';
-import { colors, radius, fonts } from '@/theme';
+import { colors, radius, fonts, createTextShadow } from '@/theme';
 import { backdropUrl, posterUrl } from '@/lib/images';
 import { getEnglishTitle } from '@/lib/format';
 import { getGenreNames } from '@/constants/genreMap';
@@ -76,8 +76,11 @@ function HeroSlide({ movie, watchlistIds, onWatchlistToggle }: SlideProps) {
   const [activeTab, setActiveTab] = useState<'suggested' | 'extras' | 'details'>('suggested');
   const title = getEnglishTitle(movie).toUpperCase();
 
+  // w780 matches (or exceeds) actual on-screen pixel width at typical phone
+  // scale factors — TMDB's 'original' posters run 2000px+ and were costing
+  // several MB per slide for no visible gain on a screen-width background.
   const imageUri =
-    posterUrl(movie.poster_path, 'original') ||
+    posterUrl(movie.poster_path, 'w780') ||
     backdropUrl(movie.backdrop_path, 'w1280');
 
   const mediaType =
@@ -135,8 +138,7 @@ function HeroSlide({ movie, watchlistIds, onWatchlistToggle }: SlideProps) {
       <LinearGradient
         colors={['rgba(10,10,12,0.85)', 'rgba(10,10,12,0.4)', 'transparent']}
         locations={[0, 0.45, 1]}
-        style={styles.topGradient}
-        pointerEvents="none"
+        style={[styles.topGradient, { pointerEvents: 'none' }]}
       />
 
       {/* Multi-stage cinematic fade */}
@@ -149,8 +151,7 @@ function HeroSlide({ movie, watchlistIds, onWatchlistToggle }: SlideProps) {
           '#0A0A0C',
         ]}
         locations={[0, 0.35, 0.58, 0.78, 1]}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}
       />
 
       {/* Hero Content Area */}
@@ -615,9 +616,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: -0.5,
     lineHeight: 31,
-    textShadowColor: 'rgba(0,0,0,0.9)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
+    ...createTextShadow('rgba(0,0,0,0.9)', 0, 2, 10),
   },
   badgesLine: {
     flexDirection: 'row',

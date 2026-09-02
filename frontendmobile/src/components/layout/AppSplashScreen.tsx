@@ -80,8 +80,12 @@ export function AppSplashScreen({ isReady, onTransitionEnd, children }: AppSplas
       {/* Branded Splash Screen Overlay */}
       {splashMounted && (
         <Animated.View
-          style={[StyleSheet.absoluteFillObject, styles.splashContainer, animatedSplashStyle]}
-          pointerEvents={isReady ? 'none' : 'auto'}
+          style={[
+            StyleSheet.absoluteFillObject,
+            styles.splashContainer,
+            animatedSplashStyle,
+            { pointerEvents: isReady ? 'none' : 'auto' },
+          ]}
         >
           <Image
             source={SPLASH_IMAGE}

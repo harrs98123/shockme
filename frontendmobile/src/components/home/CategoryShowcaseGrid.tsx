@@ -25,7 +25,7 @@ import {
 
 import { moviesApi } from '@/api/movies';
 import type { Media } from '@/types';
-import { colors, fonts, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing, createTextShadow } from '@/theme';
 import { posterUrl } from '@/lib/images';
 import { getEnglishTitle } from '@/lib/format';
 import { IOSPressable } from '@/components/ios/IOSPressable';
@@ -409,9 +409,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.headingSemi,
     fontSize: 13.5,
     color: '#FFFFFF',
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    ...createTextShadow('rgba(0,0,0,0.8)', 0, 1, 3),
   },
   cardTagline: {
     fontFamily: fonts.body,

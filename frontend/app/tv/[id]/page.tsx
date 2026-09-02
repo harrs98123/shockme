@@ -9,12 +9,13 @@ import MoctaleMeter from '@/components/MoctaleMeter';
 import SeasonsSection from '@/components/SeasonsSection';
 import WatchOrderPanel from '@/components/WatchOrderPanel';
 import { absoluteUrl, buildTvSeriesJsonLd, jsonLdScript, posterAbsoluteUrl, toDescription } from '@/lib/seo';
+import { BACKEND_FETCH_HEADERS } from '@/lib/backendFetch';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 async function fetchTV(id: string) {
   try {
-    const res = await fetch(`${API_BASE}/movies/${id}?media_type=tv`, { next: { revalidate: 300 } });
+    const res = await fetch(`${API_BASE}/movies/${id}?media_type=tv`, { next: { revalidate: 300 }, headers: BACKEND_FETCH_HEADERS });
     if (!res.ok) return null;
     return await res.json();
   } catch {

@@ -35,6 +35,7 @@ import { MovieRow } from '@/components/media/MovieRow';
 import { openTrailerInYouTube } from '@/lib/trailer';
 import type { Video } from '@/types';
 import { MoctaleMeterSection } from '@/components/media/MoctaleMeterSection';
+import { BattleGroundsSection } from '@/components/media/BattleGroundsSection';
 import { WhereToWatchSection } from '@/components/media/WhereToWatchSection';
 import { AiInsightsSection } from '@/components/media/AiInsightsSection';
 import { MovieQuoteLoader } from '@/components/media/MovieQuoteLoader';
@@ -134,7 +135,7 @@ export default function TvDetailScreen() {
         }}
       />
       {/* Fixed Top Header Controls */}
-      <View style={[styles.headerFloating, { top: insets.top + 8 }]} pointerEvents="box-none">
+      <View style={[styles.headerFloating, { top: insets.top + 8, pointerEvents: 'box-none' }]}>
         <IOSPressable
           style={styles.circleBtn}
           onPress={() => router.back()}
@@ -297,6 +298,9 @@ export default function TvDetailScreen() {
           title={title}
           posterPath={tvShow.poster_path}
         />
+
+        {/* Battle Grounds / Debates */}
+        <BattleGroundsSection movieId={tvShow.id} mediaType="tv" />
 
         {/* AI Cinematic Lab (Deep Dive & Alternate Endings) */}
         <AiInsightsSection

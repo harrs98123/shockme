@@ -3,6 +3,7 @@ export {
   spacing,
   radius,
   shadows,
+  createTextShadow,
   posterSize,
   POSTER_ASPECT,
   screenPadding,

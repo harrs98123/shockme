@@ -611,8 +611,7 @@ function ProfileView() {
       {/* Ambient Top Glow matching Search/Mood/Browse */}
       <LinearGradient
         colors={['rgba(139,92,246,0.22)', 'rgba(99,102,241,0.08)', 'transparent']}
-        style={styles.ambientGlow}
-        pointerEvents="none"
+        style={[styles.ambientGlow, { pointerEvents: 'none' }]}
       />
 
       <ScrollView

@@ -189,7 +189,7 @@ export function TurnstileGate({ onVerify, onInvalidate, resetSignal = 0 }: Props
       />
 
       {status === 'loading' ? (
-        <View style={styles.overlay} pointerEvents="none">
+        <View style={[styles.overlay, { pointerEvents: 'none' }]}>
           <ActivityIndicator size="small" color={colors.textMuted} />
           <Text variant="caption">Verifying security…</Text>
         </View>

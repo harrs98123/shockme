@@ -158,17 +158,11 @@ export default function SearchScreen() {
     <View style={[styles.root, { paddingTop: insets.top + 6 }]}>
       <LinearGradient
         colors={['rgba(139,92,246,0.14)', 'rgba(229,9,20,0.06)', 'transparent']}
-        style={styles.ambientGlow}
-        pointerEvents="none"
+        style={[styles.ambientGlow, { pointerEvents: 'none' }]}
       />
 
       <View style={styles.topBar}>
-        <View style={styles.brandRow}>
-          <PlotmintLogo size={24} />
-          <Text style={styles.brandTitle}>
-            plot<Text style={{ color: '#10B981' }}>mint•</Text>
-          </Text>
-        </View>
+        <PlotmintLogo size={24} />
 
         <IOSPressable
           style={styles.avatarBtn}
@@ -307,13 +301,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIDE_PAD,
     paddingVertical: 10,
     marginBottom: 12,
-  },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandTitle: {
-    fontFamily: fonts.headingBlack,
-    fontSize: 22,
-    color: '#FFFFFF',
-    letterSpacing: -0.4,
   },
   avatarBtn: { padding: 2 },
   avatarWrap: {

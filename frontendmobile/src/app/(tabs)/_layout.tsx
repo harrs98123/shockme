@@ -123,7 +123,7 @@ function LiquidGlassTabBar({ state, navigation }: TabBarProps) {
       />
 
       {/* Floating Dock Container */}
-      <View style={[styles.barContainer, { bottom: barBottom }]} pointerEvents="box-none">
+      <View style={[styles.barContainer, { bottom: barBottom, pointerEvents: 'box-none' }]}>
         <View style={styles.dockPill}>
           {/* Dark Glass Background with Gradient */}
           <LinearGradient

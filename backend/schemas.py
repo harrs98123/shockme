@@ -224,7 +224,9 @@ class CommentOut(BaseModel):
 class DebateCreate(BaseModel):
     movie_id: int
     media_type: str = "movie"
-    stance: str  # "agree" or "disagree"
+    # Required for a top-level argument ("agree"/"disagree"); omitted/ignored
+    # for replies, which don't take their own stance — see create_debate.
+    stance: Optional[str] = None
     content: str
     parent_id: Optional[int] = None
 
@@ -243,6 +245,8 @@ class DebateOut(BaseModel):
     parent_id: Optional[int] = None
     created_at: datetime
     author_name: str
+    author_username: Optional[str] = None
+    author_avatar: Optional[str] = None
     upvotes: int
     downvotes: int
     user_vote: Optional[str] = None

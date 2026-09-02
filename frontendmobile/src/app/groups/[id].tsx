@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   FlatList,
   TextInput,
   ActivityIndicator,
   Alert,
+  type ListRenderItemInfo,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -91,23 +91,105 @@ export default function GroupDetailScreen() {
     }
   };
 
-  const handleAddComment = async (postId: number) => {
-    const text = commentText[postId]?.trim();
-    if (!text) return;
+  const handleAddComment = useCallback(
+    async (postId: number) => {
+      const text = commentText[postId]?.trim();
+      if (!text) return;
 
-    setSubmittingComment(true);
-    try {
-      await api.post(`/groups/${groupId}/posts/${postId}/comments`, { content: text });
-      setCommentText((prev) => ({ ...prev, [postId]: '' }));
-      setActiveCommentPostId(null);
-      refetchPosts();
-      showToast.success('Comment added');
-    } catch {
-      showToast.error('Failed to post comment');
-    } finally {
-      setSubmittingComment(false);
-    }
-  };
+      setSubmittingComment(true);
+      try {
+        await api.post(`/groups/${groupId}/posts/${postId}/comments`, { content: text });
+        setCommentText((prev) => ({ ...prev, [postId]: '' }));
+        setActiveCommentPostId(null);
+        refetchPosts();
+        showToast.success('Comment added');
+      } catch {
+        showToast.error('Failed to post comment');
+      } finally {
+        setSubmittingComment(false);
+      }
+    },
+    [commentText, groupId, refetchPosts]
+  );
+
+  // These have to stay above the early returns below — Hooks must run in
+  // the same order on every render, and `group` being undefined on first
+  // load would otherwise skip them conditionally.
+  const renderPost = useCallback(
+    ({ item: post }: ListRenderItemInfo<GroupPost>) => (
+      <View style={styles.postCard}>
+        <View style={styles.postAuthorRow}>
+          <Avatar
+            seed={post.user_name}
+            name={post.user_name}
+            size={32}
+            borderRadius={16}
+          />
+          <View style={styles.authorInfo}>
+            <Text style={styles.authorName}>{post.user_name}</Text>
+            <Text style={styles.postTime}>
+              {new Date(post.created_at).toLocaleDateString()}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.postContent}>{post.content}</Text>
+
+        {/* Comments Toggle */}
+        <View style={styles.postActions}>
+          <IOSPressable
+            style={styles.commentActionBtn}
+            onPress={() =>
+              setActiveCommentPostId(
+                activeCommentPostId === post.id ? null : post.id
+              )
+            }
+            activeScale={0.92}
+          >
+            <MessageSquare size={13} color={colors.secondaryLabel} />
+            <Text style={styles.commentActionText}>
+              {post.comments?.length || 0} Comments
+            </Text>
+          </IOSPressable>
+        </View>
+
+        {/* Expanded Comments */}
+        {activeCommentPostId === post.id && (
+          <View style={styles.commentsWrap}>
+            {post.comments?.map((comment) => (
+              <View key={comment.id} style={styles.commentItem}>
+                <Text style={styles.commentAuthor}>{comment.user_name}</Text>
+                <Text style={styles.commentBody}>{comment.content}</Text>
+              </View>
+            ))}
+
+            {/* Add Comment Input */}
+            <View style={styles.addCommentRow}>
+              <TextInput
+                style={styles.commentInput}
+                value={commentText[post.id] || ''}
+                onChangeText={(val) =>
+                  setCommentText((prev) => ({ ...prev, [post.id]: val }))
+                }
+                placeholder="Write a comment..."
+                placeholderTextColor={colors.textDim}
+              />
+              <IOSPressable
+                style={styles.commentSubmitBtn}
+                onPress={() => handleAddComment(post.id)}
+                activeScale={0.9}
+              >
+                <Send size={14} color="#FFFFFF" />
+              </IOSPressable>
+            </View>
+          </View>
+        )}
+      </View>
+    ),
+    [activeCommentPostId, commentText, handleAddComment]
+  );
+
+  const keyExtractor = useCallback((post: GroupPost) => String(post.id), []);
 
   if (groupLoading) {
     return (
@@ -128,16 +210,9 @@ export default function GroupDetailScreen() {
     );
   }
 
-  return (
-    <View style={styles.root}>
-      <IOSHeader title={group.name} />
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        bounces={true}
-      >
-        {/* Group Header Hero */}
+  const listHeader = (
+    <>
+      {/* Group Header Hero */}
         <View style={styles.groupHero}>
           <LinearGradient
             colors={['rgba(236,72,153,0.18)', 'rgba(139,92,246,0.12)', 'transparent']}
@@ -239,94 +314,44 @@ export default function GroupDetailScreen() {
           </View>
         )}
 
-        {/* Posts List */}
-        <View style={styles.postsSection}>
+        {/* Posts List Header */}
+        <View style={[styles.postsSection, { paddingBottom: 0 }]}>
           <View style={styles.sectionHeader}>
             <MessageSquare size={16} color={colors.primary} />
             <Text style={styles.sectionTitle}>Discussions ({posts.length})</Text>
           </View>
+        </View>
+      </>
+  );
 
-          {postsLoading ? (
+  return (
+    <View style={styles.root}>
+      <IOSHeader title={group.name} />
+
+      <FlatList<GroupPost>
+        data={posts}
+        renderItem={renderPost}
+        keyExtractor={keyExtractor}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
+        bounces={true}
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={
+          postsLoading ? (
             <ActivityIndicator size="small" color={colors.primary} style={styles.loader} />
-          ) : posts.length === 0 ? (
+          ) : (
             <View style={styles.emptyPostsWrap}>
               <Text style={styles.emptyPostsTitle}>No discussions yet</Text>
               <Text style={styles.emptyPostsSub}>Be the first cinephile to start a debate!</Text>
             </View>
-          ) : (
-            posts.map((post) => (
-              <View key={post.id} style={styles.postCard}>
-                <View style={styles.postAuthorRow}>
-                  <Avatar
-                    seed={post.user_name}
-                    name={post.user_name}
-                    size={32}
-                    borderRadius={16}
-                  />
-                  <View style={styles.authorInfo}>
-                    <Text style={styles.authorName}>{post.user_name}</Text>
-                    <Text style={styles.postTime}>
-                      {new Date(post.created_at).toLocaleDateString()}
-                    </Text>
-                  </View>
-                </View>
-
-                <Text style={styles.postContent}>{post.content}</Text>
-
-                {/* Comments Toggle */}
-                <View style={styles.postActions}>
-                  <IOSPressable
-                    style={styles.commentActionBtn}
-                    onPress={() =>
-                      setActiveCommentPostId(
-                        activeCommentPostId === post.id ? null : post.id
-                      )
-                    }
-                    activeScale={0.92}
-                  >
-                    <MessageSquare size={13} color={colors.secondaryLabel} />
-                    <Text style={styles.commentActionText}>
-                      {post.comments?.length || 0} Comments
-                    </Text>
-                  </IOSPressable>
-                </View>
-
-                {/* Expanded Comments */}
-                {activeCommentPostId === post.id && (
-                  <View style={styles.commentsWrap}>
-                    {post.comments?.map((comment) => (
-                      <View key={comment.id} style={styles.commentItem}>
-                        <Text style={styles.commentAuthor}>{comment.user_name}</Text>
-                        <Text style={styles.commentBody}>{comment.content}</Text>
-                      </View>
-                    ))}
-
-                    {/* Add Comment Input */}
-                    <View style={styles.addCommentRow}>
-                      <TextInput
-                        style={styles.commentInput}
-                        value={commentText[post.id] || ''}
-                        onChangeText={(val) =>
-                          setCommentText((prev) => ({ ...prev, [post.id]: val }))
-                        }
-                        placeholder="Write a comment..."
-                        placeholderTextColor={colors.textDim}
-                      />
-                      <IOSPressable
-                        style={styles.commentSubmitBtn}
-                        onPress={() => handleAddComment(post.id)}
-                        activeScale={0.9}
-                      >
-                        <Send size={14} color="#FFFFFF" />
-                      </IOSPressable>
-                    </View>
-                  </View>
-                )}
-              </View>
-            ))
-          )}
-        </View>
-      </ScrollView>
+          )
+        }
+      />
     </View>
   );
 }
@@ -519,6 +544,9 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
+    // Now a FlatList item rendered outside postsSection (whose own padding
+    // used to provide this inset) — restore it here directly.
+    marginHorizontal: spacing.lg,
     marginBottom: 12,
   },
   postAuthorRow: {

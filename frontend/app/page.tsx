@@ -1,5 +1,6 @@
 import HomeContent from '@/components/HomeContent';
 import { Movie } from '@/lib/types';
+import { BACKEND_FETCH_HEADERS } from '@/lib/backendFetch';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -12,6 +13,7 @@ async function fetchMovies(endpoint: string): Promise<Movie[]> {
   try {
     const res = await fetch(`${API_BASE}/movies/${endpoint}`, {
       next: { revalidate: REVALIDATE_SECONDS },
+      headers: BACKEND_FETCH_HEADERS,
     });
     if (!res.ok) return [];
     const data = await res.json();

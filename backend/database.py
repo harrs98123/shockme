@@ -82,6 +82,14 @@ def run_security_migration():
     except sqlite3.OperationalError:
         pass
 
+    # Add parent_id to post_comments for threaded replies (if missing)
+    try:
+        cursor.execute(
+            "ALTER TABLE post_comments ADD COLUMN parent_id INTEGER REFERENCES post_comments(id)"
+        )
+    except sqlite3.OperationalError:
+        pass
+
     # Create refresh_tokens table (if missing)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS refresh_tokens (

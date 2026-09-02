@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/seo';
+import { BACKEND_FETCH_HEADERS } from '@/lib/backendFetch';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -12,6 +13,7 @@ async function fetchIds(endpoint: string): Promise<SitemapMedia[]> {
   try {
     const res = await fetch(`${API_BASE}/movies/${endpoint}`, {
       next: { revalidate: 3600 },
+      headers: BACKEND_FETCH_HEADERS,
     });
     if (!res.ok) return [];
     const data = await res.json();
@@ -28,7 +30,7 @@ interface PublicCollection {
 
 async function fetchPublicCollections(): Promise<PublicCollection[]> {
   try {
-    const res = await fetch(`${API_BASE}/collections`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${API_BASE}/collections`, { next: { revalidate: 3600 }, headers: BACKEND_FETCH_HEADERS });
     if (!res.ok) return [];
     return await res.json();
   } catch {

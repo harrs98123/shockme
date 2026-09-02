@@ -32,8 +32,7 @@ export function AuthScreen({ title, subtitle, children, onBack, footer }: Props)
       {/* Ambient Top Violet Radial Glow */}
       <LinearGradient
         colors={['rgba(139,92,246,0.22)', 'rgba(99,102,241,0.08)', 'transparent']}
-        style={styles.ambientGlow}
-        pointerEvents="none"
+        style={[styles.ambientGlow, { pointerEvents: 'none' }]}
       />
 
       {/* Top Safe Navigation Bar (Properly clears the iOS notch and clock) */}

@@ -43,12 +43,14 @@ class BotBlockerMiddleware(BaseHTTPMiddleware):
                     content={"detail": "Request blocked for security reasons."}
                 )
 
-        # 2. Check if request comes from Vercel Frontend Infrastructure
-        is_vercel = any(h.startswith("x-vercel-") for h in request.headers.keys())
-
-        # If it's a Vercel SSR/API request, allow it cleanly after passing security attack checks
-        if is_vercel:
-            return await call_next(request)
+        # NOTE: there used to be a bypass here for any request carrying a
+        # header prefixed "x-vercel-", intended to whitelist the Next.js
+        # frontend's server-side fetches. That check is spoofable — headers
+        # are plain client-supplied text, so any scraper could send
+        # `X-Vercel-Anything: 1` and skip every check below. It was removed.
+        # The frontend's server-side fetches instead send a normal,
+        # non-bot-matching User-Agent (see frontend/lib/backendFetch.ts) so
+        # they pass rule 3/4 below like any other legitimate client.
 
         # 3. Block empty User-Agents for direct client requests
         if not user_agent:

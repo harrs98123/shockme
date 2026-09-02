@@ -3,12 +3,13 @@ import { notFound } from 'next/navigation';
 import PersonProfileClient from '@/components/PersonProfileClient';
 import { PersonDetails } from '@/lib/types';
 import { absoluteUrl, buildPersonJsonLd, jsonLdScript, posterAbsoluteUrl, toDescription } from '@/lib/seo';
+import { BACKEND_FETCH_HEADERS } from '@/lib/backendFetch';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 async function fetchPerson(id: string): Promise<PersonDetails | null> {
   try {
-    const res = await fetch(`${API_BASE}/movies/person/${id}`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${API_BASE}/movies/person/${id}`, { next: { revalidate: 3600 }, headers: BACKEND_FETCH_HEADERS });
     if (!res.ok) return null;
     const data = await res.json();
     if (data?.error) return null;

@@ -69,41 +69,24 @@ export default function FeedScreen() {
         return;
       }
 
-      // Optimistic cache update without full list refetch
-      qc.setQueryData<SocialPost[]>(['social', 'feed', activeTab], (oldPosts) => {
-        if (!oldPosts) return oldPosts;
-        return oldPosts.map((p) => {
-          if (p.id !== postId) return p;
-          const isTogglingOff = p.user_reaction === reactionType;
-          let newLikes = p.likes_count || 0;
-
-          if (isTogglingOff) {
-            if (p.user_reaction === 'loved') {
-              newLikes = Math.max(0, newLikes - 1);
-            }
-          } else {
-            // Toggling on or switching
-            if (reactionType === 'loved') {
-               newLikes += 1;
-            } else if (p.user_reaction === 'loved') {
-               // Switching from 'loved' to another emoji
-               newLikes = Math.max(0, newLikes - 1);
-            }
-          }
-
-          return {
-            ...p,
-            user_reaction: isTogglingOff ? undefined : reactionType,
-            likes_count: newLikes,
-          };
-        });
-      });
-
-      // Fire network in background without invalidating / refetching whole list
+      // FeedPostCard already renders its own instant optimistic state on
+      // tap, so this only needs to reconcile the shared query cache with
+      // the server afterwards — no local guessing here, which used to
+      // drift from FeedPostCard's own optimistic reactions array.
       try {
-        await socialApi.react(postId, reactionType);
+        const updatedPost = await socialApi.react(postId, reactionType);
+        qc.setQueryData<SocialPost[]>(['social', 'feed', activeTab], (oldPosts) => {
+          if (!oldPosts) return oldPosts;
+          return oldPosts.map((p) => (
+            p.id === postId
+              ? { ...p, user_reaction: updatedPost.user_reaction, reactions: updatedPost.reactions }
+              : p
+          ));
+        });
       } catch {
-        // silent fail
+        // Reaction failed server-side — resync this tab with reality
+        // instead of leaving FeedPostCard's optimistic guess stuck.
+        qc.invalidateQueries({ queryKey: ['social', 'feed', activeTab] });
       }
     },
     [isAuthenticated, activeTab, qc]
@@ -127,6 +110,18 @@ export default function FeedScreen() {
     [isAuthenticated, qc]
   );
 
+  const handleCommentAdded = useCallback(
+    (postId: number) => {
+      qc.setQueryData<SocialPost[]>(['social', 'feed', activeTab], (oldPosts) => {
+        if (!oldPosts) return oldPosts;
+        return oldPosts.map((p) =>
+          p.id === postId ? { ...p, comments_count: p.comments_count + 1 } : p
+        );
+      });
+    },
+    [activeTab, qc]
+  );
+
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<SocialPost>) => (
       <FeedPostCard
@@ -134,21 +129,17 @@ export default function FeedScreen() {
         currentUserId={user?.id}
         onReact={handleReact}
         onToggleFollow={handleToggleFollow}
+        onCommentAdded={handleCommentAdded}
       />
     ),
-    [user?.id, handleReact, handleToggleFollow]
+    [user?.id, handleReact, handleToggleFollow, handleCommentAdded]
   );
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* ── Top Bar ── */}
       <View style={styles.topBar}>
-        <View style={styles.brandRow}>
-          <PlotmintLogo size={22} />
-          <Text style={styles.brandTitle}>
-            Plot<Text style={{ color: colors.primary }}>mint</Text>
-          </Text>
-        </View>
+        <PlotmintLogo size={22} />
 
         <View style={styles.topRightActions}>
           <IOSPressable
@@ -311,17 +302,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.06)',
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  brandTitle: {
-    fontFamily: fonts.headingBlack,
-    fontSize: 20,
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
   },
   topRightActions: {
     flexDirection: 'row',

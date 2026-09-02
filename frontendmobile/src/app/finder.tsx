@@ -733,12 +733,7 @@ export default function FinderScreen() {
       <View style={[styles.mainWrapper, { paddingTop: insets.top + 6 }]}>
         {/* ── Top Bar Header (Logo + Avatar) ── */}
         <View style={styles.topBar}>
-          <View style={styles.brandRow}>
-            <PlotmintLogo size={24} />
-            <Text style={styles.brandTitle}>
-              plot<Text style={{ color: '#10B981' }}>mint•</Text>
-            </Text>
-          </View>
+          <PlotmintLogo size={24} />
 
           <IOSPressable
             style={styles.avatarBtn}
@@ -1051,17 +1046,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: PADDING,
     paddingVertical: 10,
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  brandTitle: {
-    fontFamily: fonts.headingBlack,
-    fontSize: 22,
-    color: '#FFFFFF',
-    letterSpacing: -0.4,
   },
   avatarBtn: {
     padding: 2,

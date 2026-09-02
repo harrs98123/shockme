@@ -62,8 +62,7 @@ export function ToastHost() {
 
   return (
     <View
-      pointerEvents="box-none"
-      style={[styles.host, { top: insets.top + 8 }]}
+      style={[styles.host, { top: insets.top + 8, pointerEvents: 'box-none' }]}
     >
       <Animated.View
         key={activeToast.id}

@@ -15,6 +15,10 @@ export interface PostComment {
   contains_spoiler: boolean;
   media_url?: string | null;
   created_at: string;
+  parent_id?: number | null;
+  upvotes: number;
+  downvotes: number;
+  user_vote?: 'up' | 'down' | null;
   author: {
     id: number;
     name: string;
@@ -33,11 +37,12 @@ export interface SocialPost {
   movie?: any;
   payload?: any;
   is_spoiler: boolean;
-  likes_count: number;
   comments_count: number;
   created_at: string;
   author: SocialAuthor;
-  reactions?: { id: number; reaction_type: string; user_id: number; author_name: string }[];
+  // The backend has no separate "likes" counter — total engagement is
+  // always derived from this array (see FeedPostCard), same as web.
+  reactions: { id: number; reaction_type: string; user_id: number; author_name: string }[];
   user_reaction?: string | null;
 }
 
@@ -60,8 +65,10 @@ export const socialApi = {
   createPost: (data: PostCreatePayload) =>
     request<SocialPost>(() => api.post('/posts/', data)),
 
+  // Returns the full updated post (reactions included) so callers can sync
+  // their optimistic UI to the server's authoritative state.
   react: (postId: number, reactionType: string) =>
-    request<{ success: boolean; reaction?: string }>(() =>
+    request<SocialPost>(() =>
       api.post(`/posts/${postId}/react`, { reaction_type: reactionType })
     ),
 
@@ -73,12 +80,20 @@ export const socialApi = {
   getComments: (postId: number) =>
     request<PostComment[]>(() => api.get(`/posts/${postId}/comments`)),
 
-  addComment: (postId: number, content: string, isSpoiler = false) =>
+  addComment: (postId: number, content: string, isSpoiler = false, parentId?: number | null) =>
     request<PostComment>(() =>
-      api.post(`/posts/${postId}/comments`, {
+      api.post(`/posts/${postId}/comment`, {
         content,
         contains_spoiler: isSpoiler,
+        parent_id: parentId ?? null,
       })
+    ),
+
+  // Returns the full updated comment (vote counts included) so callers can
+  // sync optimistic UI to the server's authoritative state.
+  voteComment: (commentId: number, vote: 'up' | 'down') =>
+    request<PostComment>(() =>
+      api.post(`/posts/comments/${commentId}/vote`, { vote })
     ),
 
   getSuggestions: (limit = 8) =>

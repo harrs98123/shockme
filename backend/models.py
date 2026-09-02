@@ -619,12 +619,30 @@ class PostComment(Base):
     id = Column(Integer, primary_key=True, index=True)
     post_id = Column(Integer, ForeignKey("social_posts.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    parent_id = Column(Integer, ForeignKey("post_comments.id", ondelete="CASCADE"), nullable=True, index=True)
     content = Column(Text, nullable=False)
     contains_spoiler = Column(Boolean, default=False)
     media_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     post = relationship("SocialPost", back_populates="post_comments")
+    user = relationship("User")
+    parent = relationship("PostComment", remote_side=[id], back_populates="replies")
+    replies = relationship("PostComment", back_populates="parent", cascade="all, delete-orphan")
+    votes = relationship("CommentVote", back_populates="comment", cascade="all, delete-orphan")
+
+
+class CommentVote(Base):
+    __tablename__ = "comment_votes"
+    __table_args__ = (UniqueConstraint('comment_id', 'user_id', name='_comment_vote_uc'),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    comment_id = Column(Integer, ForeignKey("post_comments.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    vote = Column(String, nullable=False)  # "up" or "down"
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    comment = relationship("PostComment", back_populates="votes")
     user = relationship("User")
 
 

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 from database import get_db
-from models import User, SocialPost, PostReaction, PostComment, TopicFollow, UserFollow
+from models import User, SocialPost, PostReaction, PostComment, CommentVote, TopicFollow, UserFollow
 from auth.utils import get_current_user, get_current_user_optional
 from sqlalchemy.orm.attributes import flag_modified
 from cache_utils import cache_get, cache_set
@@ -15,6 +15,21 @@ router = APIRouter()
 
 FEED_CACHE_TTL = 20
 MAX_LIMIT = 100
+
+# ----------------- FEED CACHE INVALIDATION -----------------
+# get_movie_posts/get_following_feed/get_for_you_feed cache their results for
+# FEED_CACHE_TTL seconds. Without this, reacting/commenting/voting/posting
+# doesn't change what those cached responses return, so a reload within the
+# TTL window shows stale data (e.g. a like that "doesn't save"). Every write
+# below bumps this epoch; every list read mixes it into the cache key, so a
+# write instantly invalidates all previously-cached feed reads.
+FEED_EPOCH_KEY = "feed:epoch"
+
+async def _feed_epoch() -> str:
+    return (await cache_get(FEED_EPOCH_KEY)) or "0"
+
+async def _bump_feed_epoch() -> None:
+    await cache_set(FEED_EPOCH_KEY, str(int(datetime.utcnow().timestamp() * 1000)), 86400)
 
 POST_LIST_OPTIONS = (
     joinedload(SocialPost.user),
@@ -40,6 +55,10 @@ class CommentCreate(BaseModel):
     content: str
     contains_spoiler: bool = False
     media_url: Optional[str] = None
+    parent_id: Optional[int] = None
+
+class CommentVoteCreate(BaseModel):
+    vote: str  # "up" or "down"
 
 class CommentOut(BaseModel):
     id: int
@@ -48,6 +67,10 @@ class CommentOut(BaseModel):
     media_url: Optional[str]
     created_at: datetime
     author: Dict[str, Any]
+    parent_id: Optional[int] = None
+    upvotes: int = 0
+    downvotes: int = 0
+    user_vote: Optional[str] = None
 
 class ReactionOut(BaseModel):
     id: int
@@ -73,7 +96,7 @@ class SocialPostOut(BaseModel):
 # ----------------- ENDPOINTS -----------------
 
 @router.post("/posts/", response_model=SocialPostOut)
-def create_post(post: SocialPostCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def create_post(post: SocialPostCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     new_post = SocialPost(
         user_id=current_user.id,
         post_type=post.post_type,
@@ -85,31 +108,28 @@ def create_post(post: SocialPostCreate, db: Session = Depends(get_db), current_u
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
+    await _bump_feed_epoch()
     return format_post(db, new_post, current_user.id, comments_count=0, is_following=False)
 
-@router.post("/posts/{post_id}/react")
-@router.post("/posts/posts/{post_id}/react")
-def react_to_post(post_id: int, reaction: ReactionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    post = db.query(SocialPost).filter(SocialPost.id == post_id).first()
+@router.post("/posts/{post_id}/react", response_model=SocialPostOut)
+@router.post("/posts/posts/{post_id}/react", response_model=SocialPostOut)
+async def react_to_post(post_id: int, reaction: ReactionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    post = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(SocialPost.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
-        
+
     existing_reaction = db.query(PostReaction).filter(
         PostReaction.post_id == post_id,
         PostReaction.user_id == current_user.id
     ).first()
-    
+
     if existing_reaction:
         if existing_reaction.reaction_type == reaction.reaction_type:
             # Toggle off
             db.delete(existing_reaction)
-            db.commit()
-            return {"status": "removed"}
         else:
             # Change reaction
             existing_reaction.reaction_type = reaction.reaction_type
-            db.commit()
-            return {"status": "updated"}
     else:
         new_reaction = PostReaction(
             post_id=post_id,
@@ -117,13 +137,19 @@ def react_to_post(post_id: int, reaction: ReactionCreate, db: Session = Depends(
             reaction_type=reaction.reaction_type
         )
         db.add(new_reaction)
-        db.commit()
-        return {"status": "added"}
+
+    db.commit()
+    db.refresh(post)
+    await _bump_feed_epoch()
+
+    # Return the authoritative post (reactions included) so the client can
+    # sync its optimistic UI to real state instead of guessing.
+    return format_post(db, post, current_user.id)
 
 
 @router.post("/posts/{post_id}/poll/vote", response_model=SocialPostOut)
 @router.post("/posts/posts/{post_id}/poll/vote", response_model=SocialPostOut)
-def vote_on_poll(
+async def vote_on_poll(
     post_id: int,
     vote_req: PollVoteRequest,
     db: Session = Depends(get_db),
@@ -170,20 +196,33 @@ def vote_on_poll(
     flag_modified(post, "payload")
     db.commit()
     db.refresh(post)
+    await _bump_feed_epoch()
 
     return format_post(db, post, current_user.id)
 
 
 @router.post("/posts/{post_id}/comment", response_model=CommentOut)
 @router.post("/posts/posts/{post_id}/comment", response_model=CommentOut)
-def add_comment(post_id: int, comment: CommentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def add_comment(post_id: int, comment: CommentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     post = db.query(SocialPost).filter(SocialPost.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
-        
+
+    parent_id = comment.parent_id
+    if parent_id is not None:
+        parent = db.query(PostComment).filter(
+            PostComment.id == parent_id,
+            PostComment.post_id == post_id,
+        ).first()
+        if not parent:
+            raise HTTPException(status_code=400, detail="Parent comment not found on this post")
+        # Threads nest to arbitrary depth (Reddit-style) — a reply attaches
+        # directly to whichever comment the user tapped "Reply" on.
+
     new_comment = PostComment(
         post_id=post_id,
         user_id=current_user.id,
+        parent_id=parent_id,
         content=comment.content,
         contains_spoiler=comment.contains_spoiler,
         media_url=comment.media_url
@@ -191,13 +230,18 @@ def add_comment(post_id: int, comment: CommentCreate, db: Session = Depends(get_
     db.add(new_comment)
     db.commit()
     db.refresh(new_comment)
-    
+    await _bump_feed_epoch()
+
     return {
         "id": new_comment.id,
         "content": new_comment.content,
         "contains_spoiler": new_comment.contains_spoiler,
         "media_url": new_comment.media_url,
         "created_at": new_comment.created_at,
+        "parent_id": new_comment.parent_id,
+        "upvotes": 0,
+        "downvotes": 0,
+        "user_vote": None,
         "author": {
             "id": current_user.id,
             "name": current_user.name,
@@ -219,7 +263,8 @@ async def get_movie_posts(
     offset = max(offset, 0)
     current_id = current_user.id if current_user else None
 
-    cache_key = f"feed:movie:{movie_id}:{current_id or 'anon'}:{limit}:{offset}"
+    epoch = await _feed_epoch()
+    cache_key = f"feed:movie:{movie_id}:{current_id or 'anon'}:{limit}:{offset}:{epoch}"
     cached = await cache_get(cache_key)
     if cached is not None:
         return cached
@@ -235,29 +280,106 @@ async def get_movie_posts(
 
 @router.get("/posts/{post_id}/comments", response_model=List[CommentOut])
 @router.get("/posts/posts/{post_id}/comments", response_model=List[CommentOut])
-def get_comments(post_id: int, limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
+def get_comments(
+    post_id: int,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
     limit = min(max(limit, 1), MAX_LIMIT)
     offset = max(offset, 0)
+    current_id = current_user.id if current_user else None
 
-    comments = db.query(PostComment).options(joinedload(PostComment.user)).filter(
+    comments = db.query(PostComment).options(
+        joinedload(PostComment.user), joinedload(PostComment.votes)
+    ).filter(
         PostComment.post_id == post_id
     ).order_by(PostComment.created_at.asc()).offset(offset).limit(limit).all()
 
-    return [
-        {
+    result = []
+    for c in comments:
+        upvotes = sum(1 for v in c.votes if v.vote == "up")
+        downvotes = sum(1 for v in c.votes if v.vote == "down")
+        user_vote = None
+        if current_id:
+            v = next((v for v in c.votes if v.user_id == current_id), None)
+            if v:
+                user_vote = v.vote
+
+        result.append({
             "id": c.id,
             "content": c.content,
             "contains_spoiler": c.contains_spoiler,
             "media_url": c.media_url,
             "created_at": c.created_at,
+            "parent_id": c.parent_id,
+            "upvotes": upvotes,
+            "downvotes": downvotes,
+            "user_vote": user_vote,
             "author": {
                 "id": c.user.id,
                 "name": c.user.name,
                 "username": c.user.username,
                 "avatar_url": c.user.avatar_url
             }
-        } for c in comments
-    ]
+        })
+    return result
+
+
+@router.post("/posts/comments/{comment_id}/vote", response_model=CommentOut)
+async def vote_on_comment(
+    comment_id: int,
+    payload: CommentVoteCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if payload.vote not in ("up", "down"):
+        raise HTTPException(status_code=400, detail="Vote must be 'up' or 'down'")
+
+    comment = db.query(PostComment).options(
+        joinedload(PostComment.user), joinedload(PostComment.votes)
+    ).filter(PostComment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    existing = db.query(CommentVote).filter(
+        CommentVote.comment_id == comment_id,
+        CommentVote.user_id == current_user.id
+    ).first()
+
+    if existing:
+        if existing.vote == payload.vote:
+            db.delete(existing)  # Toggle off
+        else:
+            existing.vote = payload.vote
+    else:
+        db.add(CommentVote(comment_id=comment_id, user_id=current_user.id, vote=payload.vote))
+
+    db.commit()
+    db.refresh(comment)
+
+    upvotes = sum(1 for v in comment.votes if v.vote == "up")
+    downvotes = sum(1 for v in comment.votes if v.vote == "down")
+    user_vote = next((v.vote for v in comment.votes if v.user_id == current_user.id), None)
+
+    return {
+        "id": comment.id,
+        "content": comment.content,
+        "contains_spoiler": comment.contains_spoiler,
+        "media_url": comment.media_url,
+        "created_at": comment.created_at,
+        "parent_id": comment.parent_id,
+        "upvotes": upvotes,
+        "downvotes": downvotes,
+        "user_vote": user_vote,
+        "author": {
+            "id": comment.user.id,
+            "name": comment.user.name,
+            "username": comment.user.username,
+            "avatar_url": comment.user.avatar_url
+        }
+    }
 
 
 @router.get("/feed/following", response_model=List[SocialPostOut])
@@ -266,7 +388,8 @@ async def get_following_feed(limit: int = 50, offset: int = 0, db: Session = Dep
     limit = min(max(limit, 1), MAX_LIMIT)
     offset = max(offset, 0)
 
-    cache_key = f"feed:following:{current_user.id}:{limit}:{offset}"
+    epoch = await _feed_epoch()
+    cache_key = f"feed:following:{current_user.id}:{limit}:{offset}:{epoch}"
     cached = await cache_get(cache_key)
     if cached is not None:
         return cached
@@ -296,7 +419,8 @@ async def get_for_you_feed(limit: int = 50, offset: int = 0, db: Session = Depen
     offset = max(offset, 0)
     current_id = current_user.id if current_user else None
 
-    cache_key = f"feed:foryou:{current_id or 'anon'}:{limit}:{offset}"
+    epoch = await _feed_epoch()
+    cache_key = f"feed:foryou:{current_id or 'anon'}:{limit}:{offset}:{epoch}"
     cached = await cache_get(cache_key)
     if cached is not None:
         return cached

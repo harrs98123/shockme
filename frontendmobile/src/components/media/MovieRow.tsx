@@ -11,7 +11,7 @@ import { ChevronRight } from 'lucide-react-native';
 
 import type { Media } from '@/types';
 import { colors, fonts } from '@/theme';
-import { HIT_SLOP } from '@/theme/layout';
+import { HIT_SLOP, posterSize } from '@/theme/layout';
 import { IOSPressable } from '@/components/ios/IOSPressable';
 import { MovieCard } from './MovieCard';
 import { MovieRowSkeleton } from './MovieRowSkeleton';
@@ -27,6 +27,9 @@ interface Props {
 }
 
 const SEPARATOR_WIDTH = 10;
+// MovieRow never overrides MovieCard's width, so every item is exactly
+// posterSize.md wide — fixed enough to skip FlatList's layout measurement.
+const ITEM_LENGTH = posterSize.md + SEPARATOR_WIDTH;
 
 function Separator() {
   return <View style={{ width: SEPARATOR_WIDTH }} />;
@@ -101,6 +104,11 @@ export function MovieRow({
         removeClippedSubviews
         decelerationRate="fast"
         bounces={true}
+        getItemLayout={(_data, index) => ({
+          length: ITEM_LENGTH,
+          offset: ITEM_LENGTH * index,
+          index,
+        })}
       />
     </View>
   );

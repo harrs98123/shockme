@@ -4,8 +4,6 @@ import {
   Text,
   StyleSheet,
   Share,
-  TextInput,
-  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
@@ -31,11 +29,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import type { SocialPost, PostComment } from '@/api/social';
+import type { SocialPost } from '@/api/social';
 import { socialApi } from '@/api/social';
 import { colors, fonts, radius, spacing } from '@/theme';
 import { IOSPressable } from '@/components/ios/IOSPressable';
 import { Avatar } from '@/components/avatar/Avatar';
+import { CommentThread } from '@/components/social/CommentThread';
 import showToast from '@/lib/toast';
 
 const REACTIONS = [
@@ -63,6 +62,7 @@ export interface FeedPostCardProps {
   currentUserId?: number;
   onReact: (postId: number, reactionType: string) => void;
   onToggleFollow?: (author: { id: number; is_following?: boolean }) => void;
+  onCommentAdded?: (postId: number) => void;
 }
 
 function FeedPostCardComponent({
@@ -70,6 +70,7 @@ function FeedPostCardComponent({
   currentUserId,
   onReact,
   onToggleFollow,
+  onCommentAdded,
 }: FeedPostCardProps) {
   const author = post.author;
   const authorName = author?.name || 'Cinephile';
@@ -80,10 +81,6 @@ function FeedPostCardComponent({
   const [isSpoilerRevealed, setIsSpoilerRevealed] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
-  const [comments, setComments] = useState<PostComment[]>([]);
-  const [commentsLoading, setCommentsLoading] = useState(false);
-  const [commentText, setCommentText] = useState('');
-  const [submittingComment, setSubmittingComment] = useState(false);
   const [pollPayload, setPollPayload] = useState(post.payload);
   const [isWatchlisted, setIsWatchlisted] = useState(false);
 
@@ -91,10 +88,10 @@ function FeedPostCardComponent({
   const [localUserReaction, setLocalUserReaction] = useState<string | null>(
     post.user_reaction ?? null
   );
-  const [localLikesCount, setLocalLikesCount] = useState<number>(
-    post.likes_count ?? 0
-  );
   const [localReactions, setLocalReactions] = useState(post.reactions ?? []);
+  // Total engagement shown next to the heart — there's no separate "likes"
+  // counter on the backend, so (like web) it's always derived from reactions.
+  const localLikesCount = localReactions.length;
 
   // Use a ref to track synchronous immediate state and prevent rapid double-click bugs
   const localReactionRef = useRef<string | null>(post.user_reaction ?? null);
@@ -102,9 +99,8 @@ function FeedPostCardComponent({
   useEffect(() => {
     setLocalUserReaction(post.user_reaction ?? null);
     localReactionRef.current = post.user_reaction ?? null;
-    setLocalLikesCount(post.likes_count ?? 0);
     setLocalReactions(post.reactions ?? []);
-  }, [post.user_reaction, post.likes_count, post.reactions]);
+  }, [post.user_reaction, post.reactions]);
 
   // Animated heart pop on like
   const heartScale = useSharedValue(1);
@@ -128,9 +124,6 @@ function FeedPostCardComponent({
 
     // Instant zero-lag UI feedback
     setLocalUserReaction(nextReaction || null);
-    setLocalLikesCount((prev) =>
-      isCurrentlyLiked ? Math.max(0, prev - 1) : prev + 1
-    );
     setLocalReactions((prev) => {
       const filtered = prev.filter((r) => r.user_id !== (currentUserId || 0));
       if (!isCurrentlyLiked) {
@@ -187,34 +180,8 @@ function FeedPostCardComponent({
     }
   };
 
-  const handleToggleComments = async () => {
-    if (!commentsOpen) {
-      setCommentsLoading(true);
-      try {
-        const fetched = await socialApi.getComments(post.id);
-        setComments(fetched);
-      } catch {
-        // ignore
-      } finally {
-        setCommentsLoading(false);
-      }
-    }
-    setCommentsOpen(!commentsOpen);
-  };
-
-  const handleAddComment = async () => {
-    if (!commentText.trim()) return;
-    setSubmittingComment(true);
-    try {
-      const newComment = await socialApi.addComment(post.id, commentText.trim());
-      setComments((prev) => [...prev, newComment]);
-      setCommentText('');
-      showToast.success('Comment posted');
-    } catch {
-      showToast.error('Failed to post comment');
-    } finally {
-      setSubmittingComment(false);
-    }
+  const handleToggleComments = () => {
+    setCommentsOpen((v) => !v);
   };
 
   const handleVotePoll = async (optionIdx: number) => {
@@ -555,61 +522,11 @@ function FeedPostCardComponent({
       {/* ── Inline Comments Section ── */}
       {commentsOpen && (
         <View style={styles.commentsContainer}>
-          {commentsLoading ? (
-            <ActivityIndicator
-              size="small"
-              color={colors.primary}
-              style={{ marginVertical: 10 }}
-            />
-          ) : (
-            comments.map((c) => (
-              <View key={c.id} style={styles.commentRow}>
-                <Avatar
-                  src={c.author?.avatar_url}
-                  seed={c.author?.username || c.author?.name}
-                  name={c.author?.name}
-                  size={26}
-                  borderRadius={13}
-                />
-                <View style={styles.commentBubble}>
-                  <Text style={styles.commentAuthorName}>
-                    {c.author?.name || 'Cinephile'}
-                  </Text>
-                  <Text style={styles.commentContent}>{c.content}</Text>
-                </View>
-              </View>
-            ))
-          )}
-
-          {/* Quick Comment Input */}
-          <View style={styles.commentInputRow}>
-            <TextInput
-              style={styles.commentTextInput}
-              value={commentText}
-              onChangeText={setCommentText}
-              placeholder="Add a comment..."
-              placeholderTextColor={colors.textDim}
-            />
-            <IOSPressable
-              style={styles.commentSendBtn}
-              onPress={handleAddComment}
-              disabled={submittingComment || !commentText.trim()}
-              activeScale={0.88}
-            >
-              {submittingComment ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Text
-                  style={[
-                    styles.postCommentText,
-                    commentText.trim().length > 0 && { color: colors.primary },
-                  ]}
-                >
-                  Post
-                </Text>
-              )}
-            </IOSPressable>
-          </View>
+          <CommentThread
+            postId={post.id}
+            currentUserId={currentUserId}
+            onCommentAdded={() => onCommentAdded?.(post.id)}
+          />
         </View>
       )}
     </View>
@@ -919,53 +836,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: 8,
     gap: 8,
-  },
-  commentRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  commentBubble: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-  },
-  commentAuthorName: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 11,
-    color: colors.primary,
-    marginBottom: 2,
-  },
-  commentContent: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    color: '#FFFFFF',
-  },
-  commentInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
-    paddingTop: 8,
-  },
-  commentTextInput: {
-    flex: 1,
-    fontFamily: fonts.body,
-    fontSize: 12,
-    color: '#FFFFFF',
-    paddingVertical: 4,
-  },
-  commentSendBtn: {
-    paddingHorizontal: 6,
-  },
-  postCommentText: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: colors.textDim,
   },
 });
 
