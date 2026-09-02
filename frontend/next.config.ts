@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -61,9 +62,9 @@ const nextConfig: NextConfig = {
   // into each serverless function — bigger bundles, slower cold starts, more
   // Fluid CPU. Pin the root to this project.
   turbopack: {
-    root: __dirname,
+    root: path.resolve(__dirname),
   },
-  outputFileTracingRoot: __dirname,
+  outputFileTracingRoot: path.resolve(__dirname),
 
   // Enable Brotli/gzip compression
   compress: true,
