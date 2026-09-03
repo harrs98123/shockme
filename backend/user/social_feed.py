@@ -460,20 +460,17 @@ async def get_following_feed(limit: int = 50, offset: int = 0, db: Session = Dep
     if cached is not None:
         return cached
 
-    # Get IDs of people the user follows
+    # Strictly get posts from people the user follows
     not_archived = or_(SocialPost.is_archived == False, SocialPost.is_archived.is_(None))
     following_ids = [f.following_id for f in current_user.following]
     if not following_ids:
-        # Fallback to general recent so the feed is never empty!
-        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(not_archived).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
-    else:
-        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(
-            SocialPost.user_id.in_(following_ids),
-            not_archived
-        ).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+        # No following users -> return empty list (no random fallbacks)
+        return []
 
-        if not posts:
-            posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(not_archived).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+    posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(
+        SocialPost.user_id.in_(following_ids),
+        not_archived
+    ).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
 
     result = format_posts(db, posts, current_user.id)
     await cache_set(cache_key, _for_cache(result), FEED_CACHE_TTL)
@@ -495,36 +492,12 @@ async def get_for_you_feed(limit: int = 50, offset: int = 0, db: Session = Depen
 
     not_archived = or_(SocialPost.is_archived == False, SocialPost.is_archived.is_(None))
 
-    if not current_user:
-        # Public feed - just popular/recent posts
-        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(not_archived).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
-        result = format_posts(db, posts, None)
-        await cache_set(cache_key, _for_cache(result), FEED_CACHE_TTL)
-        return result
+    # For You feed: shows all active community posts across the platform ordered by recent
+    posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(
+        not_archived
+    ).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
 
-    # Intelligent Feed: Mix of following, topic follows, and popular
-    following_ids = [f.following_id for f in current_user.following]
-
-    # Topic follows (e.g. movies, genres)
-    topic_follows = db.query(TopicFollow).filter(TopicFollow.user_id == current_user.id).all()
-    followed_movie_ids = [int(t.entity_id) for t in topic_follows if t.entity_type == 'movie' and t.entity_id.isdigit()]
-
-    conditions = []
-    if following_ids:
-        conditions.append(SocialPost.user_id.in_(following_ids))
-    if followed_movie_ids:
-        conditions.append(SocialPost.movie_id.in_(followed_movie_ids))
-
-    if conditions:
-        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(or_(*conditions), not_archived).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
-    else:
-        posts = []
-
-    # Fallback to general recent if empty so feed is always vibrant
-    if not posts:
-        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(not_archived).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
-
-    result = format_posts(db, posts, current_user.id)
+    result = format_posts(db, posts, current_id)
     await cache_set(cache_key, _for_cache(result), FEED_CACHE_TTL)
     return result
 

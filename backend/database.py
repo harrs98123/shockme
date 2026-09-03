@@ -61,7 +61,15 @@ def run_security_migration():
     PostgreSQL: SQLAlchemy create_all() handles schema automatically.
     """
     if IS_POSTGRES:
-        return  # Postgres schema is managed by create_all() in main.py
+        try:
+            from sqlalchemy import text
+            with engine.connect() as pg_conn:
+                pg_conn.execute(text("ALTER TABLE social_posts ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT FALSE;"))
+                pg_conn.commit()
+                print("[DB] PostgreSQL migration verified: social_posts.is_archived")
+        except Exception as e:
+            print(f"[DB] PostgreSQL migration notice: {e}")
+        return
 
     import sqlite3
     db_path = os.path.join(os.path.dirname(__file__), "cinematch.db")

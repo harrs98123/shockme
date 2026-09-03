@@ -37,6 +37,7 @@ export interface SocialPost {
   movie?: any;
   payload?: any;
   is_spoiler: boolean;
+  is_archived?: boolean;
   comments_count: number;
   created_at: string;
   author: SocialAuthor;
@@ -98,5 +99,25 @@ export const socialApi = {
 
   getSuggestions: (limit = 8) =>
     request<any[]>(() => api.get('/user/suggestions', { params: { limit } })),
+
+  deletePost: (postId: number) =>
+    request<{ message: string; id: number }>(() => api.delete(`/posts/${postId}`)),
+
+  archivePost: (postId: number) =>
+    request<SocialPost>(() => api.patch(`/posts/${postId}/archive`)),
+
+  getMyPosts: (includeArchived = false, archivedOnly = false, limit = 50, offset = 0) =>
+    request<SocialPost[]>(() =>
+      api.get('/posts/my', {
+        params: { include_archived: includeArchived, archived_only: archivedOnly, limit, offset },
+      })
+    ),
+
+  getUserPosts: (userId: number, limit = 50, offset = 0) =>
+    request<SocialPost[]>(() =>
+      api.get(`/posts/user/${userId}`, {
+        params: { limit, offset },
+      })
+    ),
 };
 

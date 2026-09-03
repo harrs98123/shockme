@@ -8,7 +8,12 @@ project_root = os.path.dirname(backend_dir)
 venv_python = os.path.join(project_root, ".venv", "Scripts", "python.exe")
 
 if os.path.exists(venv_python) and os.path.normpath(sys.executable).lower() != os.path.normpath(venv_python).lower():
-    sys.exit(subprocess.call([venv_python] + sys.argv))
+    try:
+        res = subprocess.run([venv_python, "-c", "import sys"], capture_output=True)
+        if res.returncode == 0:
+            sys.exit(subprocess.call([venv_python] + sys.argv))
+    except Exception:
+        pass
 
 import uvicorn
 

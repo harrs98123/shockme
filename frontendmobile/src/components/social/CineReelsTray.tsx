@@ -5,23 +5,14 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  Plus,
-  Star,
-  Clapperboard,
-} from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 
 import type { User } from '@/types';
 import type { UserStoryGroup } from '@/api/stories';
-import { colors, fonts, radius, spacing } from '@/theme';
-import { posterUrl, backdropUrl } from '@/lib/images';
+import { colors, fonts, radius } from '@/theme';
 import { IOSPressable } from '@/components/ios/IOSPressable';
 import { Avatar } from '@/components/avatar/Avatar';
-
-const CARD_WIDTH = 105;
-const CARD_HEIGHT = 155;
 
 interface CineReelsTrayProps {
   currentUser: User | null;
@@ -30,22 +21,26 @@ interface CineReelsTrayProps {
   onSelectUserGroup: (index: number) => void;
 }
 
+const INSTA_STORY_GRADIENT = ['#CA1D7E', '#E052A0', '#F15C45', '#FBAA47'];
+
 export function CineReelsTray({
   currentUser,
   userGroups,
   onOpenCreateStory,
   onSelectUserGroup,
 }: CineReelsTrayProps) {
+  // Check if current user has an active story in userGroups
+  const myGroupIndex = currentUser
+    ? userGroups.findIndex((g) => g.user_id === currentUser.id)
+    : -1;
+  const myGroup = myGroupIndex >= 0 ? userGroups[myGroupIndex] : null;
+  const hasMyStory = !!(myGroup && myGroup.stories.length > 0);
+
+  // Filter out currentUser from subsequent circles if already shown as "Your story"
+  const otherGroups = userGroups.filter((g) => !currentUser || g.user_id !== currentUser.id);
+
   return (
     <View style={styles.container}>
-      <View style={styles.trayHeader}>
-        <View style={styles.trayTitleRow}>
-          <Clapperboard size={15} color={colors.primary} />
-          <Text style={styles.trayTitle}>Film Pulse & Stories</Text>
-        </View>
-        <Text style={styles.traySub}>24h Cinema Moments</Text>
-      </View>
-
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -53,110 +48,105 @@ export function CineReelsTray({
         nestedScrollEnabled={true}
         keyboardShouldPersistTaps="handled"
       >
-        {/* User's Add Story / Hot Take Capsule */}
+        {/* ── 1. "Your Story" Circle (Instagram Style) ── */}
         <IOSPressable
-          style={styles.addStoryCard}
-          onPress={onOpenCreateStory}
-          activeScale={0.94}
+          style={styles.storyItem}
+          onPress={() => {
+            if (hasMyStory && myGroupIndex >= 0) {
+              onSelectUserGroup(myGroupIndex);
+            } else {
+              onOpenCreateStory();
+            }
+          }}
+          activeScale={0.92}
           accessibilityRole="button"
-          accessibilityLabel="Post your daily film story"
+          accessibilityLabel="Your Story"
         >
-          <LinearGradient
-            colors={['#1F1F28', '#14141A']}
-            style={StyleSheet.absoluteFillObject}
-          />
-          <View style={styles.addAvatarWrap}>
-            <Avatar
-              src={currentUser?.avatar_url}
-              seed={currentUser?.username || currentUser?.name}
-              name={currentUser?.name || 'You'}
-              size={42}
-              borderRadius={21}
-            />
-            <View style={styles.plusIconBadge}>
+          <View style={styles.avatarRingWrapper}>
+            {hasMyStory ? (
+              <LinearGradient
+                colors={INSTA_STORY_GRADIENT}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientRing}
+              >
+                <View style={styles.innerRing}>
+                  <Avatar
+                    src={currentUser?.avatar_url}
+                    seed={currentUser?.username || currentUser?.name}
+                    name={currentUser?.name || 'You'}
+                    size={60}
+                    borderRadius={30}
+                  />
+                </View>
+              </LinearGradient>
+            ) : (
+              <View style={styles.unseenRing}>
+                <Avatar
+                  src={currentUser?.avatar_url}
+                  seed={currentUser?.username || currentUser?.name}
+                  name={currentUser?.name || 'You'}
+                  size={60}
+                  borderRadius={30}
+                />
+              </View>
+            )}
+
+            {/* Blue Plus Badge to create a story */}
+            <IOSPressable
+              style={styles.plusBadge}
+              onPress={onOpenCreateStory}
+              hitSlop={6}
+              activeScale={0.88}
+            >
               <Plus size={11} color="#FFFFFF" strokeWidth={3} />
-            </View>
+            </IOSPressable>
           </View>
 
-          <View style={styles.addTextWrap}>
-            <Text style={styles.addTitle}>Your Story</Text>
-            <Text style={styles.addSub}>Post Take</Text>
-          </View>
+          <Text style={styles.storyLabel} numberOfLines={1}>
+            Your story
+          </Text>
         </IOSPressable>
 
-        {/* Real Live CineStories from Backend */}
-        {userGroups.map((group, index) => {
-          const latestStory = group.stories[0];
-          const poster =
-            posterUrl(latestStory?.movie_poster, 'w342') ||
-            backdropUrl(latestStory?.movie_backdrop, 'w780');
-          const title = latestStory?.movie_title || group.name;
+        {/* ── 2. Other Cinephiles' Story Circles with Gradient Ring ── */}
+        {otherGroups.map((group) => {
+          // Find original index in userGroups so viewer opens correct user
+          const originalIndex = userGroups.findIndex((g) => g.user_id === group.user_id);
+          const displayName = group.username
+            ? `@${group.username}`
+            : group.name.split(' ')[0] || 'Cinephile';
 
           return (
             <IOSPressable
-              key={group.user_id || index}
-              style={styles.storyCard}
-              onPress={() => onSelectUserGroup(index)}
-              activeScale={0.94}
+              key={group.user_id}
+              style={styles.storyItem}
+              onPress={() => onSelectUserGroup(originalIndex >= 0 ? originalIndex : 0)}
+              activeScale={0.92}
               accessibilityRole="button"
               accessibilityLabel={`View story by ${group.name}`}
             >
-              {/* Real TMDB Poster / Backdrop Image */}
-              {poster ? (
-                <Image
-                  source={{ uri: poster }}
-                  style={StyleSheet.absoluteFillObject}
-                  contentFit="cover"
-                  transition={200}
-                />
-              ) : (
+              <View style={styles.avatarRingWrapper}>
                 <LinearGradient
-                  colors={['#2D1515', '#16161D']}
-                  style={StyleSheet.absoluteFillObject}
-                />
-              )}
-
-              {/* Gradient Dark Overlay */}
-              <LinearGradient
-                colors={['rgba(0,0,0,0.5)', 'transparent', 'rgba(0,0,0,0.85)']}
-                locations={[0, 0.4, 1]}
-                style={StyleSheet.absoluteFillObject}
-              />
-
-              {/* Top: Cinephile Avatar with Neon Story Ring */}
-              <View style={styles.storyTopRow}>
-                <LinearGradient
-                  colors={['#E50914', '#F59E0B']}
+                  colors={INSTA_STORY_GRADIENT}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={styles.avatarGradientRing}
+                  style={styles.gradientRing}
                 >
-                  <Avatar
-                    src={group.avatar_url}
-                    seed={group.username || group.name}
-                    name={group.name}
-                    size={28}
-                    borderRadius={14}
-                  />
-                </LinearGradient>
-
-                {latestStory?.rating ? (
-                  <View style={styles.ratingPill}>
-                    <Star size={9} color="#FFC107" fill="#FFC107" />
-                    <Text style={styles.ratingPillText}>{latestStory.rating}</Text>
+                  <View style={styles.innerRing}>
+                    <Avatar
+                      src={group.avatar_url}
+                      seed={group.username || group.name}
+                      name={group.name}
+                      size={60}
+                      borderRadius={30}
+                    />
                   </View>
-                ) : null}
+                </LinearGradient>
               </View>
 
-              {/* Bottom: Movie Title & Story Type */}
-              <View style={styles.storyBottomWrap}>
-                <Text style={styles.badgeLabel} numberOfLines={1}>
-                  {(latestStory?.story_type || 'FILM PULSE').toUpperCase()} • {group.stories.length}
-                </Text>
-                <Text style={styles.storyMovieTitle} numberOfLines={2}>
-                  {title}
-                </Text>
-              </View>
+              <Text style={styles.storyLabel} numberOfLines={1}>
+                {displayName}
+              </Text>
             </IOSPressable>
           );
         })}
@@ -167,127 +157,71 @@ export function CineReelsTray({
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
-  },
-  trayHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    marginBottom: 10,
-  },
-  trayTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  trayTitle: {
-    fontFamily: fonts.headingSemi,
-    fontSize: 14,
-    color: '#FFFFFF',
-  },
-  traySub: {
-    fontFamily: fonts.body,
-    fontSize: 11,
-    color: colors.secondaryLabel,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: colors.bg,
   },
   scrollContent: {
-    paddingHorizontal: spacing.lg,
-    gap: 10,
-  },
-  addStoryCard: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    borderColor: 'rgba(229,9,20,0.4)',
-    overflow: 'hidden',
+    paddingHorizontal: 12,
+    gap: 14,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 10,
   },
-  addAvatarWrap: {
-    position: 'relative',
-    marginTop: 6,
+  storyItem: {
+    alignItems: 'center',
+    width: 72,
   },
-  plusIconBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.primary,
+  avatarRingWrapper: {
+    width: 68,
+    height: 68,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  gradientRing: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    padding: 2.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unseenRing: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     borderWidth: 1.5,
-    borderColor: '#14141A',
-  },
-  addTextWrap: {
+    borderColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  addTitle: {
-    fontFamily: fonts.headingSemi,
-    fontSize: 12,
-    color: '#FFFFFF',
+  innerRing: {
+    width: 63,
+    height: 63,
+    borderRadius: 31.5,
+    backgroundColor: colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  addSub: {
+  plusBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#0095F6',
+    borderWidth: 2,
+    borderColor: colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  storyLabel: {
     fontFamily: fonts.body,
-    fontSize: 10,
-    color: colors.primary,
-    marginTop: 1,
-  },
-  storyCard: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    justifyContent: 'space-between',
-    padding: 8,
-    backgroundColor: '#121217',
-  },
-  storyTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  avatarGradientRing: {
-    padding: 1.5,
-    borderRadius: 16,
-  },
-  ratingPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: radius.xs,
-    borderWidth: 1,
-    borderColor: 'rgba(255,193,7,0.3)',
-  },
-  ratingPillText: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 9,
-    color: '#FFC107',
-  },
-  storyBottomWrap: {
-    gap: 1,
-  },
-  badgeLabel: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 8,
-    color: '#F59E0B',
-    letterSpacing: 0.5,
-  },
-  storyMovieTitle: {
-    fontFamily: fonts.headingSemi,
-    fontSize: 12,
-    color: '#FFFFFF',
-    lineHeight: 15,
+    fontSize: 11,
+    color: '#E0E0E0',
+    marginTop: 5,
+    textAlign: 'center',
+    maxWidth: 70,
   },
 });

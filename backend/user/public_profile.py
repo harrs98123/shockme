@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 from typing import Optional, List, Any, Dict
@@ -99,6 +100,7 @@ class PublicProfileStats(BaseModel):
     watched_count: int = 0
     followers_count: int = 0
     following_count: int = 0
+    posts_count: int = 0
 
 class PublicProfileResponse(BaseModel):
     user: UserPublicInfo
@@ -120,6 +122,7 @@ class FollowUserOut(BaseModel):
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
     is_following: bool = False
+    follows_you: bool = False
     followers_count: int = 0
 
     class Config:
@@ -223,6 +226,11 @@ def _build_profile_response(user: models.User, db: Session, current_user: Option
             models.UserFollow.following_id == user.id
         ).first() is not None
 
+    posts_count = db.query(models.SocialPost).filter(
+        models.SocialPost.user_id == user.id,
+        or_(models.SocialPost.is_archived == False, models.SocialPost.is_archived.is_(None))
+    ).count()
+
     stats = PublicProfileStats(
         favorites_count=len(favorites),
         reviews_count=len(reviews_raw),
@@ -231,6 +239,7 @@ def _build_profile_response(user: models.User, db: Session, current_user: Option
         watched_count=len(watched),
         followers_count=followers_count,
         following_count=following_count,
+        posts_count=posts_count,
     )
     
     # Deterministic mock taste based on user ID
@@ -355,12 +364,13 @@ def get_following_feed(
 
 @router.get("/suggestions", response_model=List[FollowUserOut])
 def get_user_suggestions(
-    limit: int = 10,
+    limit: int = 15,
     db: Session = Depends(get_db),
     current_user: Optional[models.User] = Depends(get_optional_user),
 ):
-    """Returns top suggested users/cinephiles to follow."""
+    """Returns top suggested users/cinephiles to follow, prioritizing those who follow you (follow-back)."""
     following_ids = set()
+    follows_me_ids = set()
     if current_user:
         following_ids = {
             r[0] for r in db.query(models.UserFollow.following_id).filter(
@@ -369,13 +379,32 @@ def get_user_suggestions(
         }
         following_ids.add(current_user.id)
 
-    users = db.query(models.User).filter(
-        models.User.username.isnot(None),
-        ~models.User.id.in_(following_ids) if following_ids else True
-    ).limit(limit).all()
+        follows_me_ids = {
+            r[0] for r in db.query(models.UserFollow.follower_id).filter(
+                models.UserFollow.following_id == current_user.id
+            ).all()
+        }
+
+    # 1. First get users who follow you but you don't follow back
+    follow_back_users = []
+    follow_back_ids = follows_me_ids - following_ids
+    if follow_back_ids:
+        follow_back_users = db.query(models.User).filter(
+            models.User.id.in_(follow_back_ids)
+        ).limit(limit).all()
+
+    # 2. Then get other active community cinephiles
+    excluded = following_ids.union({u.id for u in follow_back_users})
+    remaining_limit = max(limit - len(follow_back_users), 0)
+    other_users = []
+    if remaining_limit > 0:
+        other_users = db.query(models.User).filter(
+            models.User.username.isnot(None),
+            ~models.User.id.in_(excluded) if excluded else True
+        ).limit(remaining_limit).all()
 
     results = []
-    for u in users:
+    for u in follow_back_users:
         followers_count = db.query(models.UserFollow).filter(models.UserFollow.following_id == u.id).count()
         results.append(FollowUserOut(
             id=u.id,
@@ -384,8 +413,23 @@ def get_user_suggestions(
             avatar_url=u.avatar_url,
             bio=u.bio,
             is_following=False,
+            follows_you=True,
             followers_count=followers_count,
         ))
+
+    for u in other_users:
+        followers_count = db.query(models.UserFollow).filter(models.UserFollow.following_id == u.id).count()
+        results.append(FollowUserOut(
+            id=u.id,
+            name=u.name,
+            username=u.username,
+            avatar_url=u.avatar_url,
+            bio=u.bio,
+            is_following=False,
+            follows_you=False,
+            followers_count=followers_count,
+        ))
+
     return results
 
 

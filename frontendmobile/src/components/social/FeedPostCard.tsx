@@ -4,6 +4,9 @@ import {
   Text,
   StyleSheet,
   Share,
+  Alert,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
@@ -20,6 +23,11 @@ import {
   UserCheck,
   Smile,
   BarChart2,
+  MoreVertical,
+  Archive,
+  Trash2,
+  Copy,
+  Flag,
 } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
@@ -63,6 +71,9 @@ export interface FeedPostCardProps {
   onReact: (postId: number, reactionType: string) => void;
   onToggleFollow?: (author: { id: number; is_following?: boolean }) => void;
   onCommentAdded?: (postId: number) => void;
+  onPostDeleted?: (postId: number) => void;
+  onPostArchived?: (postId: number, isArchived: boolean) => void;
+  onNavigate?: () => void;
 }
 
 function FeedPostCardComponent({
@@ -71,6 +82,7 @@ function FeedPostCardComponent({
   onReact,
   onToggleFollow,
   onCommentAdded,
+  onNavigate,
 }: FeedPostCardProps) {
   const author = post.author;
   const authorName = author?.name || 'Cinephile';
@@ -83,6 +95,58 @@ function FeedPostCardComponent({
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [pollPayload, setPollPayload] = useState(post.payload);
   const [isWatchlisted, setIsWatchlisted] = useState(false);
+  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+  const [isArchived, setIsArchived] = useState(!!post.is_archived);
+
+  const isAuthorSelf = currentUserId === author?.id;
+
+  const handleDeletePost = () => {
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to permanently delete this post?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsOptionsOpen(false);
+              await socialApi.deletePost(post.id);
+              onPostDeleted?.(post.id);
+              showToast.success('Post deleted');
+            } catch {
+              showToast.error('Failed to delete post');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleToggleArchive = async () => {
+    try {
+      setIsOptionsOpen(false);
+      const updated = await socialApi.archivePost(post.id);
+      const nextState = !!updated.is_archived;
+      setIsArchived(nextState);
+      onPostArchived?.(post.id, nextState);
+      showToast.success(nextState ? 'Post moved to Archive' : 'Post unarchived');
+    } catch {
+      showToast.error('Failed to update post archive state');
+    }
+  };
+
+  const handleSharePost = async () => {
+    try {
+      setIsOptionsOpen(false);
+      await Share.share({
+        message: `Check out ${authorName}'s post on Plotmint: "${post.content ? post.content.slice(0, 100) : post.movie_title || 'Film post'}"`,
+      });
+    } catch {
+      // quiet
+    }
+  };
 
   // Optimistic instant state
   const [localUserReaction, setLocalUserReaction] = useState<string | null>(
@@ -195,7 +259,6 @@ function FeedPostCardComponent({
   };
 
   const isSpoiler = post.is_spoiler && !isSpoilerRevealed;
-  const isAuthorSelf = currentUserId === author?.id;
 
   return (
     <View style={styles.card}>
@@ -203,7 +266,10 @@ function FeedPostCardComponent({
       <View style={styles.authorHeader}>
         <IOSPressable
           style={styles.authorTouchArea}
-          onPress={() => router.push(`/user/${author.id}` as never)}
+          onPress={() => {
+            onNavigate?.();
+            router.push(`/user/${author.id}` as never);
+          }}
           activeScale={0.96}
           accessibilityRole="button"
           accessibilityLabel={`View ${authorName}'s profile`}
@@ -231,29 +297,42 @@ function FeedPostCardComponent({
           </View>
         </IOSPressable>
 
-        {!isAuthorSelf && !author.is_following && onToggleFollow && (
+        <View style={styles.authorHeaderRight}>
+          {!isAuthorSelf && !author.is_following && onToggleFollow && (
+            <IOSPressable
+              style={styles.followBtn}
+              onPress={() => onToggleFollow(author)}
+              activeScale={0.92}
+              accessibilityRole="button"
+              accessibilityLabel="Follow user"
+            >
+              <UserPlus size={11} color="#000000" strokeWidth={2.5} />
+              <Text style={styles.followBtnText}>Follow</Text>
+            </IOSPressable>
+          )}
+
           <IOSPressable
-            style={styles.followBtn}
-            onPress={() => onToggleFollow(author)}
-            activeScale={0.92}
+            style={styles.morePostBtn}
+            onPress={() => setIsOptionsOpen(true)}
+            activeScale={0.88}
             accessibilityRole="button"
-            accessibilityLabel="Follow user"
+            accessibilityLabel="Post options"
           >
-            <UserPlus size={11} color="#000000" strokeWidth={2.5} />
-            <Text style={styles.followBtnText}>Follow</Text>
+            <MoreVertical size={18} color={colors.secondaryLabel} />
           </IOSPressable>
-        )}
+        </View>
       </View>
 
       {/* ── Tagged Movie Banner (if attached) ── */}
       {(post.movie_id || post.movie_title) && (
         <IOSPressable
           style={styles.taggedMovieBanner}
-          onPress={() =>
+          onPress={() => {
+            onNavigate?.();
             router.push(
               `/${post.payload?.media_type || 'movie'}/${post.movie_id}` as never
-            )
-          }
+            );
+          }}
           activeScale={0.97}
           accessibilityRole="button"
           accessibilityLabel={`View movie ${post.movie_title || 'details'}`}
@@ -529,6 +608,109 @@ function FeedPostCardComponent({
           />
         </View>
       )}
+
+      {/* ── Post Options Modal (Instagram Style 3-dots Menu) ── */}
+      <Modal
+        visible={isOptionsOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsOptionsOpen(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setIsOptionsOpen(false)}>
+          <View style={styles.optionsBackdrop}>
+            <TouchableWithoutFeedback>
+              <View style={styles.optionsSheet}>
+                <View style={styles.optionsHandleBar} />
+
+                {isAuthorSelf && (
+                  <>
+                    <IOSPressable
+                      style={styles.optionRow}
+                      onPress={handleToggleArchive}
+                      activeScale={0.96}
+                    >
+                      <Archive size={18} color="#FFFFFF" />
+                      <Text style={styles.optionText}>
+                        {isArchived ? 'Unarchive Post' : 'Archive Post'}
+                      </Text>
+                    </IOSPressable>
+
+                    <IOSPressable
+                      style={styles.optionRowDestructive}
+                      onPress={handleDeletePost}
+                      activeScale={0.96}
+                    >
+                      <Trash2 size={18} color="#EF4444" />
+                      <Text style={styles.optionTextDestructive}>Delete Post</Text>
+                    </IOSPressable>
+                  </>
+                )}
+
+                <IOSPressable
+                  style={styles.optionRow}
+                  onPress={handleSharePost}
+                  activeScale={0.96}
+                >
+                  <Share2 size={18} color="#FFFFFF" />
+                  <Text style={styles.optionText}>Share Post...</Text>
+                </IOSPressable>
+
+                <IOSPressable
+                  style={styles.optionRow}
+                  onPress={() => {
+                    setIsOptionsOpen(false);
+                    showToast.success('Link copied to clipboard');
+                  }}
+                  activeScale={0.96}
+                >
+                  <Copy size={18} color="#FFFFFF" />
+                  <Text style={styles.optionText}>Copy Link</Text>
+                </IOSPressable>
+
+                {!isAuthorSelf && (
+                  <>
+                    {onToggleFollow && (
+                      <IOSPressable
+                        style={styles.optionRow}
+                        onPress={() => {
+                          setIsOptionsOpen(false);
+                          onToggleFollow(author);
+                        }}
+                        activeScale={0.96}
+                      >
+                        <UserPlus size={18} color="#FFFFFF" />
+                        <Text style={styles.optionText}>
+                          {author.is_following ? 'Unfollow' : 'Follow'} @{authorHandle}
+                        </Text>
+                      </IOSPressable>
+                    )}
+
+                    <IOSPressable
+                      style={styles.optionRowDestructive}
+                      onPress={() => {
+                        setIsOptionsOpen(false);
+                        showToast.info('Post reported. Thank you for keeping Plotmint safe.');
+                      }}
+                      activeScale={0.96}
+                    >
+                      <Flag size={18} color="#EF4444" />
+                      <Text style={styles.optionTextDestructive}>Report Post</Text>
+                    </IOSPressable>
+                  </>
+                )}
+
+                <IOSPressable
+                  style={styles.optionCancelBtn}
+                  onPress={() => setIsOptionsOpen(false)}
+                  activeScale={0.96}
+                >
+                  <Text style={styles.optionCancelText}>Cancel</Text>
+                </IOSPressable>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }
@@ -590,6 +772,78 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodySemi,
     fontSize: 11,
     color: '#000000',
+  },
+  authorHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  morePostBtn: {
+    padding: 4,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionsBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'flex-end',
+  },
+  optionsSheet: {
+    backgroundColor: '#1E1E26',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 32,
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  optionsHandleBar: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  optionRowDestructive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  optionText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 15,
+    color: '#FFFFFF',
+  },
+  optionTextDestructive: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 15,
+    color: '#EF4444',
+  },
+  optionCancelBtn: {
+    marginTop: 14,
+    paddingVertical: 14,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+  },
+  optionCancelText: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 15,
+    color: '#FFFFFF',
   },
   taggedMovieBanner: {
     flexDirection: 'row',

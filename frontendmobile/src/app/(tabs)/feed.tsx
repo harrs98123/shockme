@@ -15,10 +15,12 @@ import {
   Compass,
   Users,
   MessageSquare,
+  Bell,
 } from 'lucide-react-native';
 
 import { socialApi, type SocialPost } from '@/api/social';
 import { storiesApi, type UserStoryGroup } from '@/api/stories';
+import { notificationsApi } from '@/api/notifications';
 import { api, request } from '@/api/client';
 import { useAuth } from '@/hooks/useAuth';
 import { colors, fonts, radius, spacing } from '@/theme';
@@ -61,6 +63,15 @@ export default function FeedScreen() {
     queryFn: () => storiesApi.getFeed(),
     staleTime: 30 * 1000,
   });
+
+  // 3. Unread Notifications Count Query
+  const { data: unreadData, refetch: refetchUnread } = useQuery({
+    queryKey: ['user', 'notifications', 'unread-count'],
+    queryFn: () => notificationsApi.getUnreadCount(),
+    enabled: isAuthenticated,
+    staleTime: 20 * 1000,
+  });
+  const unreadCount = unreadData?.unread_count || 0;
 
   const handleReact = useCallback(
     async (postId: number, reactionType: string) => {
@@ -122,6 +133,26 @@ export default function FeedScreen() {
     [activeTab, qc]
   );
 
+  const handlePostDeleted = useCallback(
+    (postId: number) => {
+      qc.setQueryData<SocialPost[]>(['social', 'feed', activeTab], (oldPosts) =>
+        oldPosts ? oldPosts.filter((p) => p.id !== postId) : []
+      );
+      qc.invalidateQueries({ queryKey: ['social'] });
+    },
+    [activeTab, qc]
+  );
+
+  const handlePostArchived = useCallback(
+    (postId: number) => {
+      qc.setQueryData<SocialPost[]>(['social', 'feed', activeTab], (oldPosts) =>
+        oldPosts ? oldPosts.filter((p) => p.id !== postId) : []
+      );
+      qc.invalidateQueries({ queryKey: ['social'] });
+    },
+    [activeTab, qc]
+  );
+
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<SocialPost>) => (
       <FeedPostCard
@@ -130,9 +161,11 @@ export default function FeedScreen() {
         onReact={handleReact}
         onToggleFollow={handleToggleFollow}
         onCommentAdded={handleCommentAdded}
+        onPostDeleted={handlePostDeleted}
+        onPostArchived={handlePostArchived}
       />
     ),
-    [user?.id, handleReact, handleToggleFollow, handleCommentAdded]
+    [user?.id, handleReact, handleToggleFollow, handleCommentAdded, handlePostDeleted, handlePostArchived]
   );
 
   return (
@@ -142,6 +175,23 @@ export default function FeedScreen() {
         <PlotmintLogo size={22} />
 
         <View style={styles.topRightActions}>
+          <IOSPressable
+            style={styles.headerCircleBtn}
+            onPress={() => router.push('/notifications' as never)}
+            activeScale={0.9}
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+          >
+            <Bell size={17} color="#FFFFFF" />
+            {unreadCount > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadBadgeText}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </IOSPressable>
+
           <IOSPressable
             style={styles.plusComposeBtn}
             onPress={() => {
@@ -192,6 +242,7 @@ export default function FeedScreen() {
         onRefresh={() => {
           refetch();
           refetchStories();
+          refetchUnread();
         }}
         refreshing={isRefetching}
         bounces={true}
@@ -243,16 +294,26 @@ export default function FeedScreen() {
               </Text>
               <Text style={styles.emptySub}>
                 {activeTab === 'following'
-                  ? 'Follow more cinephiles or switch to "For You" to discover hot takes.'
+                  ? 'Follow more cinephiles or switch to "For You" to discover community takes.'
                   : 'Be the first cinephile to share a movie hot take!'}
               </Text>
-              <IOSPressable
-                style={styles.createFirstPostBtn}
-                onPress={() => setIsComposerOpen(true)}
-                activeScale={0.94}
-              >
-                <Text style={styles.createFirstPostBtnText}>Share a Hot Take</Text>
-              </IOSPressable>
+              {activeTab === 'following' ? (
+                <IOSPressable
+                  style={styles.createFirstPostBtn}
+                  onPress={() => router.push('/notifications' as never)}
+                  activeScale={0.94}
+                >
+                  <Text style={styles.createFirstPostBtnText}>Discover & Follow Cinephiles</Text>
+                </IOSPressable>
+              ) : (
+                <IOSPressable
+                  style={styles.createFirstPostBtn}
+                  onPress={() => setIsComposerOpen(true)}
+                  activeScale={0.94}
+                >
+                  <Text style={styles.createFirstPostBtnText}>Share a Hot Take</Text>
+                </IOSPressable>
+              )}
             </View>
           ) : (
             <ActivityIndicator
@@ -306,7 +367,37 @@ const styles = StyleSheet.create({
   topRightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+  },
+  headerCircleBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    backgroundColor: '#EF4444',
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.bg,
+  },
+  unreadBadgeText: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 9,
+    color: '#FFFFFF',
   },
   plusComposeBtn: {
     width: 32,
