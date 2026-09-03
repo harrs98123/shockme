@@ -98,7 +98,7 @@ export default function Footer() {
         { label: 'Movie Finder', href: '/finder', icon: SlidersHorizontal },
         { label: 'Mood Matcher', href: '/mood', icon: Coffee },
         { label: 'Swipe Cinema', href: '/swipe', badge: 'Tinder Mode', icon: Shuffle },
-        { label: 'Android App', href: '/plotmint.apk', badge: 'APK v1.0', icon: Smartphone, download: 'plotmint.apk' },
+        { label: 'Android App', href: '/android.apk', badge: 'APK v1.0', icon: Smartphone, download: 'android.apk' },
       ],
     },
     {
@@ -251,8 +251,8 @@ export default function Footer() {
             {/* Download Android APK Button in Footer Brand Column */}
             <div className="pt-2">
               <a
-                href="/plotmint.apk"
-                download="plotmint.apk"
+                href="/android.apk"
+                download="android.apk"
                 className="group inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-neutral-200 backdrop-blur-md transition-all duration-200 hover:border-emerald-500/40 hover:bg-emerald-500/[0.08] hover:text-white hover:shadow-[0_0_20px_rgba(0,229,153,0.15)] active:scale-95 cursor-pointer"
               >
                 <AndroidIcon size={14} className="text-[#00E599] transition-transform duration-200 group-hover:scale-110" />

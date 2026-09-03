@@ -773,8 +773,8 @@ export default function Navbar() {
                       <DropdownItem icon={<Wand2 size={16} />} label="Movie Moods" href="/mood" onClick={() => setMenuOpen(false)} />
                       
                       <a
-                        href="/plotmint.apk"
-                        download="plotmint.apk"
+                        href="/android.apk"
+                        download="android.apk"
                         onClick={() => setMenuOpen(false)}
                         style={{
                           width: '100%', display: 'flex', alignItems: 'center', gap: 12,
@@ -817,8 +817,8 @@ export default function Navbar() {
 
             {/* Minimal & Modern Desktop Download APK Button */}
             <motion.a
-              href="/plotmint.apk"
-              download="plotmint.apk"
+              href="/android.apk"
+              download="android.apk"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               title="Download Plotmint Android App (v1.0 APK)"
@@ -852,8 +852,8 @@ export default function Navbar() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {/* Minimal Mobile Download APK Button */}
             <motion.a
-              href="/plotmint.apk"
-              download="plotmint.apk"
+              href="/android.apk"
+              download="android.apk"
               whileTap={{ scale: 0.95 }}
               aria-label="Download Android App APK"
               className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-neutral-200 backdrop-blur-md transition-colors active:bg-white/[0.08] hover:border-emerald-500/40 hover:text-white"
@@ -1106,8 +1106,8 @@ export default function Navbar() {
 
                       {/* Download APK Mobile Card */}
                       <motion.a
-                        href="/plotmint.apk"
-                        download="plotmint.apk"
+                        href="/android.apk"
+                        download="android.apk"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.18 }}
