@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Turnstile } from '@marsidev/react-turnstile';
+// The Cloudflare Turnstile widget (its own script + iframe) only ever renders
+// behind the hidden "secret input" trigger further down — loading it on
+// demand keeps it out of every movie/tv page's initial JS.
+const Turnstile = dynamic(
+  () => import('@marsidev/react-turnstile').then((m) => m.Turnstile),
+  { ssr: false }
+);
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Media } from '@/lib/types';

@@ -317,7 +317,7 @@ export default function BrowseCategoriesShowcase({
                       className="group relative w-[135px] sm:w-[160px] lg:w-[175px] shrink-0 snap-start"
                     >
                       <Link
-                        href={`/movie/${movie.id}`}
+                        href={`/movie/${movie.id}`} prefetch={false}
                         className="block relative aspect-[2/3] w-full rounded-xl overflow-hidden bg-zinc-900 border border-white/[0.08] group-hover:border-[#FBBF24]/60 transition-all duration-200"
                       >
                         <Image
@@ -351,7 +351,7 @@ export default function BrowseCategoriesShowcase({
                       {/* Movie Title below */}
                       <div className="mt-1.5 px-0.5">
                         <Link
-                          href={`/movie/${movie.id}`}
+                          href={`/movie/${movie.id}`} prefetch={false}
                           title={title}
                           className="text-xs font-semibold text-white/90 hover:text-[#FBBF24] transition-colors truncate block"
                         >

@@ -210,7 +210,7 @@ export default function MoodFeaturedCard({
           {/* Action CTAs */}
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 pt-2 w-full">
             <Link
-              href={`/${mediaType}/${movie.id}`}
+              href={`/${mediaType}/${movie.id}`} prefetch={false}
               className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-all hover:scale-105 active:scale-95"
               style={{ background: primaryGlow }}
             >

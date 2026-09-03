@@ -38,7 +38,7 @@ export default function NumberedCollectionCard({ index, movie, isOwner, onRemove
       onMouseLeave={() => setIsHovered(false)}
       style={{ position: 'relative', width: '100%' }}
     >
-      <Link href={`/movie/${movie.movie_id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Link href={`/movie/${movie.movie_id}`} prefetch={false} style={{ textDecoration: 'none', color: 'inherit' }}>
         <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', background: '#111', aspectRatio: '2/3' }}>
           {/* Large Number Overlay */}
           <span style={{

@@ -27,7 +27,10 @@ import {
   Loader2,
   BarChart2
 } from 'lucide-react';
-import FollowersModal from '@/components/FollowersModal';
+import dynamic from 'next/dynamic';
+
+// Gated behind `modalOpen &&` at its render site below.
+const FollowersModal = dynamic(() => import('@/components/FollowersModal'), { ssr: false });
 import SarcasticPosterFallback from '@/components/SarcasticPosterFallback';
 import Avatar from '@/components/Avatar';
 
@@ -678,7 +681,7 @@ export default function PublicUserProfilePage() {
                         className="hover:border-white/20"
                       >
                         {/* Poster */}
-                        <Link href={`/movie/${r.movie_id}`} style={{ flexShrink: 0 }}>
+                        <Link href={`/movie/${r.movie_id}`} prefetch={false} style={{ flexShrink: 0 }}>
                           <div style={{ position: 'relative', width: 68, height: 102, borderRadius: 10, overflow: 'hidden', background: '#222' }}>
                             <Image
                               src={posterSrc}
@@ -697,7 +700,7 @@ export default function PublicUserProfilePage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="flex items-center justify-between gap-2 mb-1.5">
                             <Link
-                              href={`/movie/${r.movie_id}`}
+                              href={`/movie/${r.movie_id}`} prefetch={false}
                               style={{ textDecoration: 'none', color: 'white' }}
                               className="hover:underline"
                             >
@@ -764,7 +767,7 @@ export default function PublicUserProfilePage() {
                     return (
                       <Link
                         key={m.id}
-                        href={`/movie/${m.movie_id}`}
+                        href={`/movie/${m.movie_id}`} prefetch={false}
                         style={{ textDecoration: 'none', display: 'block' }}
                         className="group"
                       >
@@ -850,7 +853,7 @@ export default function PublicUserProfilePage() {
                     return (
                       <Link
                         key={col.id}
-                        href={`/collections/${col.id}`}
+                        href={`/collections/${col.id}`} prefetch={false}
                         style={{ textDecoration: 'none', display: 'block' }}
                         className="group"
                       >
@@ -971,7 +974,7 @@ export default function PublicUserProfilePage() {
                       return (
                         <Link
                           key={m.id}
-                          href={`/movie/${m.movie_id}`}
+                          href={`/movie/${m.movie_id}`} prefetch={false}
                           style={{ textDecoration: 'none', display: 'block' }}
                           className="group"
                         >
@@ -1020,7 +1023,7 @@ export default function PublicUserProfilePage() {
       </div>
 
       {/* Followers / Following Modal */}
-      {data && (
+      {data && modalOpen && (
         <FollowersModal
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}

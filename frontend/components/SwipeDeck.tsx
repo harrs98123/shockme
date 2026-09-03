@@ -128,7 +128,7 @@ export default function SwipeDeck({ initialMovies }: SwipeDeckProps) {
         {/* Info / Details Button */}
         {movies[0] ? (
           <Link
-            href={`/movie/${movies[0].id}`}
+            href={`/movie/${movies[0].id}`} prefetch={false}
             className="w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center justify-center shadow-lg transition-all hover:scale-110 hover:bg-purple-500/25 active:scale-95"
             title="View Details"
           >

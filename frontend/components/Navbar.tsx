@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import PlotmintLogo from '@/components/PlotmintLogo';
@@ -34,7 +35,12 @@ import {
   Smartphone,
 } from 'lucide-react';
 import Avatar from '@/components/Avatar';
-import AvatarCustomizerModal from '@/components/AvatarCustomizerModal';
+// Loaded on demand — only ever needed once the user actually opens the
+// customizer, which is gated behind `isAvatarModalOpen &&` at its render
+// site below. Navbar renders on every page, so this keeps the (canvas-confetti
+// + Cloudinary upload widget + dicebear style picker) chunk out of the JS
+// every single page load ships.
+const AvatarCustomizerModal = dynamic(() => import('@/components/AvatarCustomizerModal'), { ssr: false });
 
 const StackedBarsIcon = ({ size = 24, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>

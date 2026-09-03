@@ -320,7 +320,7 @@ export default function ScenePlayer({
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   {movieId && (
                     <Link
-                      href={`/movie/${movieId}`}
+                      href={`/movie/${movieId}`} prefetch={false}
                       target="_blank"
                       style={{
                         display: 'flex',

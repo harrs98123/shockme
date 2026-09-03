@@ -45,7 +45,7 @@ export default function CollectionMovieCard({ movie, index }: Props) {
         zIndex: isHovered ? 10 : 1,
       }}
     >
-      <Link href={`/movie/${movie.id}`} style={{ display: 'block', height: '100%' }}>
+      <Link href={`/movie/${movie.id}`} prefetch={false} style={{ display: 'block', height: '100%' }}>
         {/* Poster Image or Sarcastic Fallback */}
         <div style={{ position: 'absolute', inset: 0 }}>
           {!imgError && movie.poster_path ? (

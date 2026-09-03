@@ -45,9 +45,15 @@ import {
   Camera,
 } from 'lucide-react';
 
-import ProfileEditModal from '@/components/ProfileEditModal';
-import FollowersModal from '@/components/FollowersModal';
-import AvatarCustomizerModal from '@/components/AvatarCustomizerModal';
+import dynamic from 'next/dynamic';
+
+// All three are only ever rendered behind a state-gated conditional below —
+// loading them on demand keeps their chunks (dicebear picker, Cloudinary
+// upload widget, canvas-confetti, follower list) out of the profile page's
+// initial JS.
+const ProfileEditModal = dynamic(() => import('@/components/ProfileEditModal'), { ssr: false });
+const FollowersModal = dynamic(() => import('@/components/FollowersModal'), { ssr: false });
+const AvatarCustomizerModal = dynamic(() => import('@/components/AvatarCustomizerModal'), { ssr: false });
 import Avatar from '@/components/Avatar';
 
 type TabType = 'favorites' | 'suggestions' | 'reviews' | 'posts' | 'collections' | 'watchlist' | 'watched' | 'groups' | 'tierlists' | 'interested';
@@ -774,7 +780,7 @@ function ReviewCard({ review }: { review: UserReview }) {
 
 function CollectionCard({ collection }: { collection: Collection }) {
   return (
-    <Link href={`/collections/${collection.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+    <Link href={`/collections/${collection.id}`} prefetch={false} style={{ textDecoration: 'none', display: 'block' }}>
       <div style={{ borderRadius: 24, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)', transition: 'all 0.3s' }}
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-6px)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.15)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.05)'; }}

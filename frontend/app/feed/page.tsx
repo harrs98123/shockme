@@ -16,7 +16,12 @@ import {
 import PostComposer from '@/components/PostComposer';
 import { FollowUser } from '@/components/FollowersModal';
 import Avatar from '@/components/Avatar';
-import ShareModal, { SharePostData } from '@/components/ShareModal';
+import dynamic from 'next/dynamic';
+import type { SharePostData } from '@/components/ShareModal';
+
+// Gated behind `isShareModalOpen &&` at its render site below, so this stays
+// out of the feed's initial JS until someone actually shares a post.
+const ShareModal = dynamic(() => import('@/components/ShareModal'), { ssr: false });
 import FeedPostCard, { SocialPost } from '@/components/FeedPostCard';
 
 const PAGE_SIZE = 12;
@@ -531,11 +536,13 @@ export default function SocialFeedPage() {
       </div>
 
       {/* Share Post Modal */}
-      <ShareModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        post={shareTargetPost}
-      />
+      {isShareModalOpen && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          post={shareTargetPost}
+        />
+      )}
     </div>
   );
 }

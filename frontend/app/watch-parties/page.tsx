@@ -266,7 +266,7 @@ export default function WatchPartiesPage() {
                       <h3 className="text-xl font-black text-white leading-tight mb-2">
                         {party.title}
                       </h3>
-                      <Link href={`/movie/${party.movie_id}`} className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+                      <Link href={`/movie/${party.movie_id}`} prefetch={false} className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
                         View Movie Details <PlaySquare size={12} />
                       </Link>
                     </div>

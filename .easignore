@@ -1,0 +1,53 @@
+# Controls what `eas build` uploads. Same syntax as .gitignore; does NOT affect
+# git. EAS archives the whole repo because frontendmobile/ is a subdirectory of
+# it — everything below is dead weight for an Android/iOS build of the app.
+
+# ── Sibling projects (the mobile app is self-contained in frontendmobile/) ──
+/backend/
+/frontend/
+/releases/
+render.yaml
+Procfile
+run.py
+runtime.txt
+PYTHON_VERSION
+
+# ── Committed Python virtualenv (~20 MB of native .pyd/.so) ──
+/.venv/
+**/__pycache__/
+*.pyc
+
+# ── Binaries that must never sit in a build archive ──
+*.apk
+*.aab
+*.keystore
+*.jks
+*.p8
+*.p12
+
+# ── Node / Expo caches — EAS reinstalls deps and re-runs prebuild ──
+**/node_modules/
+frontendmobile/.expo/
+frontendmobile/dist/
+frontendmobile/web-build/
+frontendmobile/android/
+frontendmobile/ios/
+
+# ── Media & docs ──
+*.mp4
+*.mov
+*.log
+*.md
+
+# ── Editor / tooling ──
+.vscode/
+.idea/
+.claude/
+
+# ── Env files: ship only .env.production (all EXPO_PUBLIC_*, already public) ──
+.env
+.env.local
+.env.development
+.env*.local
+frontendmobile/.env
+frontendmobile/.env.local

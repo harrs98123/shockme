@@ -9,6 +9,7 @@ import MoctaleMeter from '@/components/MoctaleMeter';
 import VerdictBattleSection from '@/components/VerdictBattle';
 import WatchOrderPanel from '@/components/WatchOrderPanel';
 import CommunityPosts from '@/components/CommunityPosts';
+import LazyMount from '@/components/LazyMount';
 import { absoluteUrl, buildMovieJsonLd, jsonLdScript, posterAbsoluteUrl, toDescription } from '@/lib/seo';
 import { BACKEND_FETCH_HEADERS } from '@/lib/backendFetch';
 
@@ -128,30 +129,37 @@ export default async function MoviePage({
         )}
 
         {/* ── Community Sections: Hidden for Upcoming Movies ────────────────── */}
+        {/* None of this renders anything from SSR data (each section fetches
+            its own data client-side), so deferring the mount until it's
+            actually about to scroll into view costs nothing SEO-wise and
+            keeps ~8 client-component chunks + their fetches off the initial
+            page load. */}
         {!isUpcoming && (
           <div className="container" style={{ padding: '60px 24px' }}>
-            <div className="grid grid-cols-1 lg:grid-cols-[60%_40%] xl:grid-cols-[65%_35%] gap-12 items-start">
+            <LazyMount minHeight={600}>
+              <div className="grid grid-cols-1 lg:grid-cols-[60%_40%] xl:grid-cols-[65%_35%] gap-12 items-start">
 
-              {/* Left Column: Moctale Meter (Reviews) & Debates */}
-              <div className="flex flex-col gap-12">
-                <MoctaleMeter movieId={movie.id} mediaType="movie" />
-                <DebateSection movieId={movie.id} mediaType="movie" />
+                {/* Left Column: Moctale Meter (Reviews) & Debates */}
+                <div className="flex flex-col gap-12">
+                  <MoctaleMeter movieId={movie.id} mediaType="movie" />
+                  <DebateSection movieId={movie.id} mediaType="movie" />
+                </div>
+
+                {/* Right Column: AI & Extras (Compact) */}
+                <div className="flex flex-col gap-12">
+                  <WatchOrderPanel movieId={movie.id} mediaType="movie" />
+                  <ExplanationEngine movieId={movie.id} mediaType="movie" />
+                  <VerdictBattleSection movieId={movie.id} mediaType="movie" />
+                  <AlternateEnding movieId={movie.id} mediaType="movie" />
+                </div>
+
               </div>
 
-              {/* Right Column: AI & Extras (Compact) */}
-              <div className="flex flex-col gap-12">
-                <WatchOrderPanel movieId={movie.id} mediaType="movie" />
-                <ExplanationEngine movieId={movie.id} mediaType="movie" />
-                <VerdictBattleSection movieId={movie.id} mediaType="movie" />
-                <AlternateEnding movieId={movie.id} mediaType="movie" />
+              {/* ─── Community Posts (New Social Hub) ───────────────────────── */}
+              <div className="mt-12">
+                <CommunityPosts movieId={movie.id} />
               </div>
-
-            </div>
-            
-            {/* ─── Community Posts (New Social Hub) ───────────────────────── */}
-            <div className="mt-12">
-              <CommunityPosts movieId={movie.id} />
-            </div>
+            </LazyMount>
           </div>
         )}
       </div>

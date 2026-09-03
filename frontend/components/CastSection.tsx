@@ -24,7 +24,7 @@ export default function CastSection({ cast }: Props) {
           {visible.map((member) => (
             <Link
               key={member.id}
-              href={`/person/${member.id}`}
+              href={`/person/${member.id}`} prefetch={false}
               className="flex-shrink-0 w-28 md:w-36 flex flex-col items-center text-center snap-start group cursor-pointer"
             >
               {/* Profile Image Circle */}

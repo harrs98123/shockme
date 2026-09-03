@@ -199,7 +199,7 @@ export default function MoodMovieCard({
 
           <div className="flex items-center gap-1.5 pt-0.5 w-full overflow-hidden">
             <Link
-              href={`/${mediaType}/${movie.id}`}
+              href={`/${mediaType}/${movie.id}`} prefetch={false}
               className="flex-1 min-w-0 flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl text-white text-[11px] sm:text-xs font-bold transition-all shadow-lg hover:scale-[1.02] active:scale-95 truncate"
               style={{
                 background: accentGlow ? accentGlow.primary : 'var(--primary-hover)',

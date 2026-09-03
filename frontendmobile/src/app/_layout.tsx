@@ -28,6 +28,10 @@ import { AmbientGlow } from '@/components/layout/AmbientGlow';
 import { AppSplashScreen } from '@/components/layout/AppSplashScreen';
 import { NoInternetOverlay } from '@/components/common/NoInternetOverlay';
 
+// Expo Router renders this in place of the tree whenever a screen throws during
+// render, instead of leaving the user on a blank/frozen window.
+export { RootErrorBoundary as ErrorBoundary } from '@/components/layout/RootErrorBoundary';
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Paints the window background before the first frame, so a cold start does not

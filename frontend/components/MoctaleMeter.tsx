@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Crown, Zap, Star, MessageSquare, Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import Avatar from '@/components/Avatar';
 import toast from '@/lib/toast';
 
@@ -477,13 +476,16 @@ export default function MoctaleMeter({ movieId, mediaType = 'movie' }: { movieId
     const isSelected = selectedLabel === id;
     setSelectedLabel(isSelected ? null : id);
     
-    // Confetti Effect for Perfection
+    // Confetti Effect for Perfection — loaded on demand, this is the only
+    // place on the page that ever needs it.
     if (id === 'perfection' && !isSelected) {
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#a78bfa', '#8b5cf6', '#d946ef', '#ffffff']
+      import('canvas-confetti').then(({ default: confetti }) => {
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#a78bfa', '#8b5cf6', '#d946ef', '#ffffff']
+        });
       });
     }
   };

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, ChangeEvent, FormEvent } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, CheckCircle2, Camera, User as UserIcon, AtSign, AlignLeft } from 'lucide-react';
 import { User as UserType } from '@/lib/types';
@@ -8,7 +9,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { CldUploadWidget } from 'next-cloudinary';
 import Avatar from '@/components/Avatar';
-import AvatarCustomizerModal from '@/components/AvatarCustomizerModal';
+const AvatarCustomizerModal = dynamic(() => import('@/components/AvatarCustomizerModal'), { ssr: false });
 
 interface ProfileEditModalProps {
   user: UserType;

@@ -51,7 +51,7 @@ function CollectionCard({ col, index }: { col: CollectionOut; index: number }) {
       transition={{ delay: Math.min(index * 0.04, 0.5), duration: 0.35 }}
       className="group"
     >
-      <Link href={`/collections/${col.id}`} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
+      <Link href={`/collections/${col.id}`} prefetch={false} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
         <div style={{
           overflow: 'hidden', cursor: 'pointer', height: '100%',
           borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)',

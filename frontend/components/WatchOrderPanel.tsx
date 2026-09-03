@@ -39,7 +39,7 @@ function Chip({ label, color }: { label: string; color?: string }) {
 function MiniEntry({ label, entry }: { label: string; entry: FranchiseEntry }) {
   return (
     <Link
-      href={entryHref(entry)}
+      href={entryHref(entry)} prefetch={false}
       style={{
         display: 'flex',
         alignItems: 'center',

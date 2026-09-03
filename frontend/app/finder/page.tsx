@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import confetti from 'canvas-confetti';
 import {
   ChevronLeft,
   Check,
@@ -388,12 +387,14 @@ export default function FinderPage() {
       setLoadingStage('');
 
       setTimeout(() => {
-        confetti({
-          particleCount: 60,
-          spread: 70,
-          startVelocity: 30,
-          origin: { y: 0.25 },
-          colors: [activeGlow.primary, '#f5f5f5', activeGlow.secondary],
+        import('canvas-confetti').then(({ default: confetti }) => {
+          confetti({
+            particleCount: 60,
+            spread: 70,
+            startVelocity: 30,
+            origin: { y: 0.25 },
+            colors: [activeGlow.primary, '#f5f5f5', activeGlow.secondary],
+          });
         });
       }, 150);
     } catch (err) {

@@ -39,6 +39,26 @@ function makeLimiter(requests: number, window: `${number} s` | `${number} m`): R
 // binge-browsing, but stops rapid numeric-ID enumeration by scrapers.
 export const detailPageLimiter = makeLimiter(60, '60 s');
 
+// ── Crawl budgets ────────────────────────────────────────────────────────────
+// These are NOT per-IP. Search engines crawl from large, rotating IP pools, so
+// a per-IP limit never trips for them — yet every cold detail-page URL they
+// touch mints a fresh ISR cache entry (~2 writes + ~45 KB of origin transfer).
+// The budget below is keyed by bot FAMILY, so all of Googlebot's IPs share one
+// bucket and the monthly ISR write bill has a hard ceiling.
+//
+// 40/hour/family ≈ 960 cold pages/day/family. The sitemap only advertises ~120
+// URLs, so this is far more than enough to index everything that matters while
+// making a 66K-page link-graph walk impossible.
+export const searchCrawlLimiter = makeLimiter(40, '60 m');
+
+// Link unfurlers fetch the handful of URLs a human just shared. One shared
+// bucket across all of them is plenty and keeps Open Graph previews working.
+export const socialCrawlLimiter = makeLimiter(30, '60 m');
+
+// Backstop across ALL crawler traffic regardless of family — protects against
+// a spoofed-Googlebot flood claiming to be many different families.
+export const globalCrawlLimiter = makeLimiter(120, '60 m');
+
 // Search & catalog/filter pages: moderate — typing/filtering is bursty
 // but shouldn't sustain dozens of requests per second.
 export const searchLimiter = makeLimiter(30, '60 s');

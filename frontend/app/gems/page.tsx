@@ -503,7 +503,7 @@ export default function GemsPage() {
             {gems.map((gem, idx) => {
               const rarity = rarityConfig[gem.rarity as keyof typeof rarityConfig] || rarityConfig.common;
               return (
-                <Link href={`/movie/${gem.id}`} key={gem.id} className="gem-card-wrap">
+                <Link href={`/movie/${gem.id}`} prefetch={false} key={gem.id} className="gem-card-wrap">
                   <div
                     className="gem-card"
                     style={{

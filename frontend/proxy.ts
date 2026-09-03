@@ -1,81 +1,44 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { detailPageLimiter, searchLimiter, modApiLimiter, checkRateLimit } from '@/lib/rateLimit';
+import {
+  detailPageLimiter,
+  searchLimiter,
+  modApiLimiter,
+  searchCrawlLimiter,
+  socialCrawlLimiter,
+  globalCrawlLimiter,
+  checkRateLimit,
+} from '@/lib/rateLimit';
+import { classifyUserAgent, isValidDetailPath } from '@/lib/botGate';
 
 // Protected routes that require auth
 const PROTECTED: string[] = [];
 
 // Scoped to exactly the routes that are expensive to render or call a
-// paid/rate-limited third party — an explicit allowlist so this never runs
-// on static assets, images, or the rest of the site.
+// paid/rate-limited third party — an explicit allowlist so this never runs on
+// static assets, images, or the rest of the site.
 //
-// The `missing` conditions make Vercel skip the Proxy invocation ENTIRELY for
-// Next.js prefetch requests (Link hover/viewport prefetch) and RSC data
-// fetches. Those must never burn the rate-limit budget, an Upstash round-trip,
-// or a Fluid function invocation — only real top-level page loads and the
-// `/api/mod` proxy do. This is the single biggest cut to Edge Requests,
-// Function Invocations and Fluid Active CPU. `missing`/`has` entries must be
-// inlined as literals so Next can statically analyse the matcher at build time.
+// These used to carry `missing` conditions so Vercel would skip the Proxy
+// entirely for prefetch/RSC requests. That was a real invocation saving, but it
+// was also a hole straight through the bot gate: any scraper that set
+// `Sec-Purpose: prefetch` skipped this file completely and went on minting ISR
+// cache entries. The prefetch fast-path now lives INSIDE `proxy()`, after the
+// User-Agent check, so it still skips the Upstash round-trip without letting a
+// header opt anyone out of the crawler rules.
 export const config = {
   matcher: [
-    {
-      source: '/movie/:path*',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-        { type: 'header', key: 'sec-purpose', value: 'prefetch' },
-      ],
-    },
-    {
-      source: '/tv/:path*',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-        { type: 'header', key: 'sec-purpose', value: 'prefetch' },
-      ],
-    },
-    {
-      source: '/person/:path*',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-        { type: 'header', key: 'sec-purpose', value: 'prefetch' },
-      ],
-    },
-    {
-      source: '/collections/:path*',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-        { type: 'header', key: 'sec-purpose', value: 'prefetch' },
-      ],
-    },
-    {
-      source: '/search',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-        { type: 'header', key: 'sec-purpose', value: 'prefetch' },
-      ],
-    },
-    {
-      source: '/search/:path*',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-        { type: 'header', key: 'sec-purpose', value: 'prefetch' },
-      ],
-    },
-    {
-      source: '/catalog/:path*',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-        { type: 'header', key: 'sec-purpose', value: 'prefetch' },
-      ],
-    },
+    '/movie/:path*',
+    '/tv/:path*',
+    '/person/:path*',
+    '/collections/:path*',
+    '/search',
+    '/search/:path*',
+    '/catalog/:path*',
     '/api/mod',
   ],
 };
+
+/** Routes whose path shape is `/<section>/<numeric id>`. */
+const DETAIL_PREFIXES = ['/movie/', '/tv/', '/person/', '/collections/'];
 
 function getClientIp(request: NextRequest): string {
   const forwardedFor = request.headers.get('x-forwarded-for');
@@ -99,18 +62,49 @@ function rateLimit429(reset: number, limit: number, remaining: number): NextResp
   );
 }
 
-export async function proxy(request: NextRequest) {
-  // Belt-and-suspenders for the matcher `missing` rules above. Next.js strips
-  // its internal Flight headers (`rsc`, `next-router-prefetch`) from
-  // `request.headers` inside Proxy, so the matcher is what actually stops those
-  // — but browser-level prefetch hints still come through and are worth an
-  // early exit before the Upstash round-trip.
-  const purpose =
-    request.headers.get('purpose') || request.headers.get('sec-purpose') || '';
-  if (purpose.includes('prefetch')) {
-    return NextResponse.next();
-  }
+// Refusal for a crawler we do not serve. Returned from the edge, so Next.js
+// never renders the page and no ISR cache entry is written — which is the
+// entire point: a rendered 404 still costs an ISR write, while a proxy-level
+// 403 costs nothing but a single edge request.
+function botBlocked(reason: string): NextResponse {
+  return new NextResponse('Forbidden: automated access to this route is not permitted.\n', {
+    status: 403,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+      'X-Robots-Tag': 'noindex, nofollow',
+      'X-Block-Reason': reason,
+    },
+  });
+}
 
+// Crawlers that are over budget get 429 with a long Retry-After rather than
+// 403, because well-behaved search engines back off on 429 and come back later
+// instead of dropping the URL from their index.
+function crawlerThrottled(): NextResponse {
+  return new NextResponse('Crawl budget exhausted. Please retry later.\n', {
+    status: 429,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Retry-After': '3600',
+      'X-Robots-Tag': 'noindex',
+    },
+  });
+}
+
+// Malformed id — refuse at the edge so the renderer never mints a cache entry.
+function badPath(): NextResponse {
+  return new NextResponse('Not found.\n', {
+    status: 404,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400',
+      'X-Robots-Tag': 'noindex, nofollow',
+    },
+  });
+}
+
+export async function proxy(request: NextRequest) {
   const token = request.cookies.get('cinematch_token')?.value;
   const { pathname } = request.nextUrl;
 
@@ -121,17 +115,65 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  const isDetail = DETAIL_PREFIXES.some((p) => pathname.startsWith(p));
+
+  // ── 1. Reject malformed detail ids before anything renders ────────────────
+  // `/movie/603` is fine; `/movie/603/reviews`, `/movie/abc` and
+  // `/movie/99999999999` are enumeration noise. A rendered `notFound()` costs
+  // an ISR write; this costs nothing.
+  if (isDetail && !isValidDetailPath(pathname)) {
+    return badPath();
+  }
+
+  // ── 2. Bot gate ───────────────────────────────────────────────────────────
+  // Runs on every matched route, but the crawl BUDGET only applies to the
+  // dynamic-param routes, which are the ones that mint new cache entries.
+  const { klass, family } = classifyUserAgent(request.headers.get('user-agent'));
+
+  if (klass === 'blocked') {
+    return botBlocked(family);
+  }
+
+  // Prefetch / RSC navigation from a request that already cleared the bot gate.
+  // Real browsers fetching the next page shouldn't spend rate-limit budget, but
+  // this check deliberately sits AFTER `classifyUserAgent` so that setting a
+  // prefetch header can't be used to skip it.
+  const purpose =
+    request.headers.get('purpose') || request.headers.get('sec-purpose') || '';
+  if (purpose.includes('prefetch') || request.headers.get('next-router-prefetch')) {
+    return NextResponse.next();
+  }
+
+  if (klass === 'search' || klass === 'social') {
+    // Crawlers never need the paid moderation proxy or the search page.
+    if (pathname === '/api/mod' || pathname.startsWith('/search')) {
+      return botBlocked('crawler-on-restricted-route');
+    }
+
+    // Link unfurlers legitimately need /movie/<id> for Open Graph cards, and
+    // search engines need it for indexing — but both are metered so neither can
+    // walk the link graph into tens of thousands of cold renders.
+    if (isDetail || pathname.startsWith('/catalog')) {
+      const familyLimiter = klass === 'search' ? searchCrawlLimiter : socialCrawlLimiter;
+      const [familyBudget, globalBudget] = await Promise.all([
+        checkRateLimit(familyLimiter, `crawl:${klass}:${family}`),
+        checkRateLimit(globalCrawlLimiter, 'crawl:all'),
+      ]);
+      if (!familyBudget.success || !globalBudget.success) {
+        return crawlerThrottled();
+      }
+    }
+
+    return NextResponse.next();
+  }
+
+  // ── 3. Per-IP limits for real browsers ────────────────────────────────────
   let limiter = null;
   if (pathname === '/api/mod') {
     limiter = modApiLimiter;
   } else if (pathname.startsWith('/search') || pathname.startsWith('/catalog')) {
     limiter = searchLimiter;
-  } else if (
-    pathname.startsWith('/movie/') ||
-    pathname.startsWith('/tv/') ||
-    pathname.startsWith('/person/') ||
-    pathname.startsWith('/collections/')
-  ) {
+  } else if (isDetail) {
     limiter = detailPageLimiter;
   }
 

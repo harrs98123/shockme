@@ -512,6 +512,14 @@ export default function CategoryBrowseScreen() {
         bounces={true}
         onRefresh={refetch}
         refreshing={isRefetching}
+        // Same tuning as MovieRow's horizontal rails: bounds how much work
+        // mounts up front and off-screen instead of relying on RN's more
+        // generous defaults, since this grid can hold ~40 poster rows
+        // (movies+TV merged) for the franchise/awards categories.
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews
         ListHeaderComponent={
           <View style={styles.categoryHeroBanner}>
             <LinearGradient

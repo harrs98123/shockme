@@ -43,8 +43,19 @@ export default function Avatar({
     return 'cinephile';
   }, [seed, name]);
 
-  // Deterministically compute DiceBear avatar Data URI
+  // Determine which image source to display
+  const hasValidUploadedSrc = Boolean(
+    src &&
+    typeof src === 'string' &&
+    src.trim().length > 0 &&
+    failedSrc !== src
+  );
+
+  // Most avatars have an uploaded `src` and never need the DiceBear fallback —
+  // skip generating (and SVG-serializing) it until it's actually the thing on
+  // screen, rather than computing it unconditionally on every render.
   const dicebearDataUri = useMemo(() => {
+    if (hasValidUploadedSrc) return null;
     return generateDiceBearDataUri({
       seed: effectiveSeed,
       styleName: dicebearStyle,
@@ -55,17 +66,9 @@ export default function Avatar({
       flip,
       backgroundColor,
     });
-  }, [effectiveSeed, dicebearStyle, size, radius, scale, rotate, flip, backgroundColor]);
+  }, [hasValidUploadedSrc, effectiveSeed, dicebearStyle, size, radius, scale, rotate, flip, backgroundColor]);
 
-  // Determine which image source to display
-  const hasValidUploadedSrc = Boolean(
-    src &&
-    typeof src === 'string' &&
-    src.trim().length > 0 &&
-    failedSrc !== src
-  );
-
-  const displaySrc = hasValidUploadedSrc ? (src as string) : dicebearDataUri;
+  const displaySrc = hasValidUploadedSrc ? (src as string) : (dicebearDataUri as string);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (src) {

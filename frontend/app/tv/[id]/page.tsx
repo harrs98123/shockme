@@ -8,6 +8,7 @@ import AlternateEnding from '@/components/AlternateEnding';
 import MoctaleMeter from '@/components/MoctaleMeter';
 import SeasonsSection from '@/components/SeasonsSection';
 import WatchOrderPanel from '@/components/WatchOrderPanel';
+import LazyMount from '@/components/LazyMount';
 import { absoluteUrl, buildTvSeriesJsonLd, jsonLdScript, posterAbsoluteUrl, toDescription } from '@/lib/seo';
 import { BACKEND_FETCH_HEADERS } from '@/lib/backendFetch';
 
@@ -116,22 +117,26 @@ export default async function TVPage({
         <SeasonsSection seasons={tv.seasons} seriesId={tv.id} seriesName={tv.name || tv.title} />
       )}
 
-      {/* ── Community: Moctale Meter + Debates ─────────────── */}
-      <div className="container" style={{ padding: '60px 24px' }}>
-        <MoctaleMeter movieId={tv.id} mediaType="tv" />
-        
-        <div style={{ marginTop: '40px' }}>
-          <DebateSection movieId={tv.id} mediaType="tv" />
+      {/* ── Community + AI extras: none of this renders from SSR data (each
+          section fetches its own data client-side), so deferring the mount
+          until it's about to scroll into view costs nothing SEO-wise. ── */}
+      <LazyMount minHeight={500}>
+        <div className="container" style={{ padding: '60px 24px' }}>
+          <MoctaleMeter movieId={tv.id} mediaType="tv" />
+
+          <div style={{ marginTop: '40px' }}>
+            <DebateSection movieId={tv.id} mediaType="tv" />
+          </div>
         </div>
-      </div>
 
-      <div className="container" style={{ padding: '0 24px 60px' }}>
-        <WatchOrderPanel movieId={tv.id} mediaType="tv" />
-        <ExplanationEngine movieId={tv.id} mediaType="tv" />
-      </div>
+        <div className="container" style={{ padding: '0 24px 60px' }}>
+          <WatchOrderPanel movieId={tv.id} mediaType="tv" />
+          <ExplanationEngine movieId={tv.id} mediaType="tv" />
+        </div>
 
-      {/* ── Alternate Ending AI ────────────────────────── */}
-      <AlternateEnding movieId={tv.id} mediaType="tv" />
+        {/* ── Alternate Ending AI ────────────────────────── */}
+        <AlternateEnding movieId={tv.id} mediaType="tv" />
+      </LazyMount>
     </>
   );
 }

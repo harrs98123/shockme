@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -13,12 +13,12 @@ import {
   Loader2,
   SlidersHorizontal,
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { CldUploadWidget } from 'next-cloudinary';
 import {
   generateDiceBearDataUri,
+  loadDiceBearStyle,
   DEFAULT_AVATAR_STYLE,
 } from '@/components/Avatar/dicebear';
 import type { DiceBearStyleName } from '@/components/Avatar/Avatar.types';
@@ -96,6 +96,23 @@ export default function AvatarCustomizerModal({ isOpen, onClose, onAvatarUpdated
   const [customPhotoUrl, setCustomPhotoUrl] = useState(user?.avatar_url || '');
   const [saving, setSaving] = useState(false);
 
+  // The style picker grid below renders a live thumbnail per option, so as
+  // soon as the (already lazily-mounted) modal opens, fetch every style it
+  // offers. Each is its own chunk (see components/Avatar/dicebear.ts) — until
+  // they land, `generateDiceBearDataUri` below draws the 'lorelei' style as a
+  // placeholder, then this flips and everything redraws in the right style.
+  const [stylesReady, setStylesReady] = useState(false);
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    Promise.all(STYLE_OPTIONS.map((opt) => loadDiceBearStyle(opt.id))).then(() => {
+      if (!cancelled) setStylesReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
   // Generate live DiceBear data URI
   const liveDicebearUri = useMemo(() => {
     return generateDiceBearDataUri({
@@ -108,7 +125,8 @@ export default function AvatarCustomizerModal({ isOpen, onClose, onAvatarUpdated
       flip,
       backgroundColor: selectedPalette,
     });
-  }, [seed, styleName, scale, rotate, flip, selectedPalette]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed, styleName, scale, rotate, flip, selectedPalette, stylesReady]);
 
   // Preview source depending on tab
   const previewSrc = activeTab === 'upload' && customPhotoUrl ? customPhotoUrl : liveDicebearUri;
@@ -135,11 +153,15 @@ export default function AvatarCustomizerModal({ isOpen, onClose, onAvatarUpdated
         onAvatarUpdated(newAvatarUrl);
       }
 
-      confetti({
-        particleCount: 70,
-        spread: 60,
-        origin: { y: 0.6 },
-        colors: ['#E50914', '#8B5CF6', '#F59E0B'],
+      // canvas-confetti only fires here, on a successful save — load it on
+      // demand instead of shipping it in every page that can render this modal.
+      import('canvas-confetti').then(({ default: confetti }) => {
+        confetti({
+          particleCount: 70,
+          spread: 60,
+          origin: { y: 0.6 },
+          colors: ['#E50914', '#8B5CF6', '#F59E0B'],
+        });
       });
 
       toast.success('Avatar updated successfully!');
@@ -371,6 +393,10 @@ export default function AvatarCustomizerModal({ isOpen, onClose, onAvatarUpdated
                   >
                     {STYLE_OPTIONS.map((styleOpt) => {
                       const isSelected = styleName === styleOpt.id;
+                      // `stylesReady` isn't read here, but its change triggers the
+                      // re-render this needs: once every picker style has loaded
+                      // (see the effect above), generateDiceBearDataUri stops
+                      // substituting the 'lorelei' placeholder for the real style.
                       const thumbUri = generateDiceBearDataUri({
                         seed: user?.username || 'cinephile',
                         styleName: styleOpt.id,

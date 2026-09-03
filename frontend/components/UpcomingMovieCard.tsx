@@ -158,7 +158,7 @@ export default function UpcomingMovieCard({
         transition={{ duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
       >
         <div className="relative w-full">
-          <Link href={`/${movie.title ? 'movie' : 'tv'}/${movie.id}`} className="block w-full">
+          <Link href={`/${movie.title ? 'movie' : 'tv'}/${movie.id}`} prefetch={false} className="block w-full">
             {/* Poster Image Container */}
             <div className="relative w-full aspect-[2/3] rounded-2xl overflow-hidden bg-zinc-900 border border-white/10 shadow-xl group-hover:shadow-2xl transition-all duration-500">
               <Image

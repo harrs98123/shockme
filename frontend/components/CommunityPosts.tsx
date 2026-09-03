@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -19,9 +20,16 @@ import {
   EyeOff,
 } from 'lucide-react';
 import Avatar from '@/components/Avatar';
-import ScenePlayer from '@/components/ScenePlayer';
-import PollCard from '@/components/PollCard';
-import ShareModal, { SharePostData } from '@/components/ShareModal';
+// Only rendered for posts of the matching `post_type` — most post feeds are
+// plain text, so neither chunk is worth including until one is actually needed.
+const ScenePlayer = dynamic(() => import('@/components/ScenePlayer'));
+const PollCard = dynamic(() => import('@/components/PollCard'));
+import type { SharePostData } from '@/components/ShareModal';
+
+// Gated behind `isShareModalOpen &&` at its render site below. This component
+// is imported eagerly by every /movie and /tv page, so keeping the modal's
+// chunk out of that path until someone actually clicks share matters here.
+const ShareModal = dynamic(() => import('@/components/ShareModal'), { ssr: false });
 
 export default function CommunityPosts({ movieId }: { movieId: number }) {
   const { user: currentUser } = useAuth();
@@ -297,11 +305,13 @@ export default function CommunityPosts({ movieId }: { movieId: number }) {
       </div>
 
       {/* Share Modal */}
-      <ShareModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        post={shareTargetPost}
-      />
+      {isShareModalOpen && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          post={shareTargetPost}
+        />
+      )}
     </div>
   );
 }

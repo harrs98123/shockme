@@ -13,6 +13,12 @@ frontend/.env.local
 frontendmobile/.env
 frontendmobile/.env.local
 
+# Exception: mobile build-time config. Every value is an EXPO_PUBLIC_* variable
+# (inlined into the JS bundle, already public) and must be committed so EAS
+# Build / `expo export` pick it up. Never add a secret to these files.
+!frontendmobile/.env.production
+!frontendmobile/.env.preview
+
 # Databases & local state
 backend/cinematch.db
 backend/*.db

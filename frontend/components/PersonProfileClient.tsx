@@ -186,7 +186,7 @@ export default function PersonProfileClient({ person }: { person: PersonDetails 
                     transition={{ delay: (idx % 4) * 0.1 }}
                     className="group"
                   >
-                    <Link href={`/${item.media_type}/${item.id}`} className="block">
+                    <Link href={`/${item.media_type}/${item.id}`} prefetch={false} className="block">
                       <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-[#111] border border-white/5 transition-all duration-500 group-hover:border-white/20">
                         {item.poster_path ? (
                           <Image
