@@ -90,6 +90,46 @@ def run_security_migration():
     except sqlite3.OperationalError:
         pass
 
+    # Add is_archived to social_posts (if missing)
+    try:
+        cursor.execute(
+            "ALTER TABLE social_posts ADD COLUMN is_archived BOOLEAN DEFAULT 0"
+        )
+    except sqlite3.OperationalError:
+        pass
+
+    # Create stories table (if missing)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS stories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            movie_id INTEGER,
+            movie_title TEXT,
+            movie_poster TEXT,
+            movie_backdrop TEXT,
+            media_type TEXT DEFAULT 'movie',
+            caption TEXT,
+            story_type TEXT DEFAULT 'pulse',
+            rating REAL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS ix_stories_user_id ON stories (user_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS ix_stories_created_at ON stories (created_at)")
+
+    # Create story_reactions table (if missing)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS story_reactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            story_id INTEGER NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            reaction_type TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT _story_reaction_uc UNIQUE (story_id, user_id)
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS ix_story_reactions_story_id ON story_reactions (story_id)")
+
     # Create refresh_tokens table (if missing)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS refresh_tokens (

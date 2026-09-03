@@ -36,6 +36,7 @@ class User(Base):
     followers = relationship("UserFollow", foreign_keys="UserFollow.following_id", back_populates="following", cascade="all, delete-orphan")
     following = relationship("UserFollow", foreign_keys="UserFollow.follower_id", back_populates="follower", cascade="all, delete-orphan")
     social_posts = relationship("SocialPost", back_populates="user", cascade="all, delete")
+    stories = relationship("Story", back_populates="user", cascade="all, delete")
 
 
 class UserFollow(Base):
@@ -592,6 +593,7 @@ class SocialPost(Base):
     content = Column(Text, nullable=True)
     payload = Column(JSON, nullable=True) # for poll options, episode numbers, etc.
     is_spoiler = Column(Boolean, default=False)
+    is_archived = Column(Boolean, default=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="social_posts")
@@ -684,4 +686,37 @@ class WatchPartyParticipant(Base):
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
 
     party = relationship("WatchParty", back_populates="participants")
+    user = relationship("User")
+
+
+class Story(Base):
+    __tablename__ = "stories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    movie_id = Column(Integer, nullable=True)
+    movie_title = Column(String, nullable=True)
+    movie_poster = Column(String, nullable=True)
+    movie_backdrop = Column(String, nullable=True)
+    media_type = Column(String, default="movie")
+    caption = Column(Text, nullable=True)
+    story_type = Column(String, default="pulse")  # pulse, hot-take, rating, scene
+    rating = Column(Float, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    user = relationship("User", back_populates="stories")
+    reactions = relationship("StoryReaction", back_populates="story", cascade="all, delete")
+
+
+class StoryReaction(Base):
+    __tablename__ = "story_reactions"
+    __table_args__ = (UniqueConstraint('story_id', 'user_id', name='_story_reaction_uc'),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    story_id = Column(Integer, ForeignKey("stories.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    reaction_type = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    story = relationship("Story", back_populates="reactions")
     user = relationship("User")

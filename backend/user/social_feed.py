@@ -86,6 +86,7 @@ class SocialPostOut(BaseModel):
     movie_id: Optional[int]
     payload: Optional[Dict[str, Any]]
     is_spoiler: bool
+    is_archived: bool = False
     created_at: datetime
     author: Dict[str, Any]
     reactions: List[ReactionOut]
@@ -110,6 +111,71 @@ async def create_post(post: SocialPostCreate, db: Session = Depends(get_db), cur
     db.refresh(new_post)
     await _bump_feed_epoch()
     return format_post(db, new_post, current_user.id, comments_count=0, is_following=False)
+
+@router.delete("/posts/{post_id}")
+async def delete_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    post = db.query(SocialPost).filter(SocialPost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.user_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this post")
+    db.delete(post)
+    db.commit()
+    await _bump_feed_epoch()
+    return {"message": "Post deleted successfully", "id": post_id}
+
+@router.patch("/posts/{post_id}/archive", response_model=SocialPostOut)
+async def toggle_archive_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    post = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(SocialPost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.user_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this post")
+    post.is_archived = not bool(post.is_archived)
+    db.commit()
+    db.refresh(post)
+    await _bump_feed_epoch()
+    return format_post(db, post, current_user.id)
+
+@router.get("/posts/my", response_model=List[SocialPostOut])
+async def get_my_posts(
+    include_archived: bool = False,
+    archived_only: bool = False,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    query = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(SocialPost.user_id == current_user.id)
+    if archived_only:
+        query = query.filter(SocialPost.is_archived == True)
+    elif not include_archived:
+        query = query.filter(or_(SocialPost.is_archived == False, SocialPost.is_archived.is_(None)))
+    posts = query.order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+    return format_posts(db, posts, current_user.id)
+
+@router.get("/posts/user/{user_id}", response_model=List[SocialPostOut])
+async def get_user_posts(
+    user_id: int,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    query = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(SocialPost.user_id == user_id)
+    if not current_user or current_user.id != user_id:
+        query = query.filter(or_(SocialPost.is_archived == False, SocialPost.is_archived.is_(None)))
+    posts = query.order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+    current_id = current_user.id if current_user else None
+    return format_posts(db, posts, current_id)
 
 @router.post("/posts/{post_id}/react", response_model=SocialPostOut)
 @router.post("/posts/posts/{post_id}/react", response_model=SocialPostOut)
@@ -395,17 +461,19 @@ async def get_following_feed(limit: int = 50, offset: int = 0, db: Session = Dep
         return cached
 
     # Get IDs of people the user follows
+    not_archived = or_(SocialPost.is_archived == False, SocialPost.is_archived.is_(None))
     following_ids = [f.following_id for f in current_user.following]
     if not following_ids:
         # Fallback to general recent so the feed is never empty!
-        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(not_archived).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
     else:
         posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(
-            SocialPost.user_id.in_(following_ids)
+            SocialPost.user_id.in_(following_ids),
+            not_archived
         ).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
 
         if not posts:
-            posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+            posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(not_archived).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
 
     result = format_posts(db, posts, current_user.id)
     await cache_set(cache_key, _for_cache(result), FEED_CACHE_TTL)
@@ -425,9 +493,11 @@ async def get_for_you_feed(limit: int = 50, offset: int = 0, db: Session = Depen
     if cached is not None:
         return cached
 
+    not_archived = or_(SocialPost.is_archived == False, SocialPost.is_archived.is_(None))
+
     if not current_user:
         # Public feed - just popular/recent posts
-        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(not_archived).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
         result = format_posts(db, posts, None)
         await cache_set(cache_key, _for_cache(result), FEED_CACHE_TTL)
         return result
@@ -446,13 +516,13 @@ async def get_for_you_feed(limit: int = 50, offset: int = 0, db: Session = Depen
         conditions.append(SocialPost.movie_id.in_(followed_movie_ids))
 
     if conditions:
-        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(or_(*conditions)).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(or_(*conditions), not_archived).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
     else:
         posts = []
 
     # Fallback to general recent if empty so feed is always vibrant
     if not posts:
-        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
+        posts = db.query(SocialPost).options(*POST_LIST_OPTIONS).filter(not_archived).order_by(SocialPost.created_at.desc()).offset(offset).limit(limit).all()
 
     result = format_posts(db, posts, current_user.id)
     await cache_set(cache_key, _for_cache(result), FEED_CACHE_TTL)
@@ -568,6 +638,7 @@ def format_post(
         "movie_id": post.movie_id,
         "payload": payload,
         "is_spoiler": post.is_spoiler,
+        "is_archived": bool(getattr(post, "is_archived", False)),
         "created_at": post.created_at,
         "author": {
             "id": post.user.id,
